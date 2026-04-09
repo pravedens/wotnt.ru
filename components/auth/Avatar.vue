@@ -1,0 +1,115 @@
+<template>
+  <div class="relative" :class="containerClass">
+    <img 
+      v-if="src"
+      :src="src" 
+      :alt="alt"
+      :class="[
+        'object-cover',
+        roundedClass,
+        sizeClass,
+        borderClass
+      ]"
+      @load="onLoad"
+      @error="onError"
+    >
+    <div 
+      v-else
+      :class="[
+        'flex items-center justify-center text-white font-bold',
+        roundedClass,
+        sizeClass,
+        bgClass
+      ]"
+    >
+      {{ initials }}
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed } from 'vue'
+
+const props = defineProps({
+  src: {
+    type: String,
+    default: null
+  },
+  name: {
+    type: String,
+    default: 'User'
+  },
+  alt: {
+    type: String,
+    default: 'Avatar'
+  },
+  size: {
+    type: String,
+    default: 'md',
+    validator: (value) => ['sm', 'md', 'lg', 'xl'].includes(value)
+  },
+  rounded: {
+    type: String,
+    default: 'full',
+    validator: (value) => ['full', 'lg', 'md', 'none'].includes(value)
+  },
+  border: {
+    type: Boolean,
+    default: true
+  },
+  containerClass: {
+    type: String,
+    default: ''
+  }
+})
+
+// Размеры
+const sizeClass = computed(() => {
+  const sizes = {
+    sm: 'w-8 h-8 text-sm',
+    md: 'w-10 h-10 text-base',
+    lg: 'w-24 h-24 text-2xl',  // Увеличил для карточки
+    xl: 'w-32 h-32 text-3xl'
+  }
+  return sizes[props.size] || sizes.md
+})
+
+// Скругление
+const roundedClass = computed(() => {
+  const roundings = {
+    full: 'rounded-full',
+    lg: 'rounded-lg',
+    md: 'rounded-md',
+    none: 'rounded-none'
+  }
+  return roundings[props.rounded] || roundings.full
+})
+
+// Граница
+const borderClass = computed(() => {
+  return props.border ? 'border-2 border-white/20' : ''
+})
+
+// Фон для заглушки
+const bgClass = computed(() => {
+  return 'bg-gradient-to-br from-blue-500 to-purple-500'
+})
+
+const initials = computed(() => {
+  if (!props.name) return 'U'
+  return props.name
+    .split(' ')
+    .map(word => word[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2)
+})
+
+const onLoad = () => {
+  console.log('✅ Avatar loaded:', props.src)
+}
+
+const onError = (e) => {
+  console.error('❌ Avatar error:', props.src, e)
+}
+</script>

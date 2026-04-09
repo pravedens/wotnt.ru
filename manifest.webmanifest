@@ -1,0 +1,23 @@
+{
+  "name": "wotnt.ru",
+  "short_name": "wotnt",
+  "description": "Духовные проповеди и события",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#4f46e5",
+  "background_color": "#4f46e5",
+  "icons": [
+    {
+      "src": "/favicon/favicon-32.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    },
+    {
+      "src": "/favicon/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}

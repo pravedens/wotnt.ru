@@ -1,0 +1,29 @@
+User-agent: *
+Allow: /
+Disallow: /auth/
+Disallow: /dashboard
+Disallow: /favorites
+Disallow: /privacy
+Disallow: /contacts
+Disallow: /help
+Disallow: /terms
+
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: Twitterbot
+Allow: /
+
+User-agent: vk.com
+Allow: /
+
+User-agent: OKBot
+Allow: /
+
+User-agent: TelegramBot
+Allow: /
+
+Sitemap: https://wotnt.ru/sitemap.xml
+
+# Для LLM
+Allow: /llms.txt
