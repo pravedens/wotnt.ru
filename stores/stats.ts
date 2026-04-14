@@ -38,7 +38,6 @@ export const useStatsStore = defineStore('stats', {
         this.postsStats[postId] = { views_count: 0, likes_count: 0, liked: false }
       }
       Object.assign(this.postsStats[postId], data)
-      //console.log(`📊 Stats updated for post ${postId}:`, this.postsStats[postId])
     },
 
     setLoading(postId: number, isLoading: boolean) {

@@ -7,11 +7,9 @@ export const useImageUrl = () => {
   const getImageUrl = (path: string | null | undefined, type?: 'events' | 'sermons' | 'abouts'): string | null => {
     if (!path) return null
     
-    console.log('🔍 Original path:', path)
     
     // Если уже полный URL
     if (path.startsWith('http')) {
-      console.log('✅ Full URL:', path)
       return path
     }
     
@@ -34,7 +32,6 @@ export const useImageUrl = () => {
     
     // Формируем полный URL
     const fullUrl = `${baseUrl}/storage/${cleanPath}`
-    console.log('✅ Generated URL:', fullUrl)
     
     return fullUrl
   }

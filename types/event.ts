@@ -18,6 +18,8 @@ export interface Event {
   is_published?: boolean
   is_past?: boolean
   can_edit?: boolean
+  members_only?: boolean
+  ministers_only?: boolean
   
   // Аксессоры из модели
   full_date?: string
@@ -37,9 +39,25 @@ export interface CalendarEvent {
   slug: string
   color?: string
   time?: string
+  description?: string
+  startDate?: string
+  startTime?: string
+  show_in_carousel?: boolean
   is_published?: boolean
+  members_only?: boolean
+  ministers_only?: boolean
   is_past?: boolean
   can_edit?: boolean
+}
+
+interface CalendarDay {
+  day: number
+  date: string
+  month: number
+  year: number
+  weekday: number
+  events: CalendarEvent[]
+  isCurrentMonth: boolean
 }
 
 export interface MonthData {

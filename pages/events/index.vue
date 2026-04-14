@@ -65,7 +65,7 @@
           <p class="text-white/80 text-lg mb-4">В этом месяце нет запланированных событий</p>
           <button
             v-if="userCanEdit"
-            @click="openCreateModal(new Date().toISOString().split('T')[0])"
+            @click="openCreateModal(getTodayDate())"
             class="px-6 py-2 bg-gradient-to-r from-green-500 to-teal-500 text-white rounded-lg hover:from-green-600 hover:to-teal-600 transition"
           >
             + Создать событие
@@ -116,8 +116,31 @@ import EventsCalendar from '~/components/events/Calendar.vue'
 import EventsCard from '~/components/events/EventCard.vue'
 import EventsViewModal from '~/components/events/ViewModal.vue'
 import EventsFormModal from '~/components/events/FormModal.vue'
-import { onMounted } from 'vue'
 
+// Типы
+interface Event {
+  id: number
+  title: string
+  slug: string
+  color?: string
+  startDate?: string
+  startTime?: string
+  time?: string
+  description?: string
+  show_in_carousel?: boolean
+  is_published?: boolean
+  members_only?: boolean
+  ministers_only?: boolean  // ✅ Добавлено
+  is_past?: boolean
+  can_edit?: boolean
+}
+
+interface TransformedMonthData {
+  list?: Event[]
+  events?: Record<number, Event[]>
+}
+
+// Composables
 const router = useRouter()
 const authStore = useAuthStore()
 
@@ -133,23 +156,43 @@ const {
   prevMonth,
   nextMonth,
   today,
-  loadEvent,
-  isAdmin
+  loadEvent
 } = useEvents()
 
 // ============================================
-// 🔥 ТРАНСФОРМАЦИЯ ДАННЫХ ДЛЯ КАЛЕНДАРЯ
+// ТРАНСФОРМАЦИЯ ДАННЫХ ДЛЯ КАЛЕНДАРЯ
 // ============================================
 
+// Функция для форматирования времени
+const formatEventTime = (event: Event): string | null => {
+  if (event.time) {
+    if (event.time.match(/^\d{2}:\d{2}$/)) {
+      return event.time
+    }
+    const match = event.time.match(/(\d{2}:\d{2})/)
+    if (match) {
+      return match[1]
+    }
+  }
+  
+  if (event.startTime) {
+    const match = event.startTime.match(/(\d{2}:\d{2})/)
+    if (match) {
+      return match[1]
+    }
+  }
+  
+  return null
+}
+
 // Преобразуем данные из API в формат, понятный календарю
-const transformedMonthData = computed(() => {
+const transformedMonthData = computed((): TransformedMonthData | null => {
   if (!monthData.value) return null
   
-  // Группируем события по дням
-  const eventsByDay: Record<number, any[]> = {}
+  const eventsByDay: Record<number, Event[]> = {}
   
   if (monthData.value.list && Array.isArray(monthData.value.list)) {
-    monthData.value.list.forEach((event: any) => {
+    monthData.value.list.forEach((event: Event) => {
       if (event.startDate) {
         const date = new Date(event.startDate)
         const day = date.getDate()
@@ -158,18 +201,21 @@ const transformedMonthData = computed(() => {
           eventsByDay[day] = []
         }
         
+        const formattedTime = formatEventTime(event)
+        
         eventsByDay[day].push({
           id: event.id,
           title: event.title,
           slug: event.slug,
           color: event.color,
-          time: event.startTime,
+          time: formattedTime,
           description: event.description,
           startDate: event.startDate,
           startTime: event.startTime,
           show_in_carousel: event.show_in_carousel,
           is_published: event.is_published,
           members_only: event.members_only,
+          ministers_only: event.ministers_only,  // ✅ Добавлено
           is_past: event.is_past,
           can_edit: event.can_edit
         })
@@ -177,12 +223,13 @@ const transformedMonthData = computed(() => {
     })
   }
   
-  // Сортируем события в каждом дне по времени
   Object.keys(eventsByDay).forEach(day => {
     eventsByDay[Number(day)].sort((a, b) => {
-      if (a.startTime && b.startTime) {
-        return a.startTime.localeCompare(b.startTime)
+      if (a.time && b.time) {
+        return a.time.localeCompare(b.time)
       }
+      if (a.time && !b.time) return -1
+      if (!a.time && b.time) return 1
       return 0
     })
   })
@@ -231,39 +278,34 @@ useHead({
 // ЛОГИКА КОМПОНЕНТА
 // ============================================
 
-// Права на редактирование
 const userCanEdit = computed(() => authStore.isAdmin)
 
-const viewEvent = ref<any>(null)
-const editEvent = ref<any>(null)
+const viewEvent = ref<Event | null>(null)
+const editEvent = ref<Event | null>(null)
 const createDate = ref<string | null>(null)
 
-// ✅ Загружаем события при монтировании с явными параметрами
+const getTodayDate = (): string => {
+  return new Date().toISOString().split('T')[0]
+}
+
 onMounted(() => {
   const now = new Date()
   const currentMonthValue = now.getMonth() + 1
   const currentYearValue = now.getFullYear()
-  console.log('📅 onMounted - loading events for:', currentMonthValue, currentYearValue)
   loadMonthEvents(currentMonthValue, currentYearValue)
 })
 
-// ✅ Повторная попытка загрузки
 const retryLoad = () => {
   loadMonthEvents(currentMonth.value, currentYear.value)
 }
 
-// Открыть модальное окно просмотра
-const openViewModal = (event: any) => {
-  console.log('📖 Открытие просмотра события:', event.slug || event.id)
+const openViewModal = (event: Event) => {
   viewEvent.value = event
 }
 
-// Открыть модальное окно редактирования
-const openEditModal = async (event: any) => {
-  console.log('✏️ Открытие редактирования события:', event?.slug || event?.id)
+const openEditModal = async (event: Event) => {
   
   if (!userCanEdit.value) {
-    console.log('🚫 Нет прав на редактирование')
     return
   }
   
@@ -280,12 +322,9 @@ const openEditModal = async (event: any) => {
   }
 }
 
-// Открыть модальное окно создания
 const openCreateModal = (dateStr: string) => {
-  console.log('📅 openCreateModal called with date:', dateStr)
   
   if (!userCanEdit.value) {
-    console.log('🚫 Нет прав на редактирование')
     return
   }
   
@@ -295,11 +334,15 @@ const openCreateModal = (dateStr: string) => {
   })
 }
 
-// Обработчик сохранения события
 const handleEventSaved = () => {
-  console.log('💾 Событие сохранено, обновляем календарь')
   loadMonthEvents(currentMonth.value, currentYear.value)
   createDate.value = null
   editEvent.value = null
 }
 </script>
+
+<style scoped>
+.container {
+  max-width: 1280px;
+}
+</style>

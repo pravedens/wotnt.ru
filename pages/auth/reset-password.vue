@@ -101,8 +101,6 @@ const email = route.query.email || ''
 // Сохраняем URL для возврата
 const redirectPath = ref('/dashboard')
 
-console.log('Reset password page loaded:', { token: token.substring(0, 10) + '...', email })
-
 const form = ref({
   email: email,
   token: token,
@@ -129,20 +127,10 @@ const passwordMismatch = computed(() => {
 
 // Валидация формы
 const isFormValid = computed(() => {
-  const valid = form.value.password.length >= 8 &&
+  return form.value.password.length >= 8 &&
          form.value.password === form.value.password_confirmation &&
          form.value.token &&
          form.value.email
-  
-  console.log('Form validation:', {
-    password: form.value.password.length >= 8,
-    match: form.value.password === form.value.password_confirmation,
-    token: !!form.value.token,
-    email: !!form.value.email,
-    valid
-  })
-  
-  return valid
 })
 
 onMounted(() => {
@@ -177,8 +165,6 @@ onMounted(() => {
 })
 
 const resetPassword = async () => {
-  console.log('Resetting password with:', form.value)
-  
   if (!isFormValid.value) {
     error.value = 'Пожалуйста, заполните все поля правильно'
     return

@@ -72,17 +72,14 @@ const success = ref('')
 const redirectPath = ref('/dashboard')
 
 onMounted(() => {
-  // Если уже авторизован, перенаправляем
   if (authStore.isAuthenticated) {
     router.push('/dashboard')
     return
   }
   
-  // Сохраняем redirect из query параметра
   if (route.query.redirect) {
     redirectPath.value = route.query.redirect
   } else {
-    // Проверяем referrer (откуда пришли)
     const referrer = document.referrer
     if (referrer && referrer.includes(window.location.hostname)) {
       try {
@@ -97,7 +94,6 @@ onMounted(() => {
   }
 })
 
-// Ссылка для возврата к логину с сохранением redirect
 const loginLink = computed(() => ({
   path: '/auth/login',
   query: redirectPath.value !== '/dashboard' ? { redirect: redirectPath.value } : undefined
@@ -108,15 +104,21 @@ const sendResetLink = async () => {
   error.value = ''
   success.value = ''
   
-  const result = await authStore.forgotPassword(email.value)
-  
-  if (result.success) {
-    success.value = result.message
-    email.value = ''
-  } else {
-    error.value = result.error
+  try {
+    const result = await authStore.forgotPassword(email.value)
+    
+    
+    if (result.success) {
+      success.value = result.message
+      email.value = ''
+    } else {
+      error.value = result.error || 'Ошибка отправки запроса'
+    }
+  } catch (err) {
+    console.error('Send reset link error:', err)
+    error.value = 'Произошла ошибка. Попробуйте позже.'
+  } finally {
+    loading.value = false
   }
-  
-  loading.value = false
 }
 </script>

@@ -13,11 +13,9 @@ const urlsToCache = [
 
 // Установка Service Worker
 self.addEventListener('install', event => {
-  console.log('[Service Worker] Install');
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
-        console.log('[Service Worker] Caching app shell');
         return cache.addAll(urlsToCache);
       })
   );
@@ -25,12 +23,10 @@ self.addEventListener('install', event => {
 
 // Активация и удаление старых кэшей
 self.addEventListener('activate', event => {
-  console.log('[Service Worker] Activate');
   event.waitUntil(
     caches.keys().then(keyList => {
       return Promise.all(keyList.map(key => {
         if (key !== CACHE_NAME) {
-          console.log('[Service Worker] Removing old cache', key);
           return caches.delete(key);
         }
       }));

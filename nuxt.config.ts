@@ -11,7 +11,7 @@ export default defineNuxtConfig({
     // Временно отключаем проблемные модули:
     // '@nuxt/fonts',
     // '@nuxt/icon',
-     '@nuxt/image',
+    '@nuxt/image',
     // '@nuxt/scripts'
   ],
 
@@ -45,10 +45,12 @@ export default defineNuxtConfig({
       meta: [
         { name: 'viewport', content: 'width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes' },
         { name: 'format-detection', content: 'telephone=no' },
-        {
-          name: 'yandex-verification',
-          content: '2faacdec1b38494c'
-        }
+        { name: 'yandex-verification', content: '2faacdec1b38494c' },
+        // ✅ Добавляем мета-теги для предотвращения кэширования
+        { name: 'Cache-Control', content: 'no-cache, no-store, must-revalidate' },
+        { name: 'Pragma', content: 'no-cache' },
+        { name: 'Expires', content: '0' },
+        { name: 'version', content: new Date().toISOString() }
       ],
       link: [
         // Добавляем шрифты вручную, если нужно
@@ -58,23 +60,82 @@ export default defineNuxtConfig({
   },
   
   routeRules: {
-    '/api/**': { proxy: 'https://wotgospel.ru/api/**' },
-    '/': { isr: true },
-    '/sermons': { isr: true },
-    '/events': { isr: true },
-    '/about': { isr: true },
-    '/sermons/**': { swr: 3600 },
-    '/events/**': { swr: 3600 },
-    '/auth/**': { swr: 0 },
-    '/dashboard/**': { swr: 0 },
-    '/verify-email': { swr: 0 },
+    '/api/**': { 
+      proxy: 'https://wotgospel.ru/api/**',
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
+    },
+    '/': { 
+      isr: true,
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate'
+      }
+    },
+    '/sermons': { 
+      isr: true,
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate'
+      }
+    },
+    '/events': { 
+      isr: true,
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate'
+      }
+    },
+    '/about': { 
+      isr: true,
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate'
+      }
+    },
+    '/sermons/**': { 
+      swr: 3600,
+      headers: {
+        'Cache-Control': 'public, max-age=3600, must-revalidate'
+      }
+    },
+    '/events/**': { 
+      swr: 3600,
+      headers: {
+        'Cache-Control': 'public, max-age=3600, must-revalidate'
+      }
+    },
+    '/auth/**': { 
+      swr: 0,
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate'
+      }
+    },
+    '/dashboard/**': { 
+      swr: 0,
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate'
+      }
+    },
+    '/verify-email': { 
+      swr: 0,
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate'
+      }
+    },
+    '/_nuxt/**': {
+      headers: {
+        'Cache-Control': 'public, max-age=31536000, immutable'
+      }
+    },
+    '/pastor/**': { swr: 0 },
   },
   
   runtimeConfig: {
     public: {
       apiBase: process.env.NUXT_PUBLIC_FORTIFY_BASE_URL || 'https://wotgospel.ru',
       carouselLimit: process.env.CAROUSEL_LIMIT || 6,
-      fortifyOrigin: process.env.NUXT_FORTIFY_ORIGIN || 'https://wotnt.ru'
+      fortifyOrigin: process.env.NUXT_FORTIFY_ORIGIN || 'https://wotnt.ru',
+      appVersion: process.env.npm_package_version || '1.0.0'
     }
   },
   
@@ -89,7 +150,10 @@ export default defineNuxtConfig({
     publicAssets: [
       {
         dir: 'public',
-        maxAge: 3600
+        maxAge: 3600,
+        headers: {
+          'Cache-Control': 'public, max-age=3600, must-revalidate'
+        }
       }
     ],
     prerender: {

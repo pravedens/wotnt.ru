@@ -14,7 +14,7 @@
       <div v-else-if="error" class="bg-red-500/20 border border-red-500/50 rounded-2xl p-8 text-center max-w-2xl mx-auto">
         <p class="text-red-200 text-lg mb-4">{{ error }}</p>
         <button 
-          @click="router.back()"
+          @click="goBack"
           class="inline-block px-6 py-2 bg-red-500/30 text-red-200 rounded-lg hover:bg-red-500/40 transition"
         >
           Вернуться к календарю
@@ -32,6 +32,12 @@
             :style="{ backgroundImage: `url(${imageUrl})` }"
           ></div>
           
+          <!-- Заглушка без изображения -->
+          <div 
+            v-else
+            class="absolute inset-0 bg-gradient-to-br from-blue-500 to-purple-500"
+          ></div>
+          
           <!-- Затемнение -->
           <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-black/30"></div>
           
@@ -40,7 +46,7 @@
             <!-- Дата -->
             <div class="mb-2">
               <span class="px-3 py-1 text-sm rounded-full bg-blue-500/30 text-blue-200 backdrop-blur-sm border border-blue-400/30">
-                {{ event.display_date_time || formatDate(event.event_date) }}
+                {{ displayDate }}
               </span>
             </div>
             
@@ -75,50 +81,67 @@
 import { useRoute, useRouter } from 'vue-router'
 import EventsBreadcrumbs from '~/components/events/Breadcrumbs.vue'
 
+// Типы
+interface Event {
+  id: number
+  title: string
+  slug: string
+  thumbnail?: string
+  description?: string
+  info?: string
+  content?: string
+  event_date?: string
+  startDate?: string
+  startTime?: string
+  display_date_time?: string
+  members_only?: boolean
+  is_published?: boolean
+}
+
+// Composables
 const route = useRoute()
 const router = useRouter()
+const config = useRuntimeConfig()
 
-// =====================================================
-// ✅ ЗАГРУЗКА СОБЫТИЯ С ТОКЕНОМ АВТОРИЗАЦИИ
-// =====================================================
-
+// Состояния
 const slug = computed(() => route.params.slug as string)
-const event = ref<any>(null)
+const event = ref<Event | null>(null)
 const pending = ref(true)
 const error = ref<string | null>(null)
 
-// Функция для получения заголовков с токеном
-const getAuthHeaders = () => {
-  const headers: Record<string, string> = {
-    'Accept': 'application/json'
-  }
-  
-  // Получаем токен из localStorage (только на клиенте)
+// Получение токена авторизации
+const getAuthToken = (): string | null => {
   if (process.client) {
-    const token = localStorage.getItem('auth_token')
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`
-    }
+    return localStorage.getItem('auth_token')
   }
-  
-  return headers
+  return null
 }
 
-// Загружаем событие
+// Загрузка события (используем прокси для избежания CORS)
 const loadEvent = async () => {
   pending.value = true
   error.value = null
   
   try {
-    const headers = getAuthHeaders()
-    const data = await $fetch(`https://wotgospel.ru/api/events/${slug.value}`, { headers })
+    const headers: Record<string, string> = {
+      'Accept': 'application/json'
+    }
+    
+    const token = getAuthToken()
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`
+    }
+    
+    // Используем прокси вместо прямого URL
+    const data = await $fetch(`/api/events/${slug.value}`, { headers })
     event.value = data
   } catch (err: any) {
     console.error('Error loading event:', err)
     
-    if (err.response?.status === 403 || err.status === 403) {
+    const status = err.response?.status || err.status
+    if (status === 403) {
       error.value = 'Доступ запрещён. Это событие только для членов церкви.'
-    } else if (err.response?.status === 404 || err.status === 404) {
+    } else if (status === 404) {
       error.value = 'Событие не найдено'
     } else {
       error.value = 'Ошибка загрузки события'
@@ -133,71 +156,65 @@ onMounted(() => {
   loadEvent()
 })
 
+onUnmounted(() => {
+    if (process.client) {
+        document.body.style.overflow = ''
+        document.body.style.position = ''
+        document.body.style.top = ''
+        document.body.style.width = ''
+    }
+})
+
+// Навигация назад
+const goBack = () => {
+    if (process.client) {
+        document.body.style.overflow = ''
+        document.body.style.position = ''
+        document.body.style.top = ''
+        document.body.style.width = ''
+    }
+    router.back()
+}
 // =====================================================
-// ✅ ИЗОБРАЖЕНИЕ ИЗ S3
+// ИЗОБРАЖЕНИЕ ИЗ S3
 // =====================================================
+
+const getStorageUrl = (thumbnail: string): string => {
+  if (thumbnail.startsWith('http')) return thumbnail
+  if (thumbnail.startsWith('events/thumbnails/')) {
+    return `https://storage.yandexcloud.net/wotgospel-media/${thumbnail}`
+  }
+  if (thumbnail.startsWith('posts/thumbnails/')) {
+    return `https://storage.yandexcloud.net/wotgospel-media/${thumbnail}`
+  }
+  if (thumbnail.startsWith('public/')) {
+    return `https://wotgospel.ru/storage/${thumbnail.replace('public/', '')}`
+  }
+  return `https://wotgospel.ru/storage/${thumbnail}`
+}
 
 const imageUrl = computed(() => {
   if (!event.value?.thumbnail) return null
-
-  if (event.value.thumbnail.startsWith('http')) {
-    return event.value.thumbnail
-  }
-
-  if (event.value.thumbnail.startsWith('events/thumbnails/')) {
-    return `https://storage.yandexcloud.net/wotgospel-media/${event.value.thumbnail}`
-  }
-
-  if (event.value.thumbnail.startsWith('posts/thumbnails/')) {
-    return `https://storage.yandexcloud.net/wotgospel-media/${event.value.thumbnail}`
-  }
-
-  if (event.value.thumbnail.startsWith('public/')) {
-    return `https://wotgospel.ru/storage/${event.value.thumbnail.replace('public/', '')}`
-  }
-
-  return `https://wotgospel.ru/storage/${event.value.thumbnail}`
+  return getStorageUrl(event.value.thumbnail)
 })
 
-// Картинка для соцсетей (без webp)
+// Картинка для соцсетей
 const socialImage = computed(() => {
   if (imageUrl.value) {
     let image = imageUrl.value
-
     if (image.includes('.webp')) {
       image = image.replace('.webp', '.jpg')
     }
-
-    if (image.startsWith('http')) {
-      return image
-    }
-
-    return `https://wotnt.ru${image}`
+    return image
   }
-
   return 'https://storage.yandexcloud.net/wotgospel-media/og-images/default-og-image.jpg'
 })
 
 // =====================================================
-// ✅ URL И ОПИСАНИЕ
+// ДАТА
 // =====================================================
 
-const currentUrl = computed(() => {
-  return `https://wotnt.ru${route.fullPath}`
-})
-
-const cleanDescription = computed(() => {
-  if (!event.value?.description) return ''
-  return event.value.description
-    .replace(/<[^>]*>/g, '')
-    .substring(0, 300)
-})
-
-// =====================================================
-// ✅ ФОРМАТ ДАТЫ
-// =====================================================
-
-const formatDate = (dateString: string) => {
+const formatDate = (dateString: string): string => {
   if (!dateString) return ''
   const d = new Date(dateString)
   return d.toLocaleDateString('ru-RU', {
@@ -207,31 +224,36 @@ const formatDate = (dateString: string) => {
   })
 }
 
-// =====================================================
-// ✅ ЗАГОЛОВОК ДЛЯ SEO
-// =====================================================
-
-const shareTitle = computed(() => {
-  if (!event.value) return 'Событие'
-
-  let title = ''
-
-  if (event.value.event_date) {
-    title = formatDate(event.value.event_date)
-  }
-
-  if (event.value.title) {
-    title = title
-      ? `${title} — ${event.value.title}`
-      : event.value.title
-  }
-
-  return title || 'Событие'
+const displayDate = computed(() => {
+  if (!event.value) return ''
+  if (event.value.display_date_time) return event.value.display_date_time
+  if (event.value.startDate) return formatDate(event.value.startDate)
+  if (event.value.event_date) return formatDate(event.value.event_date)
+  return 'Дата уточняется'
 })
 
 // =====================================================
-// ✅ SEO (SSR)
+// SEO
 // =====================================================
+
+const currentUrl = computed(() => `https://wotnt.ru${route.fullPath}`)
+
+const cleanDescription = computed(() => {
+  if (!event.value?.description) return ''
+  return event.value.description
+    .replace(/<[^>]*>/g, '')
+    .substring(0, 300)
+})
+
+const shareTitle = computed(() => {
+  if (!event.value) return 'Событие'
+  
+  let title = displayDate.value !== 'Дата уточняется' ? displayDate.value : ''
+  if (event.value.title) {
+    title = title ? `${title} — ${event.value.title}` : event.value.title
+  }
+  return title || 'Событие'
+})
 
 // Обновляем мета-теги после загрузки данных
 watch(event, (newEvent) => {
@@ -305,5 +327,11 @@ watch(event, (newEvent) => {
 }
 .prose li {
   margin-bottom: 0.25rem;
+}
+.prose img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+  margin: 1rem 0;
 }
 </style>

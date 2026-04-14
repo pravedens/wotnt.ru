@@ -166,7 +166,6 @@ useHead({
 
 // Обработка поиска
 const handleSearch = (query, resetPage = true) => {
-  console.log('🔍 Поиск:', query)
   
   // Устанавливаем поисковый запрос
   setFilter('search', query || null)

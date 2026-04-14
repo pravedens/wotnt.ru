@@ -267,7 +267,6 @@ const trackEvent = (eventName: string, eventParams: Record<string, any> = {}) =>
       window.ym(95320948, 'reachGoal', eventName, eventParams)
     }
     
-    console.log(`📊 Event tracked: ${eventName}`, eventParams)
   }
 }
 
@@ -305,14 +304,7 @@ const trackExternalLink = (platform: string) => {
 
 // URL для шаринга во ВКонтакте
 const vkShareUrl = computed(() => {
-  const params = new URLSearchParams({
-    url: currentUrl.value,
-    title: shareTitle.value,
-    description: cleanDescription.value,
-    image: socialImage.value
-  })
-  
-  return `https://vk.com/share.php?${params.toString()}`
+  return `https://vk.com/share.php?url=${encodeURIComponent(currentUrl.value)}`
 })
 
 // Обработчик клика на ВКонтакте
@@ -459,16 +451,9 @@ const shareTitle = computed(() => {
 
 // Основная картинка для соцсетей
 const socialImage = computed(() => {
-  if (imageUrl.value) {
-    let image = imageUrl.value
-    if (image.includes('.webp')) {
-      image = image.replace('.webp', '.jpg')
-    }
-    if (image.startsWith('http')) {
-      return image
-    }
-    return `https://wotnt.ru${image}`
-  }
+  if (post.value?.og_image) return post.value.og_image
+  if (imageUrl.value && !imageUrl.value.endsWith('.webp')) return imageUrl.value
+
   return 'https://storage.yandexcloud.net/wotgospel-media/og-images/default-og-image.jpg'
 })
 
@@ -476,21 +461,23 @@ const socialImage = computed(() => {
 useServerSeoMeta({
   title: () => shareTitle.value,
   description: () => cleanDescription.value || 'Проповедь церкви Слово Истины',
+
   ogTitle: () => shareTitle.value,
-  ogDescription: () => cleanDescription.value,
+  ogDescription: () => cleanDescription.value || 'Проповедь церкви Слово Истины',
   ogUrl: () => currentUrl.value,
   ogType: 'article',
   ogImage: () => socialImage.value,
   ogImageSecureUrl: () => socialImage.value,
-  ogImageWidth: 1200,
-  ogImageHeight: 630,
+  ogImageWidth: '1200',
+  ogImageHeight: '630',
   ogImageType: 'image/jpeg',
   ogSiteName: 'Церковь Слово Истины',
   ogLocale: 'ru_RU',
+
+  twitterCard: 'summary_large_image',
   twitterTitle: () => shareTitle.value,
-  twitterDescription: () => cleanDescription.value,
-  twitterImage: () => socialImage.value,
-  twitterCard: 'summary_large_image'
+  twitterDescription: () => cleanDescription.value || 'Проповедь церкви Слово Истины',
+  twitterImage: () => socialImage.value
 })
 
 // Добавляем VK-specific мета-теги

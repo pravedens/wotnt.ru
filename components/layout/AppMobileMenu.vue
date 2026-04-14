@@ -36,6 +36,17 @@
             </NuxtLink>
           </li>
           
+          <!-- Ссылка для пастора (только для авторизованных с ролью pastor) -->
+          <li v-if="authStore.isPastor">
+            <NuxtLink 
+              to="/pastor/users" 
+              class="block px-4 py-3 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition"
+              @click="$emit('update:modelValue', false)"
+            >
+              👥 Пользователи
+            </NuxtLink>
+          </li>
+          
           <!-- Для авторизованных пользователей -->
           <template v-if="user">
             <li class="border-t border-white/10 my-2 pt-2">
@@ -137,7 +148,7 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue', 'logout'])
 
 const authStore = useAuthStore()
-const { user, userRoles, avatarUrl } = storeToRefs(authStore)
+const { user, userRoles, avatarUrl, isPastor } = storeToRefs(authStore)
 
 if (!authStore) {
   console.error('❌ authStore не инициализирован')

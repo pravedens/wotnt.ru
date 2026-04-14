@@ -160,7 +160,6 @@ const formatDate = (dateString: string) => {
 }
 
 const handleFavoriteToggle = ({ postId, isFavorite }: { postId: number, isFavorite: boolean }) => {
-  console.log(`📝 Post ${postId} favorite status:`, isFavorite)
 }
 </script>
 

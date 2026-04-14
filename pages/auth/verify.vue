@@ -36,7 +36,7 @@
       
       <div v-else-if="status === 'pending'" class="space-y-3">
         <p class="text-white/80 mb-4">
-          Письмо с подтверждением отправлено на <strong>{{ authStore.user?.email }}</strong>
+          Письмо с подтверждением отправлено на <strong>{{ userEmail || authStore.user?.email || 'указанный email' }}</strong>
         </p>
         <button 
           @click="resendEmail"
@@ -46,11 +46,19 @@
           {{ resendLoading ? 'Отправка...' : 'Отправить повторно' }}
         </button>
         <button 
+          v-if="authStore.isAuthenticated"
           @click="logout"
           class="w-full bg-gray-500 text-white py-2 rounded-lg hover:bg-gray-600 transition"
         >
           Выйти
         </button>
+        <NuxtLink 
+          v-else
+          to="/auth/login" 
+          class="block text-white/60 hover:text-white transition"
+        >
+          Вернуться к входу
+        </NuxtLink>
       </div>
       
       <div v-else-if="status === 'loading'" class="space-y-3">
@@ -80,6 +88,7 @@ const title = ref('Подтверждение email')
 const message = ref('')
 const icon = ref('📧')
 const resendLoading = ref(false)
+const userEmail = ref('')
 
 const iconClass = computed(() => {
   switch (status.value) {
@@ -95,9 +104,22 @@ onMounted(async () => {
     await authStore.init()
   }
   
-  const { verified, status: urlStatus, message: urlMessage } = route.query
+  const { verified, status: urlStatus, message: urlMessage, registered, email } = route.query
   
-  console.log('Verify page:', { urlStatus, verified, isAuthenticated: authStore.isAuthenticated })
+  // Сохраняем email из query
+  if (email) {
+    userEmail.value = email
+  }
+  
+  // После регистрации (пользователь не авторизован)
+  if (registered === '1') {
+    status.value = 'pending'
+    title.value = 'Подтвердите email'
+    const displayEmail = userEmail.value || authStore.user?.email || 'указанный email'
+    message.value = `Письмо с подтверждением отправлено на ${displayEmail}. Перейдите по ссылке в письме для подтверждения.`
+    icon.value = '📧'
+    return
+  }
   
   // Обработка параметров из URL (после редиректа из Laravel)
   if (urlStatus === 'success' || verified === '1') {
@@ -106,20 +128,19 @@ onMounted(async () => {
     message.value = urlMessage || 'Ваш email успешно подтвержден. Теперь вы можете войти в аккаунт.'
     icon.value = '✅'
     
-    // ✅ ВАЖНО: Обновляем данные пользователя в store
+    // Обновляем данные пользователя в store (если есть)
     if (authStore.isAuthenticated) {
-      await authStore.fetchUser() // Перезагружаем пользователя из API
-      console.log('User updated after verification:', {
-        email: authStore.user?.email,
-        email_verified_at: authStore.user?.email_verified_at,
-        isEmailVerified: authStore.isEmailVerified
-      })
+      await authStore.fetchUser()
+      
+      // Если пользователь уже авторизован, через 2 секунды идем в дашборд
+      setTimeout(() => {
+        router.push('/dashboard')
+      }, 2000)
+    } else {
+      // Если не авторизован - показываем кнопку "Войти в аккаунт"
+      status.value = 'success'
+      // Кнопка "Войти в аккаунт" уже есть в шаблоне
     }
-    
-    // Перенаправляем в дашборд через 2 секунды
-    setTimeout(() => {
-      router.push('/dashboard')
-    }, 2000)
   } 
   else if (urlStatus === 'error') {
     status.value = 'error'
@@ -131,31 +152,52 @@ onMounted(async () => {
     if (!authStore.user?.email_verified_at) {
       status.value = 'pending'
       title.value = 'Подтвердите email'
-      message.value = `Для доступа к личному кабинету необходимо подтвердить ваш email адрес.`
+      const displayEmail = userEmail.value || authStore.user?.email || 'указанный email'
+      message.value = `Для доступа к личному кабинету необходимо подтвердить ваш email адрес. Письмо отправлено на ${displayEmail}.`
     } else {
       // Уже подтвержден - идем в дашборд
       await router.push('/dashboard')
     }
   }
   else {
-    status.value = 'error'
-    title.value = 'Требуется авторизация'
-    message.value = 'Пожалуйста, войдите в аккаунт для подтверждения email.'
-    icon.value = '🔐'
-    
-    setTimeout(() => {
-      router.push('/auth/login')
-    }, 3000)
+    // Если нет параметров и не авторизован - показываем информационное сообщение
+    status.value = 'pending'
+    title.value = 'Подтверждение email'
+    message.value = 'Если вы зарегистрировались, проверьте почту и перейдите по ссылке для подтверждения.'
+    icon.value = '📧'
   }
 })
 
 const resendEmail = async () => {
+  // Если не авторизован, пробуем отправить по email из query
   if (!authStore.isAuthenticated) {
-    notificationStore.warning('Внимание', 'Необходимо войти в аккаунт')
-    await router.push('/auth/login')
+    const email = userEmail.value || route.query.email
+    if (!email) {
+      notificationStore.warning('Внимание', 'Email не указан. Пожалуйста, войдите в аккаунт.')
+      await router.push('/auth/login')
+      return
+    }
+    
+    resendLoading.value = true
+    try {
+      await $fetch('https://wotgospel.ru/api/email/verification-notification', {
+        method: 'POST',
+        body: { email },
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
+      })
+      notificationStore.success('Успешно', 'Письмо отправлено повторно. Проверьте вашу почту.')
+    } catch (err) {
+      notificationStore.error('Ошибка', 'Не удалось отправить письмо')
+    } finally {
+      resendLoading.value = false
+    }
     return
   }
   
+  // Авторизованный пользователь
   resendLoading.value = true
   
   try {

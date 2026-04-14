@@ -77,7 +77,19 @@
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           allowfullscreen
           :title="streamTitle"
+          @load="onPlayerLoad"
         ></iframe>
+        
+        <!-- Кнопка обновления трансляции -->
+        <button
+          @click="refreshStream"
+          class="absolute bottom-4 right-4 bg-black/50 backdrop-blur-sm p-2 rounded-full hover:bg-black/70 transition z-10"
+          title="Обновить трансляцию"
+        >
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+          </svg>
+        </button>
       </div>
       
       <!-- Нет активной трансляции -->
@@ -107,8 +119,56 @@ const error = ref<string | null>(null)
 const streamUrl = ref<string | null>(null)
 const streamTitle = ref('')
 const isLiveActive = ref(false)
+const playerIframe = ref<HTMLIFrameElement | null>(null)
 
 let refreshInterval: NodeJS.Timeout | null = null
+let saveProgressInterval: NodeJS.Timeout | null = null
+
+// Сохранение времени просмотра
+const getStorageKey = (): string => {
+  return 'live_stream_progress'
+}
+
+const saveProgress = (time: number) => {
+  if (process.client && time > 0) {
+    localStorage.setItem(getStorageKey(), time.toString())
+  }
+}
+
+const getSavedProgress = (): number => {
+  if (process.client) {
+    const saved = localStorage.getItem(getStorageKey())
+    return saved ? parseInt(saved, 10) : 0
+  }
+  return 0
+}
+
+const clearProgress = () => {
+  if (process.client) {
+    localStorage.removeItem(getStorageKey())
+  }
+}
+
+// Формирование URL с параметрами
+const buildStreamUrl = (baseUrl: string, savedTime: number = 0): string => {
+  let url = baseUrl
+  
+  // Добавляем параметры
+  const params = new URLSearchParams()
+  params.set('autoplay', '1')
+  
+  if (savedTime > 0) {
+    params.set('start', savedTime.toString())
+    params.set('startTime', savedTime.toString()) // для Rutube
+  }
+  
+  const paramString = params.toString()
+  if (paramString) {
+    url += (url.includes('?') ? '&' : '?') + paramString
+  }
+  
+  return url
+}
 
 // Загрузка статуса трансляции
 const loadStreamStatus = async () => {
@@ -117,18 +177,22 @@ const loadStreamStatus = async () => {
   loading.value = true
   
   try {
-    const response = await $fetch<LiveStreamResponse>('/api/live/current')
+    const savedTime = getSavedProgress()
+    const params = savedTime > 0 ? { startTime: savedTime } : {}
+    
+    const response = await $fetch<LiveStreamResponse>('/api/live/current', {
+      params
+    })
     
     if (response.success && response.data) {
       const newStream = response.data
       const wasUrl = streamUrl.value
       
       isLiveActive.value = newStream.isActive
-      // Устанавливаем название, если есть
       streamTitle.value = newStream.title || ''
       
       const newUrl = newStream.isActive && newStream.embedUrl
-        ? newStream.embedUrl
+        ? buildStreamUrl(newStream.embedUrl, savedTime)
         : null
       
       if (newUrl && newUrl !== wasUrl) {
@@ -165,6 +229,55 @@ const loadStreamStatus = async () => {
   }
 }
 
+// Обработчик загрузки плеера
+const onPlayerLoad = () => {
+  
+  // Сохраняем время каждые 5 секунд
+  if (saveProgressInterval) {
+    clearInterval(saveProgressInterval)
+  }
+  
+  saveProgressInterval = setInterval(() => {
+    // Пытаемся получить время из iframe
+    const iframe = playerIframe.value
+    if (iframe && iframe.contentWindow) {
+      // Отправляем запрос на получение времени
+      iframe.contentWindow.postMessage({ type: 'player:getCurrentTime' }, '*')
+    }
+  }, 5000)
+}
+
+// Обновление трансляции
+const refreshStream = () => {
+  if (streamUrl.value) {
+    // Сохраняем текущее время перед обновлением
+    const iframe = playerIframe.value
+    if (iframe && iframe.contentWindow) {
+      iframe.contentWindow.postMessage({ type: 'player:getCurrentTime' }, '*')
+    }
+    
+    // Обновляем URL
+    setTimeout(() => {
+      if (streamData.value?.embedUrl) {
+        const savedTime = getSavedProgress()
+        streamUrl.value = buildStreamUrl(streamData.value.embedUrl, savedTime)
+      }
+    }, 100)
+  }
+}
+
+// Слушаем сообщения от плеера
+if (process.client) {
+  window.addEventListener('message', (event) => {
+    if (event.data && event.data.type === 'player:currentTime') {
+      const time = Math.floor(event.data.time)
+      if (time > 0) {
+        saveProgress(time)
+      }
+    }
+  })
+}
+
 // Первичная загрузка
 const loadStream = async () => {
   initialLoading.value = true
@@ -180,14 +293,26 @@ const startStatusRefresh = () => {
   }, 30000)
 }
 
+// Сохраняем время перед закрытием страницы
+const handleBeforeUnload = () => {
+  if (playerIframe.value && playerIframe.value.contentWindow) {
+    playerIframe.value.contentWindow.postMessage({ type: 'player:getCurrentTime' }, '*')
+  }
+}
+
 onMounted(() => {
   loadStream()
   startStatusRefresh()
+  window.addEventListener('beforeunload', handleBeforeUnload)
 })
 
 onUnmounted(() => {
   if (refreshInterval) {
     clearInterval(refreshInterval)
   }
+  if (saveProgressInterval) {
+    clearInterval(saveProgressInterval)
+  }
+  window.removeEventListener('beforeunload', handleBeforeUnload)
 })
 </script>

@@ -30,7 +30,6 @@ async function fetchAllSermons() {
     if (sermons.length === 0) break;
     
     allSermons = [...allSermons, ...sermons];
-    console.log(`📥 Page ${currentPage}: ${sermons.length} sermons (total ${allSermons.length})`);
     
     if (sermons.length < perPage) break;
     currentPage++;
@@ -40,10 +39,8 @@ async function fetchAllSermons() {
 }
 
 async function generateSitemap() {
-  console.log('🚀 Generating full sitemap...');
   
   const sermons = await fetchAllSermons();
-  console.log(`✅ Total sermons: ${sermons.length}`);
   
   let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
   xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
@@ -83,8 +80,6 @@ async function generateSitemap() {
   }
   
   fs.writeFileSync(filePath, xml);
-  console.log(`✅ Sitemap saved to ${filePath}`);
-  console.log(`📊 Total URLs: ${staticUrls.length + sermons.length}`);
 }
 
 generateSitemap().catch(console.error);

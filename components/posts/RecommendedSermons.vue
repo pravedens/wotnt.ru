@@ -71,7 +71,6 @@ const loadRecommendedSermons = async () => {
       }
     })
     
-    console.log('✅ Recommended sermons loaded:', response)
     
     sermons.value = response || []
     

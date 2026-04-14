@@ -82,7 +82,6 @@ const getListLink = () => {
   if (route.query.search) query.search = String(route.query.search)
   if (route.query.page && Number(route.query.page) > 1) query.page = String(route.query.page)
   
-  //console.log('📌 getListLink:', { query, fromRoute: route.query })
   
   return {
     path: '/sermons',
@@ -103,7 +102,6 @@ const getConferenceLink = () => {
   if (route.query.search) query.search = String(route.query.search)
   if (route.query.page && Number(route.query.page) > 1) query.page = String(route.query.page)
   
-  //console.log('📌 getConferenceLink:', { query, page: query.page })
   
   return {
     path: '/sermons',
@@ -204,7 +202,6 @@ const breadcrumbs = computed<Breadcrumb[]>(() => {
     }
   }
   
-  //console.log('🍞 Итоговые хлебные крошки:', crumbs)
   
   return crumbs
 })

@@ -24,11 +24,10 @@
 <script setup>
 import { useAuthStore } from '~/stores/auth'
 import AppHeader from '~/components/layout/AppHeader.vue'
-import AppFooter from '~/components/layout/AppFooter.vue' // 👈 Импортируем
+import AppFooter from '~/components/layout/AppFooter.vue'
 import AppMobileMenu from '~/components/layout/AppMobileMenu.vue'
 import { useRoute } from 'vue-router'
 
-console.log('✅ Layout default загружен')
 
 // Мета-теги и фавиконки
 useHead({
@@ -81,21 +80,46 @@ const isInDashboard = computed(() => {
          route.path.startsWith('https://wotgospel.ru/admin')
 })
 
+// ✅ Функция восстановления скролла
+const restoreScroll = () => {
+  if (process.client) {
+    document.body.style.overflow = ''
+    document.body.style.position = ''
+    document.body.style.top = ''
+    document.body.style.width = ''
+    document.documentElement.style.overflow = ''
+  }
+}
+
 // Обработка выхода
 const handleLogout = async () => {
   await authStore.logout()
   mobileMenuOpen.value = false
+  restoreScroll()
   await router.push('/')
 }
 
 // Закрываем мобильное меню при смене маршрута
 watch(route, () => {
   mobileMenuOpen.value = false
+  // ✅ Восстанавливаем скролл при смене маршрута
+  restoreScroll()
+})
+
+// ✅ Глобальное восстановление скролла после каждой навигации
+router.afterEach(() => {
+  restoreScroll()
 })
 
 // Инициализация авторизации при загрузке
 onMounted(() => {
   authStore.init()
+  restoreScroll()
+})
+
+// ✅ Очищаем при размонтировании
+onUnmounted(() => {
+  restoreScroll()
 })
 </script>
 
@@ -107,5 +131,17 @@ html, body {
 
 #__nuxt {
   height: 100%;
+}
+
+/* ✅ Глобальное восстановление скролла для любых модальных окон */
+body.modal-open {
+  overflow: hidden !important;
+  position: fixed !important;
+  width: 100% !important;
+}
+
+/* ✅ Плавный скролл для всей страницы */
+html {
+  scroll-behavior: smooth;
 }
 </style>

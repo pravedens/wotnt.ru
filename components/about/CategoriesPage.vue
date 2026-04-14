@@ -226,7 +226,6 @@ const selectDenomination = async (denom: Denomination) => {
     // Обновляем URL
     router.push({ query: { category: denom.slug } })
     
-    console.log('📚 Загруженные статьи:', categoryAbouts.value)
   } catch (err) {
     console.error('Error loading category articles:', err)
     categoryAbouts.value = []

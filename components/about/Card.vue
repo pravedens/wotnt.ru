@@ -85,7 +85,6 @@ const handleImageError = (e: Event) => {
   imageError.value = true
   const img = e.target as HTMLImageElement
   console.error('❌ Ошибка загрузки изображения:', img.src)
-  console.log('📁 Путь в базе:', props.about.thumbnail)
 }
 
 // Форматирование даты

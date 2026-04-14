@@ -9,8 +9,9 @@
       <div class="flex gap-2 w-full sm:w-auto justify-center">
         <button
           @click="$emit('prev-month')"
-          class="p-2 hover:bg-white/10 rounded-lg transition text-white/70 hover:text-white flex-1 sm:flex-none"
+          class="p-2 hover:bg-white/10 rounded-lg transition text-white/70 hover:text-white flex-1 sm:flex-none disabled:opacity-50 disabled:cursor-not-allowed"
           :disabled="loading"
+          aria-label="Предыдущий месяц"
         >
           <svg class="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
@@ -19,7 +20,7 @@
         
         <button
           @click="$emit('today')"
-          class="px-4 py-2 text-sm bg-white/10 hover:bg-white/20 rounded-lg transition text-white flex-1 sm:flex-none"
+          class="px-4 py-2 text-sm bg-white/10 hover:bg-white/20 rounded-lg transition text-white flex-1 sm:flex-none disabled:opacity-50"
           :disabled="loading"
         >
           Сегодня
@@ -27,8 +28,9 @@
         
         <button
           @click="$emit('next-month')"
-          class="p-2 hover:bg-white/10 rounded-lg transition text-white/70 hover:text-white flex-1 sm:flex-none"
+          class="p-2 hover:bg-white/10 rounded-lg transition text-white/70 hover:text-white flex-1 sm:flex-none disabled:opacity-50 disabled:cursor-not-allowed"
           :disabled="loading"
+          aria-label="Следующий месяц"
         >
           <svg class="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
@@ -67,7 +69,7 @@
               'hover:bg-green-500/20': canEdit && !day.events.length
             }
           ]"
-          @click="$emit('select-day', day.date)"
+          @click="handleDayClick(day.date)"
         >
           <!-- Верхняя строка: число -->
           <div class="flex justify-between items-center mb-1">
@@ -84,9 +86,9 @@
           </div>
           
           <!-- События дня -->
-          <div class="space-y-1 relative">
+          <div class="space-y-1 relative flex-1">
             <div
-              v-for="event in day.events.slice(0, 3)"
+              v-for="event in day.events.slice(0, maxEventsPerDay)"
               :key="event.id"
               class="text-[10px] sm:text-xs px-1 py-0.5 rounded text-white font-medium transition hover:brightness-110 whitespace-nowrap overflow-hidden relative"
               :style="{ 
@@ -99,7 +101,7 @@
                 'line-through': !event.is_published && event.is_past,
                 'border border-dashed border-white/50': !event.is_published && !event.is_past
               }"
-              @click.stop="$emit(canEdit ? 'select-event' : 'view-event', event)"
+              @click.stop="handleEventClick(event)"
               :title="getEventTitle(event)"
             >
               <!-- Желтая полоска сбоку для событий только для членов -->
@@ -108,19 +110,25 @@
                 class="absolute left-0 top-0 bottom-0 w-1 bg-yellow-400 rounded-l"
               ></div>
               
-              <!-- Отображение времени -->
+              <!-- Фиолетовая полоска сбоку для событий только для служителей -->
+              <div 
+                v-if="event.ministers_only && !canEdit"
+                class="absolute left-0 top-0 bottom-0 w-1 bg-purple-400 rounded-l"
+              ></div>
+              
+              <!-- Отображение времени или названия -->
               <span class="truncate block pl-0.5">
-                {{ event.time ? event.time.substring(0, 5) : event.title.substring(0, 3) + '…' }}
+                {{ getEventDisplayText(event) }}
               </span>
             </div>
           </div>
           
           <!-- Индикатор "ещё" -->
           <div
-            v-if="day.events.length > 3"
-            class="mt-1 text-[8px] sm:text-xs text-white/70 font-medium bg-black/30 rounded-full px-1 inline-block"
+            v-if="day.events.length > maxEventsPerDay"
+            class="mt-1 text-[8px] sm:text-xs text-white/70 font-medium bg-black/30 rounded-full px-1 inline-block text-center"
           >
-            +{{ day.events.length - 3 }}
+            +{{ day.events.length - maxEventsPerDay }}
           </div>
         </div>
         
@@ -133,9 +141,40 @@
 
 <script setup lang="ts">
 import { useWindowSize } from '@vueuse/core'
+import { computed } from 'vue'
 
+// Типы
+interface CalendarEvent {
+  id: number
+  title: string
+  slug: string
+  color?: string
+  time?: string
+  description?: string
+  startDate?: string
+  startTime?: string
+  is_published?: boolean
+  members_only?: boolean
+  ministers_only?: boolean
+  is_past?: boolean
+  can_edit?: boolean
+}
+
+interface CalendarDay {
+  day: number
+  date: string
+  month: number
+  year: number
+  weekday: number
+  events: CalendarEvent[]
+  isCurrentMonth: boolean
+}
+
+// Props
 const props = defineProps<{
-  monthData: any
+  monthData: {
+    events?: Record<number, CalendarEvent[]>
+  } | null
   currentMonth: number
   currentYear: number
   loading?: boolean
@@ -143,18 +182,22 @@ const props = defineProps<{
   canEdit?: boolean
 }>()
 
+// Emits
 const emit = defineEmits<{
   'prev-month': []
   'next-month': []
   'today': []
   'select-day': [date: string]
-  'select-event': [event: any]
-  'view-event': [event: any]
+  'select-event': [event: CalendarEvent]
+  'view-event': [event: CalendarEvent]
 }>()
 
+// Константы
 const weekDays = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
 const shortWeekDays = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
+const maxEventsPerDay = 3
 
+// Адаптивность
 const { width } = useWindowSize()
 
 const columns = computed(() => {
@@ -165,14 +208,40 @@ const columns = computed(() => {
 })
 
 const calendarGridClass = computed(() => {
-  return `grid grid-cols-${columns.value} gap-1`
+  const colCount = columns.value
+  return `grid grid-cols-${colCount} gap-1`
 })
 
 const dayCellClass = computed(() => {
   return 'h-32 sm:h-40 md:h-48 lg:h-56'
 })
 
-const getEventOpacity = (event: any) => {
+// Функция для извлечения времени из любого формата
+const extractTime = (timeString?: string): string | null => {
+  if (!timeString) return null
+  
+  if (timeString.match(/^\d{2}:\d{2}$/)) {
+    return timeString
+  }
+  
+  if (timeString.includes('T')) {
+    const match = timeString.match(/(\d{2}:\d{2})/)
+    if (match) {
+      return match[1]
+    }
+  }
+  
+  if (timeString.includes(':')) {
+    const parts = timeString.split(':')
+    if (parts.length >= 2) {
+      return `${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}`
+    }
+  }
+  
+  return null
+}
+
+const getEventOpacity = (event: CalendarEvent) => {
   if (props.canEdit) {
     if (event.is_past) return 0.8
     return 1
@@ -183,8 +252,9 @@ const getEventOpacity = (event: any) => {
   return 1
 }
 
-const getEventTitle = (event: any) => {
-  let title = event.time ? `${event.time} ${event.title}` : event.title
+const getEventTitle = (event: CalendarEvent) => {
+  const eventTime = extractTime(event.startTime || event.time)
+  let title = eventTime ? `${eventTime} ${event.title}` : event.title
   
   if (props.canEdit) {
     if (!event.is_published && event.is_past) {
@@ -195,38 +265,68 @@ const getEventTitle = (event: any) => {
       title += ' (прошедшее)'
     } else if (event.members_only) {
       title += ' (только для членов церкви)'
+    } else if (event.ministers_only) {
+      title += ' (только для служителей)'
     }
   } else {
     if (event.is_past) {
       title += ' (прошедшее)'
     } else if (event.members_only) {
       title += ' (только для членов церкви)'
+    } else if (event.ministers_only) {
+      title += ' (только для служителей)'
     }
   }
   
   return title
 }
 
-const getShortWeekday = (weekday: number) => {
-  return shortWeekDays[weekday]
+// Функция отображения времени
+const getEventDisplayText = (event: CalendarEvent) => {
+  const eventTime = extractTime(event.startTime || event.time)
+  
+  if (eventTime) {
+    return eventTime
+  }
+  
+  const title = event.title || ''
+  return title.length > 8 ? title.substring(0, 6) + '…' : title
 }
 
-const getDayTextClass = (day: any) => {
+const getShortWeekday = (weekday: number) => {
+  return shortWeekDays[weekday] || ''
+}
+
+const getDayTextClass = (day: CalendarDay) => {
   if (day.weekday === 5 || day.weekday === 6) {
     return 'text-red-300'
   }
   return 'text-white'
 }
 
-const getDayBackgroundClass = (day: any) => {
+const getDayBackgroundClass = (day: CalendarDay) => {
   if (day.weekday === 5 || day.weekday === 6) {
     return 'bg-red-500/5 hover:bg-red-500/10'
   }
   return ''
 }
 
-const calendarDays = computed(() => {
-  if (!props.monthData) return []
+// Обработчики событий
+const handleDayClick = (date: string) => {
+  emit('select-day', date)
+}
+
+const handleEventClick = (event: CalendarEvent) => {
+  if (props.canEdit || event.can_edit) {
+    emit('select-event', event)
+  } else {
+    emit('view-event', event)
+  }
+}
+
+// Генерация дней календаря
+const calendarDays = computed((): (CalendarDay | null)[] => {
+  if (!props.monthData?.events) return []
   
   const firstDayOfMonth = new Date(props.currentYear, props.currentMonth - 1, 1)
   const lastDayOfMonth = new Date(props.currentYear, props.currentMonth, 0)
@@ -240,7 +340,7 @@ const calendarDays = computed(() => {
   const rows = Math.ceil(totalDays / cols)
   const totalCells = rows * cols
   
-  const days: any[] = []
+  const days: (CalendarDay | null)[] = []
   
   for (let i = 0; i < totalCells; i++) {
     const dayNumber = i - startOffset + 1
@@ -253,7 +353,7 @@ const calendarDays = computed(() => {
       const weekday = cellDate.getDay() === 0 ? 6 : cellDate.getDay() - 1
       const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
       
-      const dayEvents = props.monthData.events?.[day] || []
+      const dayEvents: CalendarEvent[] = props.monthData.events?.[day] || []
       
       days.push({
         day,
@@ -272,7 +372,8 @@ const calendarDays = computed(() => {
   return days
 })
 
-const isToday = (dateStr: string) => {
+// Проверка, является ли дата сегодняшней
+const isToday = (dateStr: string): boolean => {
   const today = new Date()
   const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
   return dateStr === todayStr

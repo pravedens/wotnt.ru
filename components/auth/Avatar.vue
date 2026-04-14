@@ -1,8 +1,8 @@
 <template>
   <div class="relative" :class="containerClass">
     <img 
-      v-if="src"
-      :src="src" 
+      v-if="avatarUrl"
+      :src="avatarUrl" 
       :alt="alt"
       :class="[
         'object-cover',
@@ -68,7 +68,7 @@ const sizeClass = computed(() => {
   const sizes = {
     sm: 'w-8 h-8 text-sm',
     md: 'w-10 h-10 text-base',
-    lg: 'w-24 h-24 text-2xl',  // Увеличил для карточки
+    lg: 'w-24 h-24 text-2xl',
     xl: 'w-32 h-32 text-3xl'
   }
   return sizes[props.size] || sizes.md
@@ -95,6 +95,29 @@ const bgClass = computed(() => {
   return 'bg-gradient-to-br from-blue-500 to-purple-500'
 })
 
+// ✅ Обработка URL аватара (поддержка S3 и локального хранилища)
+const avatarUrl = computed(() => {
+  if (!props.src) return null
+  
+  // Если уже полный URL
+  if (props.src.startsWith('http')) {
+    return props.src
+  }
+  
+  // Если аватар на S3 (Yandex Cloud)
+  if (props.src.startsWith('avatars/')) {
+    return `https://storage.yandexcloud.net/wotgospel-media/${props.src}`
+  }
+  
+  // Если путь начинается с storage/
+  if (props.src.startsWith('storage/')) {
+    return `https://wotgospel.ru/${props.src}`
+  }
+  
+  // Fallback для локальных аватаров
+  return `https://wotgospel.ru/storage/${props.src}`
+})
+
 const initials = computed(() => {
   if (!props.name) return 'U'
   return props.name
@@ -106,10 +129,10 @@ const initials = computed(() => {
 })
 
 const onLoad = () => {
-  console.log('✅ Avatar loaded:', props.src)
 }
 
 const onError = (e) => {
-  console.error('❌ Avatar error:', props.src, e)
+  console.error('❌ Avatar error:', avatarUrl.value, e)
+  // При ошибке показываем инициалы (компонент переключится на v-else)
 }
 </script>

@@ -27,6 +27,15 @@
             Главная
           </NuxtLink>
           
+          <!-- Ссылка для пастора -->
+            <NuxtLink 
+                v-if="authStore.isPastor"
+                to="/pastor/users"
+                class="hover:text-blue-300 transition"
+            >
+                👥 Пользователи
+            </NuxtLink>
+          
           <!-- Для авторизованных пользователей -->
           <template v-if="user">
             <div class="relative group">

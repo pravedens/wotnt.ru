@@ -56,7 +56,6 @@ const fetchVerseOfTheDay = async () => {
   
   try {
     const response = await $fetch<{ success: boolean; data: BibleVerse | null; message: string }>('/api/bible/verse-of-the-day')
-    console.log('Verse response:', response)
     verse.value = response.data
   } catch (err: any) {
     console.error('Error fetching verse:', err)

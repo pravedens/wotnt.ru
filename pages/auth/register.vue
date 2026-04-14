@@ -134,10 +134,6 @@ const notificationStore = useNotificationStore()
 const route = useRoute()
 const router = useRouter()
 
-// ✅ Добавьте это для отладки
-console.log('🔍 AuthStore methods:', Object.keys(authStore))
-console.log('🔍 Register method type:', typeof authStore.register)
-
 const form = ref({
   name: '',
   email: '',
@@ -162,12 +158,6 @@ onMounted(async () => {
   // Инициализируем store (загружаем данные из localStorage)
   await authStore.init()
   
-  console.log('✅ AuthStore initialized:', {
-    isAuthenticated: authStore.isAuthenticated,
-    hasUser: !!authStore.user,
-    hasToken: !!authStore.token
-  })
-  
   if (authStore.isAuthenticated) {
     router.push('/')
     return
@@ -191,90 +181,69 @@ onMounted(async () => {
 })
 
 const handleRegister = async () => {
-  console.log('🚀 handleRegister called')
-  
-  error.value = ''
-  privacyError.value = false
-  
-  if (!form.value.privacy_accepted) {
-    privacyError.value = true
-    notificationStore.warning(
-      'Необходимо согласие',
-      'Для регистрации необходимо согласиться на обработку персональных данных'
-    )
-    return
-  }
-  
-  if (passwordMismatch.value) {
-    notificationStore.error('Ошибка', 'Пароли не совпадают')
-    return
-  }
-  
-  loading.value = true
-  
-  try {
-    let registrationSource = 'wotnt.ru'
+    error.value = ''
+    privacyError.value = false
     
-    if (process.client) {
-      const hostname = window.location.hostname
-      if (hostname === 'localhost' || hostname === '127.0.0.1') {
-        registrationSource = 'wotnt.ru'
-      } else {
-        registrationSource = hostname
-      }
-    }
-    
-    // ✅ Проверяем, что метод существует
-    if (typeof authStore.register !== 'function') {
-      console.error('❌ authStore.register is not a function!', authStore)
-      throw new Error('Метод регистрации не найден. Пожалуйста, перезагрузите страницу.')
-    }
-    
-    console.log('📤 Calling register with:', { 
-      name: form.value.name, 
-      email: form.value.email,
-      registration_source: registrationSource 
-    })
-    
-    const result = await authStore.register({
-      name: form.value.name,
-      email: form.value.email,
-      password: form.value.password,
-      password_confirmation: form.value.password_confirmation,
-      privacy_accepted: form.value.privacy_accepted,
-      registration_source: registrationSource
-    })
-    
-    console.log('📥 Register result:', result)
-    
-    if (result.success) {
-      notificationStore.success('Регистрация успешна!', result.message)
-      
-      if (result.requiresVerification) {
-        await router.push('/auth/verify')
-      } else {
-        await router.push({
-          path: '/auth/login',
-          query: { redirect: redirectPath.value, registered: '1' }
-        })
-      }
-    } else {
-      error.value = result.error
-      if (result.error?.includes('email') || result.error?.includes('уже')) {
+    if (!form.value.privacy_accepted) {
+        privacyError.value = true
         notificationStore.warning(
-          'Email уже зарегистрирован',
-          'Попробуйте войти или восстановить пароль'
+            'Необходимо согласие',
+            'Для регистрации необходимо согласиться на обработку персональных данных'
         )
-      } else {
-        notificationStore.error('Ошибка регистрации', result.error)
-      }
+        return
     }
-  } catch (err) {
-    console.error('❌ Register error:', err)
-    error.value = err.message || 'Произошла неизвестная ошибка'
-    notificationStore.error('Ошибка', error.value)
-  } finally {
-    loading.value = false
-  }
+    
+    if (passwordMismatch.value) {
+        notificationStore.error('Ошибка', 'Пароли не совпадают')
+        return
+    }
+    
+    loading.value = true
+    
+    try {
+        let registrationSource = 'wotnt.ru'
+        if (process.client) {
+            const hostname = window.location.hostname
+            if (hostname === 'localhost' || hostname === '127.0.0.1') {
+                registrationSource = 'wotnt.ru'
+            } else {
+                registrationSource = hostname
+            }
+        }
+        
+        const result = await authStore.register({
+            name: form.value.name,
+            email: form.value.email,
+            password: form.value.password,
+            password_confirmation: form.value.password_confirmation,
+            privacy_accepted: form.value.privacy_accepted,
+            registration_source: registrationSource
+        })
+        
+        if (result.success) {
+            notificationStore.success('Регистрация успешна!', result.message)
+            // ✅ Передаем email в query параметр
+            await router.push({
+                path: '/auth/verify',
+                query: { registered: '1', email: form.value.email }
+            })
+        } else {
+            error.value = result.error
+            if (result.error?.includes('email') || result.error?.includes('уже')) {
+                notificationStore.warning(
+                    'Email уже зарегистрирован',
+                    'Попробуйте войти или восстановить пароль'
+                )
+            } else {
+                notificationStore.error('Ошибка регистрации', result.error)
+            }
+        }
+    } catch (err) {
+        console.error('Register error:', err)
+        error.value = err.message || 'Произошла неизвестная ошибка'
+        notificationStore.error('Ошибка', error.value)
+    } finally {
+        loading.value = false
+    }
 }
 </script>

@@ -17,7 +17,6 @@ export const useCarouselStats = () => {
     error.value = null
     
     try {
-      console.log('📡 Fetching carousel stats from API...')
       const response = await $fetch('/api/events/carousel-stats')
       
       stats.value = {
