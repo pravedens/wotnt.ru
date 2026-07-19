@@ -19,7 +19,7 @@
           >
         </div>
         
-        <div class="mb-6">
+        <div class="mb-4">
           <label class="block text-white/80 mb-2">Пароль</label>
           <input 
             v-model="form.password" 
@@ -30,6 +30,24 @@
           >
         </div>
         
+        <div class="mb-6 flex items-center justify-between">
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input 
+              type="checkbox" 
+              v-model="form.remember"
+              class="w-4 h-4 rounded border-white/30 bg-white/10 text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
+            >
+            <span class="text-white/70 text-sm">Запомнить меня</span>
+          </label>
+          
+          <NuxtLink 
+            to="/auth/forgot-password" 
+            class="text-white/50 hover:text-white text-sm transition"
+          >
+            Забыли пароль?
+          </NuxtLink>
+        </div>
+        
         <button 
           type="submit" 
           :disabled="loading"
@@ -38,10 +56,10 @@
           {{ loading ? 'Вход...' : 'Войти' }}
         </button>
         
-        <div class="mt-4 text-center text-white/60 space-x-2">
-          <NuxtLink to="/auth/register" class="hover:text-white transition">Регистрация</NuxtLink>
-          <span>|</span>
-          <NuxtLink to="/auth/forgot-password" class="hover:text-white transition">Забыли пароль?</NuxtLink>
+        <div class="mt-4 text-center">
+          <NuxtLink to="/auth/register" class="text-white/60 hover:text-white transition">
+            Нет аккаунта? Зарегистрироваться
+          </NuxtLink>
         </div>
       </form>
     </div>
@@ -65,7 +83,8 @@ const router = useRouter()
 
 const form = ref({
   email: '',
-  password: ''
+  password: '',
+  remember: false,
 })
 const error = ref('')
 const loading = ref(false)
@@ -74,10 +93,12 @@ const handleLogin = async () => {
   loading.value = true
   error.value = ''
   
-  
   try {
-    const result = await authStore.login(form.value.email, form.value.password)
-    
+    const result = await authStore.login(
+      form.value.email, 
+      form.value.password, 
+      form.value.remember
+    )
     
     if (result.success) {
       notificationStore.success('Успешный вход', 'Добро пожаловать!')
@@ -86,7 +107,7 @@ const handleLogin = async () => {
         notificationStore.warning('Требуется подтверждение', 'Пожалуйста, подтвердите email для доступа к личному кабинету')
         await router.push('/auth/verify')
       } else {
-        const redirect = route.query.redirect || '/dashboard'
+        const redirect = route.query.redirect?.toString() || '/dashboard'
         await router.push(redirect)
       }
     } else {

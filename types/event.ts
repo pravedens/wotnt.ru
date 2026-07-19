@@ -27,6 +27,12 @@ export interface Event {
   display_date_time?: string
   event_date?: string
   event_time?: string
+  
+  // 🆕 Для кнопки «Я приду»
+  attendees_count?: number
+  user_attending?: boolean
+  status?: 'active' | 'cancelled' | 'past'
+  is_cancelled?: boolean  // удобный геттер
 }
 
 export interface DayEvents {

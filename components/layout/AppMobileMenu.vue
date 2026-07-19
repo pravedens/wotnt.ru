@@ -36,6 +36,39 @@
             </NuxtLink>
           </li>
           
+          <!-- Проповеди -->
+          <li>
+            <NuxtLink 
+              to="/sermons" 
+              class="block px-4 py-3 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition"
+              @click="$emit('update:modelValue', false)"
+            >
+              Проповеди
+            </NuxtLink>
+          </li>
+          
+          <!-- События -->
+          <li>
+            <NuxtLink 
+              to="/events" 
+              class="block px-4 py-3 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition"
+              @click="$emit('update:modelValue', false)"
+            >
+              События
+            </NuxtLink>
+          </li>
+          
+                    <!-- Служители -->
+          <li>
+            <NuxtLink 
+              to="/ministers" 
+              class="block px-4 py-3 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition"
+              @click="$emit('update:modelValue', false)"
+            >
+              Служители
+            </NuxtLink>
+          </li>
+          
           <!-- Ссылка для пастора (только для авторизованных с ролью pastor) -->
           <li v-if="authStore.isPastor">
             <NuxtLink 

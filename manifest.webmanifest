@@ -1,23 +1,99 @@
 {
-  "name": "wotnt.ru",
-  "short_name": "wotnt",
-  "description": "Духовные проповеди и события",
+  "id": "/",
+  "name": "Церковь Слово Истины",
+  "short_name": "WoTNT",
+  "description": "Церковь Слово Истины - проповеди, события, общение",
   "start_url": "/",
-  "scope": "/",
   "display": "standalone",
-  "orientation": "portrait",
+  "display_override": ["window-controls-overlay", "standalone"],
   "theme_color": "#4f46e5",
-  "background_color": "#4f46e5",
+  "background_color": "#ffffff",
+  "orientation": "portrait",
+  "scope": "/",
   "icons": [
     {
-      "src": "/favicon/favicon-32.png",
-      "sizes": "32x32",
-      "type": "image/png"
+      "src": "/favicon/icon-72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "any"
     },
     {
-      "src": "/favicon/apple-touch-icon.png",
-      "sizes": "180x180",
-      "type": "image/png"
+      "src": "/favicon/icon-96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon/icon-128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon/icon-144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon/icon-152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon/icon-384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/mobile.webp",
+      "sizes": "1080x1920",
+      "type": "image/webp",
+      "form_factor": "narrow",
+      "label": "Главная страница на мобильном"
+    },
+    {
+      "src": "/screenshots/mobile-events.webp",
+      "sizes": "1080x1920",
+      "type": "image/webp",
+      "form_factor": "narrow",
+      "label": "События на мобильном"
+    },
+    {
+      "src": "/screenshots/desktop.webp",
+      "sizes": "1920x1080",
+      "type": "image/webp",
+      "form_factor": "wide",
+      "label": "Главная страница на компьютере"
+    },
+    {
+      "src": "/screenshots/desktop-events.webp",
+      "sizes": "1920x1080",
+      "type": "image/webp",
+      "form_factor": "wide",
+      "label": "События на компьютере"
+    }
+  ],
+  "protocol_handlers": [
+    {
+      "protocol": "web+wotnt",
+      "url": "/?from=%s"
     }
   ]
 }

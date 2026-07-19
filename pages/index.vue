@@ -10,8 +10,10 @@
       </p>
     </header>
     
-    <!-- Прямая трансляция -->
-    <LiveStream />
+    <!-- Прямая трансляция (компонент сам решает, показываться или нет) -->
+    <ClientOnly>
+      <LiveStream />
+    </ClientOnly>
     
     <!-- Декоративный разделитель -->
     <div class="container mx-auto px-4 mb-16">
@@ -21,8 +23,8 @@
     </div>
     
     <!-- Ближайшие события -->
-    <section aria-labelledby="events-heading" class="mb-16">
-      <div class="container mx-auto px-4">
+    <section aria-labelledby="events-heading" class="mb-16 events-section">
+      <div class="events-container">
         <h2 id="events-heading" class="sr-only">
           Ближайшие события
         </h2>
@@ -42,7 +44,7 @@
       <VerseOfTheDay />
     </div>
     
-        <!-- Декоративный разделитель -->
+    <!-- Декоративный разделитель -->
     <div class="container mx-auto px-4 mb-16">
       <div class="w-full max-w-2xl mx-auto">
         <div class="h-px bg-gradient-to-r from-transparent via-white/30 to-transparent"></div>
@@ -66,9 +68,18 @@
       </div>
     </div>
     
+    <!-- Дружественные церкви -->
+    <FriendsCarousel />
+    
+    <!-- Декоративный разделитель -->
+    <div class="container mx-auto px-4 mb-16">
+      <div class="w-full max-w-2xl mx-auto">
+        <div class="h-px bg-gradient-to-r from-transparent via-white/30 to-transparent"></div>
+      </div>
+    </div>
+    
     <!-- Дополнительный контент -->
     <div class="container mx-auto px-4 py-12 text-white max-w-4xl mx-auto space-y-10">
-      <!-- О церкви -->
       <section>
         <h2 class="text-2xl font-bold mb-4">О церкви «Слово Истины»</h2>
         <p class="text-white/80 mb-4">
@@ -80,7 +91,6 @@
         </p>
       </section>
 
-      <!-- Миссия -->
       <section>
         <h2 class="text-2xl font-bold mb-4">Наша миссия</h2>
         <p class="text-white/80">
@@ -89,7 +99,6 @@
         </p>
       </section>
 
-      <!-- Призыв -->
       <section>
         <h2 class="text-2xl font-bold mb-4">Присоединяйтесь к нам</h2>
         <p class="text-white/80">
@@ -98,16 +107,13 @@
         </p>
       </section>
 
-      <!-- FAQ -->
       <section>
         <h2 class="text-2xl font-bold mb-4">Часто задаваемые вопросы</h2>
         <div class="text-white/80 space-y-3">
           <p><strong>Когда проходят богослужения?</strong><br>
           Постоянные богослужения проходят каждое воскресенье, начало в 11:00.</p>
-
           <p><strong>Можно ли смотреть проповеди онлайн?</strong><br>
           Да, на сайте доступны видео-, аудио- и текстовые форматы проповедей.</p>
-
           <p><strong>Как стать частью церкви?</strong><br>
           Вы можете посетить служение лично, познакомиться с пастором и участниками церкви и принять решение самостоятельно.</p>
         </div>
@@ -117,12 +123,18 @@
 </template>
 
 <script setup lang="ts">
-import UpcomingCarousel from '~/components/events/UpcomingCarousel.vue'
-import RecommendedSermons from '~/components/posts/RecommendedSermons.vue'
-import VerseOfTheDay from '~/components/bible/VerseOfTheDay.vue'
-import LiveStream from '~/components/live/LiveStream.vue'
+// ============================================
+// ВСЕ КОМПОНЕНТЫ ЗАГРУЖАЮТСЯ АСИНХРОННО
+// ============================================
+const LiveStream = defineAsyncComponent(() => import('~/components/live/LiveStream.vue'))
+const UpcomingCarousel = defineAsyncComponent(() => import('~/components/events/UpcomingCarousel.vue'))
+const RecommendedSermons = defineAsyncComponent(() => import('~/components/posts/RecommendedSermons.vue'))
+const VerseOfTheDay = defineAsyncComponent(() => import('~/components/bible/VerseOfTheDay.vue'))
+const FriendsCarousel = defineAsyncComponent(() => import('~/components/friends/FriendsCarousel.vue'))
 
-// SEO мета-теги для главной страницы с оптимизированным description
+// ============================================
+// SEO МЕТА-ТЕГИ
+// ============================================
 useServerSeoMeta({
   title: 'Церковь Слово Истины | Главная',
   description: 'Церковь Слово Истины — рекомендуемые проповеди, видео и аудио записи, текстовые, события, стих дня. Присоединяйтесь к нашим служениям!',
@@ -143,7 +155,9 @@ useServerSeoMeta({
   twitterImage: 'https://storage.yandexcloud.net/wotgospel-media/og-images/default-og-image.jpg'
 })
 
-// Микроразметка Schema.org
+// ============================================
+// МИКРОРАЗМЕТКА SCHEMA.ORG
+// ============================================
 useHead(() => ({
   script: [
     {
@@ -241,5 +255,53 @@ useHead(() => ({
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border-width: 0;
+}
+
+.events-section {
+  overflow: hidden;
+}
+
+.events-container {
+  width: 100%;
+  margin: 0 auto;
+}
+
+@media (max-width: 768px) {
+  .events-container {
+    width: 100vw;
+    margin-left: calc(-50vw + 50%);
+    margin-right: calc(-50vw + 50%);
+  }
+  
+  .events-container :deep(.carousel-container) {
+    padding-left: 0;
+    padding-right: 0;
+  }
+  
+  .events-container :deep(.swiper-slide) {
+    width: 85% !important;
+    margin-right: 16px;
+  }
+  
+  .events-container :deep(.swiper-slide:first-child) {
+    margin-left: 16px;
+  }
+  
+  .events-container :deep(.swiper-slide:last-child) {
+    margin-right: 16px;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .events-container {
+    width: 100vw;
+    margin-left: calc(-50vw + 50%);
+    margin-right: calc(-50vw + 50%);
+  }
+  
+  .events-container :deep(.carousel-container) {
+    max-width: 90%;
+    margin: 0 auto;
+  }
 }
 </style>

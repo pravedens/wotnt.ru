@@ -1,8 +1,9 @@
 import type { Event, MonthData } from '~/types/event'
 import { useAuthStore } from '~/stores/auth'
+import { useApi } from '~/composables/useApi'
 
 export const useEvents = () => {
-    const { getImageUrl } = useApi()
+    const { getImageUrl, $api } = useApi()
     const authStore = useAuthStore()
 
     const monthData = ref<MonthData | null>(null)
@@ -21,77 +22,48 @@ export const useEvents = () => {
         }
     }
 
-    // Заголовки с Bearer токеном
-    const getHeaders = () => {
-        // Пробуем получить токен из store
-        let token = authStore.token
-        
-        // Если нет в store, пробуем из localStorage
-        if (process.client && !token) {
-            token = localStorage.getItem('auth_token')
-            if (token) {
-            }
-        }
-        
-        const headers: Record<string, string> = {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-        }
-        
-        if (token) {
-            headers['Authorization'] = `Bearer ${token}`
-        } else {
-        }
-        
-        return headers
-    }
-
     // =========================
     // Загрузка событий за месяц (через прокси)
     // =========================
     const loadMonthEvents = async (month?: number, year?: number) => {
-    loading.value = true
-    error.value = null
+        loading.value = true
+        error.value = null
 
-    try {
-        await ensureAuthReady()
-        
-        let token = authStore.token
-        if (process.client && !token) {
-            token = localStorage.getItem('auth_token')
-            if (token) {
-                authStore.token = token
+        try {
+            await ensureAuthReady()
+            
+            let token = authStore.token
+            if (process.client && !token) {
+                token = localStorage.getItem('auth_token')
+                if (token) {
+                    authStore.token = token
+                }
             }
+
+            const targetMonth = month ?? currentMonth.value
+            const targetYear = year ?? currentYear.value
+
+            // ✅ Используем $api для автоматического добавления timestamp и заголовков
+            const response = await $api<MonthData>('/events', {
+                params: {
+                    month: targetMonth,
+                    year: targetYear
+                }
+            })
+
+            monthData.value = response
+            isAdmin.value = response?.is_admin || false
+
+            currentMonth.value = Number(response?.month || targetMonth)
+            currentYear.value = Number(response?.year || targetYear)
+
+        } catch (err: any) {
+            error.value = err?.data?.message || err?.message || 'Ошибка загрузки событий'
+            console.error('Events load error:', err)
+        } finally {
+            loading.value = false
         }
-
-        const targetMonth = month ?? currentMonth.value
-        const targetYear = year ?? currentYear.value
-
-        const headers = getHeaders()
-
-        // ✅ Добавляем параметр для обхода кэша
-        const response = await $fetch<MonthData>('/api/events', {
-            params: {
-                month: targetMonth,
-                year: targetYear,
-                _t: Date.now() // ← Добавьте эту строку
-            },
-            headers
-        })
-
-        monthData.value = response
-        isAdmin.value = response?.is_admin || false
-
-        currentMonth.value = Number(response?.month || targetMonth)
-        currentYear.value = Number(response?.year || targetYear)
-
-    } catch (err: any) {
-        error.value = err?.data?.message || err?.message || 'Ошибка загрузки событий'
-        console.error('Events load error:', err)
-    } finally {
-        loading.value = false
     }
-}
 
     // =========================
     // Загрузка одного события (через прокси)
@@ -100,17 +72,8 @@ export const useEvents = () => {
         try {
             await ensureAuthReady()
             
-            const headers: Record<string, string> = {
-                'Accept': 'application/json'
-            }
-            
-            const token = authStore.token
-            if (token) {
-                headers['Authorization'] = `Bearer ${token}`
-            }
-
-            // ✅ Используем прокси вместо прямого URL
-            const event = await $fetch<Event>(`/api/events/${slug}`, { headers })
+            // ✅ Используем $api для автоматического добавления timestamp и заголовков
+            const event = await $api<Event>(`/events/${slug}`)
 
             return event
         } catch (err) {
@@ -160,6 +123,83 @@ export const useEvents = () => {
         ]
         return months[currentMonth.value - 1]
     })
+    
+    // 🆕 Кнопка «Я приду»
+const attendEvent = async (slug: string): Promise<{ success: boolean; attending: boolean; count: number; message?: string }> => {
+    try {
+        await ensureAuthReady()
+        
+        const authStore = useAuthStore()
+        const token = authStore.token
+        
+        if (!token) {
+            return { success: false, attending: false, count: 0, message: 'Необходимо авторизоваться' }
+        }
+        
+        const response: any = await $fetch(`/api/events/${slug}/attend`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/json'
+            }
+        })
+        
+        return {
+            success: true,
+            attending: response.attending,
+            count: response.attendees_count,
+            message: response.message
+        }
+    } catch (err: any) {
+        console.error('Attend event error:', err)
+        const message = err?.data?.message || err?.message || 'Ошибка записи на событие'
+        return { success: false, attending: false, count: 0, message }
+    }
+}
+
+const unattendEvent = async (slug: string): Promise<{ success: boolean; attending: boolean; count: number; message?: string }> => {
+    try {
+        await ensureAuthReady()
+        
+        const authStore = useAuthStore()
+        const token = authStore.token
+        
+        if (!token) {
+            return { success: false, attending: false, count: 0, message: 'Необходимо авторизоваться' }
+        }
+        
+        const response: any = await $fetch(`/api/events/${slug}/attend`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/json'
+            }
+        })
+        
+        return {
+            success: true,
+            attending: response.attending,
+            count: response.attendees_count,
+            message: response.message
+        }
+    } catch (err: any) {
+        console.error('Unattend event error:', err)
+        const message = err?.data?.message || err?.message || 'Ошибка отмены записи'
+        return { success: false, attending: false, count: 0, message }
+    }
+}
+
+const getAttendeesCount = async (slug: string): Promise<number> => {
+    try {
+        const response: any = await $fetch(`/api/events/${slug}/attendees-count`, {
+            headers: { 'Accept': 'application/json' }
+        })
+        return response.attendees_count || 0
+    } catch (err) {
+        console.error('Get attendees count error:', err)
+        return 0
+    }
+}
 
     return {
         monthData,
@@ -175,6 +215,9 @@ export const useEvents = () => {
         loadEvent,
         prevMonth,
         nextMonth,
-        today
+        today,
+        attendEvent,
+        unattendEvent,
+        getAttendeesCount
     }
 }

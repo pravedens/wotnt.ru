@@ -3,21 +3,17 @@
     <div class="bg-white/10 backdrop-blur-lg p-8 rounded-2xl shadow-2xl w-full max-w-md border border-white/20">
       <h1 class="text-3xl font-bold text-white mb-8 text-center">Новый пароль</h1>
       
-      <!-- Сообщение об ошибке -->
       <div v-if="error" class="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-200">
         {{ error }}
       </div>
       
-      <!-- Сообщение об успехе -->
       <div v-if="success" class="mb-4 p-3 bg-green-500/20 border border-green-500/50 rounded-lg text-green-200">
         {{ success }}
       </div>
       
       <form v-if="!success" @submit.prevent="resetPassword">
-        <!-- Email (скрытое поле для формы) -->
         <input type="hidden" v-model="form.email">
         
-        <!-- Новый пароль -->
         <div class="mb-4">
           <label class="block text-white/80 mb-2">Новый пароль</label>
           <input 
@@ -32,7 +28,6 @@
           <p class="text-white/40 text-xs mt-1">Минимум 8 символов</p>
         </div>
         
-        <!-- Подтверждение пароля -->
         <div class="mb-6">
           <label class="block text-white/80 mb-2">Подтверждение пароля</label>
           <input 
@@ -49,7 +44,6 @@
           </p>
         </div>
         
-        <!-- Кнопка сброса -->
         <button 
           type="submit" 
           :disabled="loading || !isFormValid"
@@ -59,7 +53,6 @@
         </button>
       </form>
       
-      <!-- Кнопка перейти к логину после успеха -->
       <div v-if="success" class="text-center">
         <NuxtLink 
           :to="loginLink"
@@ -69,7 +62,6 @@
         </NuxtLink>
       </div>
       
-      <!-- Ссылка назад -->
       <NuxtLink 
         v-if="!success"
         :to="loginLink"
@@ -83,7 +75,7 @@
 
 <script setup>
 import { useAuthStore } from '~/stores/auth'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute, useRouter, onBeforeRouteUpdate } from 'vue-router'
 
 definePageMeta({
   layout: 'auth',
@@ -94,16 +86,11 @@ const authStore = useAuthStore()
 const route = useRoute()
 const router = useRouter()
 
-// Получаем токен и email из URL
-const token = route.query.token || ''
-const email = route.query.email || ''
-
-// Сохраняем URL для возврата
 const redirectPath = ref('/dashboard')
 
 const form = ref({
-  email: email,
-  token: token,
+  email: '',
+  token: '',
   password: '',
   password_confirmation: ''
 })
@@ -112,20 +99,17 @@ const loading = ref(false)
 const error = ref('')
 const success = ref('')
 
-// Формируем ссылку на логин с сохранением redirect
 const loginLink = computed(() => ({
   path: '/auth/login',
   query: redirectPath.value !== '/dashboard' ? { redirect: redirectPath.value } : undefined
 }))
 
-// Проверка совпадения паролей
 const passwordMismatch = computed(() => {
   return form.value.password && 
          form.value.password_confirmation && 
          form.value.password !== form.value.password_confirmation
 })
 
-// Валидация формы
 const isFormValid = computed(() => {
   return form.value.password.length >= 8 &&
          form.value.password === form.value.password_confirmation &&
@@ -133,38 +117,51 @@ const isFormValid = computed(() => {
          form.value.email
 })
 
+// ✅ Функция обновления формы из параметров маршрута
+const updateFormFromRoute = () => {
+  const token = route.query.token || ''
+  const email = route.query.email || ''
+  
+  if (token && email) {
+    form.value.token = token
+    form.value.email = email
+    error.value = '' // Очищаем ошибку, если параметры появились
+  }
+}
+
+// ✅ Следим за изменением маршрута (для случая, когда параметры приходят после монтирования)
+onBeforeRouteUpdate((to, from) => {
+  updateFormFromRoute()
+})
+
+// ✅ Также следим за изменением query параметров
+watch(() => route.query, (newQuery) => {
+  updateFormFromRoute()
+}, { immediate: true, deep: true })
+
 onMounted(() => {
-  // Если уже авторизован, перенаправляем
+  
+  updateFormFromRoute()
+  
   if (authStore.isAuthenticated) {
     router.push('/dashboard')
     return
   }
   
-  // Сохраняем redirect из query параметра
   if (route.query.redirect) {
     redirectPath.value = route.query.redirect
-  } else {
-    // Проверяем referrer (откуда пришли)
-    const referrer = document.referrer
-    if (referrer && referrer.includes(window.location.hostname)) {
-      try {
-        const url = new URL(referrer)
-        if (!url.pathname.includes('/auth/')) {
-          redirectPath.value = url.pathname + url.search
-        }
-      } catch (e) {
-        console.error('Error parsing referrer:', e)
-      }
-    }
   }
   
-  // Если нет токена или email в URL, показываем ошибку
-  if (!token || !email) {
-    error.value = 'Недействительная ссылка для сброса пароля'
-  }
+  // Если после обновления всё ещё нет параметров - ошибка
+  setTimeout(() => {
+    if (!form.value.token || !form.value.email) {
+      error.value = 'Недействительная ссылка для сброса пароля. Пожалуйста, запросите сброс пароля заново.'
+    }
+  }, 500)
 })
 
 const resetPassword = async () => {
+  
   if (!isFormValid.value) {
     error.value = 'Пожалуйста, заполните все поля правильно'
     return
@@ -177,7 +174,6 @@ const resetPassword = async () => {
   
   if (result.success) {
     success.value = result.message
-    // Через 3 секунды перенаправляем на логин с сохранением redirect
     setTimeout(() => {
       router.push(loginLink.value)
     }, 3000)

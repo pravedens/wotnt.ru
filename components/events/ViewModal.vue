@@ -42,12 +42,12 @@
             </svg>
             <span>{{ formattedDateTime }}</span>
             
-            <!-- Индикатор "только для членов" -->
+            <!-- Индикатор "только для прихожан" -->
             <span 
               v-if="event?.members_only && !canEdit"
               class="ml-2 text-xs px-2 py-0.5 bg-yellow-500/30 text-yellow-200 rounded-full"
             >
-              🔒 Только для членов церкви
+              🔒 Только для прихожан
             </span>
             
             <!-- Индикатор статуса (для админов) -->
@@ -125,41 +125,31 @@ const emit = defineEmits<{
 const imageUrl = computed(() => {
   if (!props.event?.thumbnail) return null
   
-  // Если уже полный URL
   if (props.event.thumbnail.startsWith('http')) {
     return props.event.thumbnail
   }
   
-  // Если путь начинается с events/thumbnails/ (новый формат S3)
   if (props.event.thumbnail.startsWith('events/thumbnails/')) {
     return `https://storage.yandexcloud.net/wotgospel-media/${props.event.thumbnail}`
   }
   
-  // Если путь начинается с public/ (старый формат)
   if (props.event.thumbnail.startsWith('public/')) {
     return `https://wotgospel.ru/storage/${props.event.thumbnail.replace('public/', '')}`
   }
   
-  // Fallback
   return `https://wotgospel.ru/storage/${props.event.thumbnail}`
 })
 
-// Форматированная дата и время
+// ⭐ Форматированная дата и время
 const formattedDateTime = computed(() => {
   if (!props.event) return ''
   
   const parts: string[] = []
   
   // Дата
-  if (props.event.startDate) {
-    const date = new Date(props.event.startDate)
-    parts.push(date.toLocaleDateString('ru-RU', { 
-      day: 'numeric', 
-      month: 'long', 
-      year: 'numeric' 
-    }))
-  } else if (props.event.event_date) {
-    const date = new Date(props.event.event_date)
+  const dateSource = props.event.startDate || props.event.event_date
+  if (dateSource) {
+    const date = new Date(dateSource)
     parts.push(date.toLocaleDateString('ru-RU', { 
       day: 'numeric', 
       month: 'long', 
@@ -167,9 +157,9 @@ const formattedDateTime = computed(() => {
     }))
   }
   
-  // Время
-  if (props.event.startTime) {
-    parts.push('в ' + props.event.startTime.substring(0, 5))
+  // Время из поля time (уже локальное)
+  if (props.event.time && props.event.time !== '') {
+    parts.push('в ' + props.event.time)
   }
   
   return parts.join(' ') || 'Дата не указана'
@@ -190,7 +180,6 @@ watch(() => props.visible, (isVisible) => {
     }
 }, { immediate: true })
 
-// ✅ Дополнительная очистка при размонтировании
 onUnmounted(() => {
     unlockScroll()
 })

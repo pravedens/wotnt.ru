@@ -55,22 +55,40 @@
           </div>
         </header>
         
+        <!-- Кнопка «Я приду» только для активных событий -->
+<div class="mb-8 flex justify-center" v-if="!event.is_cancelled && !event.is_past">
+  <EventAttendButton
+    :event-id="event.id"
+    :event-slug="event.slug"
+    :initial-attending="event.user_attending"
+    :initial-count="event.attendees_count"
+    :is-past-event="event.is_past"
+    :members-only="event.members_only"
+    :ministers-only="event.ministers_only"
+    @update="handleAttendUpdate"
+  />
+</div>
+
+<!-- Сообщение для отменённого события -->
+<div v-else-if="event.is_cancelled" class="mb-8 text-center">
+  <div class="inline-flex items-center gap-2 px-6 py-3 bg-red-500/20 border border-red-500/50 rounded-xl text-red-200">
+    <span>❌</span>
+    <span>Событие отменено</span>
+  </div>
+</div>
+        
+        <ConferenceRegistration 
+            v-if="event.is_conference"
+            :event="event"
+            @registered="handleRegistered"
+            class="mb-8"
+        />
+        
         <!-- Краткое описание -->
-        <div v-if="event.description" class="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 mb-8">
-          <h2 class="text-2xl font-bold text-white mb-4">О событии</h2>
-          <p class="text-white/80 whitespace-pre-line leading-relaxed">{{ event.description }}</p>
-        </div>
-        
-        <!-- Детальная информация -->
-        <div v-if="event.info" class="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 mb-8">
-          <h2 class="text-2xl font-bold text-white mb-4">Подробности</h2>
-          <div class="text-white/80 prose prose-invert max-w-none" v-html="event.info"></div>
-        </div>
-        
-        <!-- Контент -->
-        <div v-if="event.content" class="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20">
-          <h2 class="text-2xl font-bold text-white mb-4">Содержание</h2>
-          <div class="text-white/80 prose prose-invert max-w-none" v-html="event.content"></div>
+        <div v-if="event.description" class="bg-white/10 backdrop-blur-lg rounded-2xl p-3 border border-white/20 mb-8">
+            <p class="text-white/80 whitespace-pre-line leading-relaxed border-l-4 border-indigo-500 pl-3 italic mb-8">{{ event.description }}</p>
+            <div class="text-white/80 prose prose-invert max-w-none border-l-4 border-red-500 pl-3 mb-8" v-html="event.content"></div>
+            <div class="text-white/80 prose prose-invert max-w-none border-l-4 border-green-500 pl-3" v-html="event.info"></div>
         </div>
       </article>
     </div>
@@ -80,6 +98,8 @@
 <script setup lang="ts">
 import { useRoute, useRouter } from 'vue-router'
 import EventsBreadcrumbs from '~/components/events/Breadcrumbs.vue'
+import ConferenceRegistration from '~/components/events/ConferenceRegistration.vue'
+import EventAttendButton from '~/components/events/EventAttendButton.vue'
 
 // Типы
 interface Event {
@@ -117,6 +137,10 @@ const getAuthToken = (): string | null => {
   return null
 }
 
+const handleRegistered = () => {
+  // Опционально: обновить данные события
+}
+
 // Загрузка события (используем прокси для избежания CORS)
 const loadEvent = async () => {
   pending.value = true
@@ -140,7 +164,7 @@ const loadEvent = async () => {
     
     const status = err.response?.status || err.status
     if (status === 403) {
-      error.value = 'Доступ запрещён. Это событие только для членов церкви.'
+      error.value = 'Доступ запрещён. Это событие только для прихожан.'
     } else if (status === 404) {
       error.value = 'Событие не найдено'
     } else {
@@ -254,6 +278,13 @@ const shareTitle = computed(() => {
   }
   return title || 'Событие'
 })
+
+const handleAttendUpdate = (attending: boolean, count: number) => {
+  if (event.value) {
+    event.value.user_attending = attending
+    event.value.attendees_count = count
+  }
+}
 
 // Обновляем мета-теги после загрузки данных
 watch(event, (newEvent) => {

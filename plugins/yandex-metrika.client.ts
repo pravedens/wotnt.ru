@@ -1,26 +1,38 @@
+// plugins/yandex-metrika.client.ts
 export default defineNuxtPlugin({
   name: 'yandex-metrika',
   enforce: 'post',
   
   setup() {
     if (process.client) {
-      // Ваш код счетчика
-      (function(m,e,t,r,i,k,a){
-        m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
-        m[i].l=1*new Date();
-        for (var j = 0; j < document.scripts.length; j++) {
-          if (document.scripts[j].src === r) { return; }
-        }
-        k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a);
-      })(window, document, 'script', 'https://mc.yandex.ru/metrika/tag.js', 'ym');
+      // Откладываем загрузку на 3 секунды после загрузки страницы
+      if (document.readyState === 'complete') {
+        setTimeout(loadMetrika, 3000);
+      } else {
+        window.addEventListener('load', () => {
+          setTimeout(loadMetrika, 3000);
+        });
+      }
+    }
+  }
+})
 
-      ym(95320948, 'init', {
+function loadMetrika() {
+  const script = document.createElement('script');
+  script.src = 'https://mc.yandex.ru/metrika/tag.js';
+  script.async = true;
+  script.defer = true;
+  script.onload = () => {
+    if (window.ym) {
+      window.ym(95320948, 'init', {
         clickmap: true,
         referrer: document.referrer,
         url: location.href,
         accurateTrackBounce: true,
-        trackLinks: true
+        trackLinks: true,
+        webvisor: false // отключаем для ускорения
       });
     }
-  }
-})
+  };
+  document.head.appendChild(script);
+}

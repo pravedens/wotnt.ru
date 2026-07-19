@@ -98,11 +98,14 @@
 <script setup>
 import { useRoute, useRouter } from 'vue-router'
 import { usePosts } from '~/composables/usePosts'
-import PostCard from '~/components/posts/PostCard.vue'
 import PostFilters from '~/components/posts/PostFilters.vue'
 import Pagination from '~/components/posts/Pagination.vue'
 import SearchBar from '~/components/posts/SearchBar.vue'
 import PostsBreadcrumbs from '~/components/posts/Breadcrumbs.vue'
+
+const PostCard = defineAsyncComponent(() => 
+  import('~/components/posts/PostCard.vue')
+)
 
 const route = useRoute()
 const router = useRouter()

@@ -33,6 +33,12 @@
                 </svg>
                 <span>ОГРН: 1096600001794</span>
               </p>
+              <p class="flex items-start gap-2 justify-center md:justify-start">
+                <svg class="w-4 h-4 mt-1 flex-shrink-0 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <span>ИНН: 6623060094</span>
+              </p>
             </div>
           </div>
         </div>
@@ -69,6 +75,18 @@
               <NuxtLink to="/contacts" class="text-white/70 hover:text-white transition flex items-center gap-2 justify-center md:justify-start group">
                 <span class="w-1 h-1 bg-blue-400 rounded-full group-hover:w-2 transition-all"></span>
                 Контакты
+              </NuxtLink>
+            </li>
+            <li>
+              <NuxtLink to="/ministers" class="text-white/70 hover:text-white transition flex items-center gap-2 justify-center md:justify-start group">
+                <span class="w-1 h-1 bg-blue-400 rounded-full group-hover:w-2 transition-all"></span>
+                Служители
+              </NuxtLink>
+            </li>
+            <li>
+              <NuxtLink to="/bible-school" class="text-white/70 hover:text-white transition flex items-center gap-2 justify-center md:justify-start group">
+                <span class="w-1 h-1 bg-blue-400 rounded-full group-hover:w-2 transition-all"></span>
+                Ученичество
               </NuxtLink>
             </li>
           </ul>

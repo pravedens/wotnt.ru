@@ -94,19 +94,18 @@
         <section class="mb-8">
           <h2 class="text-2xl font-semibold text-white text-center mb-4">Поделиться проповедью</h2>
           <div class="flex flex-wrap gap-3 justify-center">
-            <a
-              :href="vkShareUrl"
-              target="_blank"
-              rel="noopener noreferrer"
-              @click="handleVkClick"
-              class="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-all shadow-lg hover:shadow-xl cursor-pointer"
-              aria-label="Поделиться в ВКонтакте"
+            <!-- ⭐ Новая кнопка "Ссылка" вместо ВКонтакте -->
+            <button
+              @click="copyLinkToClipboard"
+              class="flex items-center gap-2 px-5 py-2.5 bg-gray-600 hover:bg-gray-700 text-white rounded-xl transition-all shadow-lg hover:shadow-xl cursor-pointer"
+              aria-label="Скопировать ссылку"
             >
-              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                <path d="M21.485 7.097c.139-.445-.05-.678-.526-.678h-1.966c-.43 0-.646.24-.756.505 0 0-.89 2.131-2.155 3.514-.398.418-.58.55-.797.55-.109 0-.27-.132-.27-.577V7.097c0-.459-.134-.678-.522-.678h-3.119c-.294 0-.473.226-.473.44 0 .46.668.567.735 1.862v2.815c0 .617-.112.73-.357.73-.658 0-2.257-2.386-3.207-5.115-.187-.544-.373-.733-.806-.733H4.827c-.478 0-.574.24-.574.505 0 .473.627 2.842 2.915 5.97 1.526 2.181 3.676 3.37 5.634 3.37 1.174 0 1.32-.26 1.32-.712v-1.642c0-.495.104-.594.453-.594.257 0 .698.129 1.727 1.126 1.175 1.175 1.368 1.703 2.03 1.703h1.966c.478 0 .719-.237.58-.707-.151-.479-.694-1.172-1.414-1.994-.398-.472-.995-.981-1.176-1.235-.253-.33-.18-.477 0-.771 0 0 2.074-2.896 2.29-3.876z"/>
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.102m1.858-2.648a4 4 0 00-5.656 0l-4 4a4 4 0 005.656 5.656l1.102-1.102" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 13.828a4 4 0 010 5.656l-4 4a4 4 0 01-5.656-5.656l1.102-1.102" />
               </svg>
-              <span class="hidden sm:inline">ВКонтакте</span>
-            </a>
+              <span class="hidden sm:inline">Ссылка</span>
+            </button>
             
             <button
               @click="handleShareOK"
@@ -122,27 +121,29 @@
         </section>
         
         <!-- Видео Rutube -->
-        <ClientOnly v-if="post.rutube">
-          <section class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 mb-8">
-            <h2 class="text-2xl font-semibold text-white mb-3">Видео проповеди на Rutube</h2>
-            <div class="aspect-video rounded-lg overflow-hidden">
-              <iframe 
-                width="100%" 
-                height="100%" 
-                :src="`https://rutube.ru/play/embed/${post.rutube}`"
-                frameborder="0" 
-                allow="clipboard-write; autoplay"
-                allowfullscreen
-                loading="lazy"
-                :title="`Видео проповеди: ${post.title}`"
-              ></iframe>
-            </div>
-          </section>
-          
-          <template #fallback>
-            <div class="aspect-video bg-white/5 rounded-lg animate-pulse"></div>
-          </template>
-        </ClientOnly>
+<ClientOnly v-if="post.rutube">
+  <section class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 mb-8">
+    <h2 class="text-2xl font-semibold text-white mb-3">Видео проповеди на Rutube</h2>
+    <div class="aspect-video rounded-lg overflow-hidden">
+      <iframe 
+        width="100%" 
+        height="100%" 
+        :src="`https://rutube.ru/play/embed/${post.rutube}`"
+        frameborder="0" 
+        allow="clipboard-write; autoplay"
+        allowfullscreen
+        loading="lazy"
+        :title="`Видео проповеди: ${post.title}`"
+        referrerpolicy="strict-origin-when-cross-origin"
+        sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-presentation"
+      ></iframe>
+    </div>
+  </section>
+  
+  <template #fallback>
+    <div class="aspect-video bg-white/5 rounded-lg animate-pulse"></div>
+  </template>
+</ClientOnly>
         
         <!-- Другие источники просмотра -->
         <section v-if="hasMediaLinks" class="mb-8">
@@ -207,6 +208,10 @@
             @download="trackFileDownload('text')"
           />
         </section>
+        
+        <!-- Комментарии -->
+        <CommentSection :post-id="post.id" />
+
       </article>
     </div>
   </div>
@@ -220,6 +225,7 @@ import { useStatsStore } from '~/stores/stats'
 import PostsBreadcrumbs from '~/components/posts/Breadcrumbs.vue'
 import AudioPlayer from '~/components/posts/AudioPlayer.vue'
 import TextFile from '~/components/posts/TextFile.vue'
+import CommentSection from '~/components/comments/CommentSection.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -247,26 +253,45 @@ const error = computed(() => {
 })
 
 // ============================================
-// GOOGLE ANALYTICS & YANDEX METRIKA ТРЕКИНГ
+// YANDEX METRIKA ТРЕКИНГ
 // ============================================
 
-// Отправка события в GA4 и Яндекс.Метрику
+// Отправка события в Яндекс.Метрику
 const trackEvent = (eventName: string, eventParams: Record<string, any> = {}) => {
   if (process.client) {
-    // Google Analytics 4
-    if (typeof window !== 'undefined' && window.gtag) {
-      window.gtag('event', eventName, {
-        ...eventParams,
-        event_category: eventParams.event_category || 'sermons',
-        event_label: eventParams.event_label || post.value?.title
-      })
-    }
     
     // Яндекс.Метрика
     if (typeof window !== 'undefined' && window.ym) {
       window.ym(95320948, 'reachGoal', eventName, eventParams)
     }
     
+  }
+}
+
+// Копирование ссылки в буфер обмена
+const copyLinkToClipboard = async () => {
+  const url = currentUrl.value
+  
+  try {
+    await navigator.clipboard.writeText(url)
+    
+    // Уведомление пользователю
+    if (window.showNotification) {
+      window.showNotification('Ссылка скопирована!', 'success')
+    } else {
+      alert('Ссылка скопирована в буфер обмена')
+    }
+    
+    // Трекинг
+    trackEvent('copy_link', {
+      event_category: 'share',
+      event_label: 'Copy Link',
+      sermon_id: post.value?.id,
+      sermon_title: post.value?.title
+    })
+  } catch (err) {
+    console.error('Failed to copy link:', err)
+    alert('Не удалось скопировать ссылку')
   }
 }
 
@@ -297,22 +322,6 @@ const trackExternalLink = (platform: string) => {
     event_category: 'social',
     event_label: platform,
     platform: platform,
-    sermon_id: post.value?.id,
-    sermon_title: post.value?.title
-  })
-}
-
-// URL для шаринга во ВКонтакте
-const vkShareUrl = computed(() => {
-  return `https://vk.com/share.php?url=${encodeURIComponent(currentUrl.value)}`
-})
-
-// Обработчик клика на ВКонтакте
-const handleVkClick = () => {
-  trackEvent('share', {
-    event_category: 'social',
-    event_label: 'VKontakte',
-    platform: 'vk',
     sermon_id: post.value?.id,
     sermon_title: post.value?.title
   })
@@ -384,7 +393,6 @@ const backLink = computed(() => {
   if (route.query.category_id) query.category_id = String(route.query.category_id)
   if (route.query.group_id) query.group_id = String(route.query.group_id)
   if (route.query.conference_id) query.conference_id = String(route.query.conference_id)
-  // search и page не включаем
   
   return {
     path: '/sermons',

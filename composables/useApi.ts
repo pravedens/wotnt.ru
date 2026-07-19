@@ -4,11 +4,13 @@ export const useApi = () => {
     
     const baseUrl = config.public.apiBase // https://wotgospel.ru
 
-    // Получение заголовков с Bearer токеном
+    // Получение заголовков с Bearer токеном и предотвращением кэширования
     const getHeaders = (withAuth: boolean = true): Record<string, string> => {
         const headers: Record<string, string> = {
             'Accept': 'application/json',
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache'
         }
         
         if (withAuth) {
@@ -21,16 +23,44 @@ export const useApi = () => {
         return headers
     }
 
+    // Создаем API клиент с автоматической подстановкой токена и timestamp
+    const $api = $fetch.create({
+        baseURL: '/api',
+        headers: {
+            'Accept': 'application/json',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache'
+        },
+        onRequest({ options }) {
+            // Автоматически добавляем Bearer токен
+            const token = authStore.token
+            if (token) {
+                options.headers = {
+                    ...options.headers,
+                    'Authorization': `Bearer ${token}`
+                }
+            }
+        },
+        onResponseError({ response }) {
+            if (response.status === 401 && authStore.token) {
+                console.warn('API: Unauthorized, logging out')
+                console.log('Request URL:', response.response?.url);
+                console.log('Request method:', response.response?.status);
+                //authStore.logout()
+            }
+        }
+    })
+
     const getImageUrl = (path: string | null | undefined, type?: 'events' | 'sermons' | 'abouts'): string | null => {
-    if (!path) return null
-    if (path.startsWith('http')) return path
-    if (path.startsWith('/storage')) return `${baseUrl}${path}`
-    if (path.includes('public/')) return `${baseUrl}/storage/${path.replace('public/', '')}`
-    // ✅ Для аватаров на S3
-    if (path.startsWith('avatars/')) return `https://storage.yandexcloud.net/wotgospel-media/${path}`
-    if (type && !path.includes('/')) return `${baseUrl}/storage/${type}/${path}`
-    return `${baseUrl}/storage/${path}`
-}
+        if (!path) return null
+        if (path.startsWith('http')) return path
+        if (path.startsWith('/storage')) return `${baseUrl}${path}`
+        if (path.includes('public/')) return `${baseUrl}/storage/${path.replace('public/', '')}`
+        // Для аватаров на S3
+        if (path.startsWith('avatars/')) return `https://storage.yandexcloud.net/wotgospel-media/${path}`
+        if (type && !path.includes('/')) return `${baseUrl}/storage/${type}/${path}`
+        return `${baseUrl}/storage/${path}`
+    }
 
     const handleError = (err: any): string => {
         if (err?.data?.message) return err.data.message
@@ -41,6 +71,7 @@ export const useApi = () => {
     return {
         baseUrl,
         getHeaders,
+        $api,
         getImageUrl,
         handleError
     }

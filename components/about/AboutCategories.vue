@@ -36,7 +36,7 @@
           <!-- Изображение статьи если есть -->
           <div v-if="currentArticle.thumbnail" class="mb-8 rounded-xl overflow-hidden">
             <img 
-              :src="getImageUrl(currentArticle.thumbnail)"
+              :src="getImageUrl(currentArticle.thumbnail, 'abouts')"
               :alt="currentArticle.title"
               class="w-full max-h-[400px] object-cover"
               @error="handleImageError"

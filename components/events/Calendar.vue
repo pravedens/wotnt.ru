@@ -78,7 +78,7 @@
             </span>
             <span 
               v-if="columns < 7" 
-              class="text-[10px] sm:hidden"
+              class="text-xs sm:hidden"
               :class="getDayTextClass(day)"
             >
               {{ getShortWeekday(day.weekday) }}
@@ -104,7 +104,7 @@
               @click.stop="handleEventClick(event)"
               :title="getEventTitle(event)"
             >
-              <!-- Желтая полоска сбоку для событий только для членов -->
+              <!-- Желтая полоска сбоку для событий только для прихожан -->
               <div 
                 v-if="event.members_only && !canEdit"
                 class="absolute left-0 top-0 bottom-0 w-1 bg-yellow-400 rounded-l"
@@ -264,7 +264,7 @@ const getEventTitle = (event: CalendarEvent) => {
     } else if (event.is_past) {
       title += ' (прошедшее)'
     } else if (event.members_only) {
-      title += ' (только для членов церкви)'
+      title += ' (только для прихожан)'
     } else if (event.ministers_only) {
       title += ' (только для служителей)'
     }
@@ -272,7 +272,7 @@ const getEventTitle = (event: CalendarEvent) => {
     if (event.is_past) {
       title += ' (прошедшее)'
     } else if (event.members_only) {
-      title += ' (только для членов церкви)'
+      title += ' (только для прихожан)'
     } else if (event.ministers_only) {
       title += ' (только для служителей)'
     }
@@ -283,10 +283,8 @@ const getEventTitle = (event: CalendarEvent) => {
 
 // Функция отображения времени
 const getEventDisplayText = (event: CalendarEvent) => {
-  const eventTime = extractTime(event.startTime || event.time)
-  
-  if (eventTime) {
-    return eventTime
+  if (event.time) {
+    return event.time
   }
   
   const title = event.title || ''
@@ -399,6 +397,20 @@ const isToday = (dateStr: string): boolean => {
   
   .grid > div {
     touch-action: manipulation;
+  }
+  
+  /* Увеличение ячеек на мобильных */
+  .h-32 {
+    min-height: 6rem;
+  }
+  
+  /* Увеличение шрифтов на мобильных */
+  .text-xs {
+    font-size: 1.125rem !important;
+  }
+  
+  .text-base {
+    font-size: 1.525rem !important;
   }
 }
 

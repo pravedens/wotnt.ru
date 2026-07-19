@@ -69,7 +69,7 @@
                       {{ event.time || 'Весь день' }}
                     </span>
                     
-                    <!-- Индикатор "только для членов" -->
+                    <!-- Индикатор "только для прихожан" -->
                     <span 
                       v-if="event.members_only"
                       class="text-xs px-1.5 py-0.5 bg-yellow-500/30 text-yellow-200 rounded-full"

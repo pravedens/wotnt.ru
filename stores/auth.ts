@@ -38,22 +38,25 @@ export const useAuthStore = defineStore('auth', {
     getters: {
         isAuthenticated: (state) => !!state.user && !!state.token,
         isEmailVerified: (state) => !!state.user?.email_verified_at,
-        isAdmin: (state) => state.roles.includes('admin') || state.roles.includes('super_admin'),
+        isAdmin: (state) => state.roles.includes('admin') || state.roles.includes('super_admin') || state.roles.includes('redactorEvents'),
         canAccessAdmin: (state) => state.roles.some(role => role !== 'user'),
         isPastor: (state) => state.roles.includes('pastor'),
+        isMinister: (state) => state.roles.includes('minister'),
+        isMember: (state) => state.roles.includes('member'),
+        isTeacher: (state) => state.roles.includes('teacher'),      // ✅ ДОБАВИТЬ
+        isStudent: (state) => state.roles.includes('student'),      // ✅ ДОБАВИТЬ
+        isGroupLeader: (state) => state.roles.includes('group_leader'),
         
-        // ✅ Основная роль для отображения (с приоритетом minister)
         userRoles: (state) => {
             if (!state.roles || state.roles.length === 0) {
                 return 'Пользователь'
             }
             
-            // Приоритет: minister > member > super_admin > admin > editor > user
             if (state.roles.includes('minister')) {
                 return 'Служитель'
             }
             if (state.roles.includes('member')) {
-                return 'Член семьи'
+                return 'Прихожанин'
             }
             if (state.roles.includes('super_admin')) {
                 return 'Супер-администратор'
@@ -64,18 +67,26 @@ export const useAuthStore = defineStore('auth', {
             if (state.roles.includes('editor')) {
                 return 'Редактор'
             }
+            if (state.roles.includes('teacher')) {
+                return 'Преподаватель'
+            }
+            if (state.roles.includes('student')) {
+                return 'Ученик'
+            }
             
             return 'Пользователь'
         },
         
-        // ✅ Список всех ролей для отображения
         userRolesList: (state) => {
             const roleNames: Record<string, string> = {
                 'super_admin': 'Супер-администратор',
                 'admin': 'Администратор',
                 'editor': 'Редактор',
-                'member': 'Член семьи',
+                'member': 'Прихожанин',
                 'minister': 'Служитель',
+                'teacher': 'Преподаватель',
+                'student': 'Ученик',
+                'group_leader': 'Лидер группы',
                 'user': 'Пользователь'
             }
             
@@ -83,17 +94,15 @@ export const useAuthStore = defineStore('auth', {
         },
         
         avatarUrl: (state) => {
-    if (!state.user) return null
-    if (state.user.avatar) {
-        // ✅ Для S3
-        if (state.user.avatar.startsWith('avatars/')) {
-            return `https://storage.yandexcloud.net/wotgospel-media/${state.user.avatar}`
-        }
-        // Fallback для старых аватаров
-        return `https://wotgospel.ru/storage/${state.user.avatar}`
-    }
-    return `https://ui-avatars.com/api/?name=${encodeURIComponent(state.user.name)}&background=10b981&color=fff&bold=true&size=128`
-},
+            if (!state.user) return null
+            if (state.user.avatar) {
+                if (state.user.avatar.startsWith('avatars/')) {
+                    return `https://storage.yandexcloud.net/wotgospel-media/${state.user.avatar}`
+                }
+                return `https://wotgospel.ru/storage/${state.user.avatar}`
+            }
+            return `https://ui-avatars.com/api/?name=${encodeURIComponent(state.user.name)}&background=10b981&color=fff&bold=true&size=128`
+        },
         
         needsConsentUpdate: (state) => {
             return state.consentVersion !== '2.0'
@@ -113,45 +122,50 @@ export const useAuthStore = defineStore('auth', {
             this.consentHistory = []
         },
 
-        async init() {
-            if (this.initialized) return
-
-            if (process.client) {
-                const token = localStorage.getItem('auth_token')
-                const userStr = localStorage.getItem('auth_user')
-                const rolesStr = localStorage.getItem('auth_roles')
-                const consentHistoryStr = localStorage.getItem('consent_history')
-
-                if (token && userStr) {
-                    this.token = token
-                    this.user = JSON.parse(userStr)
-                    this.roles = rolesStr ? JSON.parse(rolesStr) : []
-                    
-                    if (consentHistoryStr) {
-                        this.consentHistory = JSON.parse(consentHistoryStr)
-                        if (this.consentHistory.length > 0) {
-                            const latest = this.consentHistory[0]
-                            this.consentVersion = latest.version
-                            this.consentDate = latest.date
-                            this.consentIp = latest.ip
-                        }
+        async validateToken(): Promise<boolean> {
+            if (!this.token) return false
+            
+            try {
+                const response: any = await $fetch('https://wotgospel.ru/api/user/check-token', {
+                    headers: {
+                        'Authorization': `Bearer ${this.token}`,
+                        'Accept': 'application/json'
                     }
+                })
+                
+                if (response && response.success && response.user) {
+                    this.user = response.user
+                    this.roles = response.roles || []
                     
-                    await this.fetchUser()
-                    await this.fetchConsentHistory()
+                    if (process.client) {
+                        localStorage.setItem('auth_user', JSON.stringify(this.user))
+                        localStorage.setItem('auth_roles', JSON.stringify(this.roles))
+                    }
+                    return true
                 }
+                return false
+            } catch (err: any) {
+                if (err?.status === 401) {
+                    console.log('Token invalid, clearing session')
+                    this.$reset()
+                    if (process.client) {
+                        localStorage.removeItem('auth_token')
+                        localStorage.removeItem('auth_user')
+                        localStorage.removeItem('auth_roles')
+                        localStorage.removeItem('auth_remember')
+                    }
+                }
+                return false
             }
-
-            this.initialized = true
         },
 
-        async login(email: string, password: string) {
+        async login(email: string, password: string, remember: boolean = false) {
             this.loading = true
 
             try {
                 const response: any = await $fetch('https://wotgospel.ru/api/login', {
                     method: 'POST',
-                    body: { email, password },
+                    body: { email, password, remember },
                     headers: {
                         'Accept': 'application/json',
                         'Content-Type': 'application/json'
@@ -170,6 +184,7 @@ export const useAuthStore = defineStore('auth', {
                     localStorage.setItem('auth_token', this.token)
                     localStorage.setItem('auth_user', JSON.stringify(this.user))
                     localStorage.setItem('auth_roles', JSON.stringify(this.roles))
+                    localStorage.setItem('auth_remember', response.remember ? 'true' : 'false')
                 }
 
                 return {
@@ -197,42 +212,84 @@ export const useAuthStore = defineStore('auth', {
             }
         },
 
-        async register(data: {
-            name: string
-            email: string
-            password: string
-            password_confirmation: string
-            privacy_accepted: boolean
-            registration_source: string
-        }) {
-            this.loading = true
+        async init() {
+            if (this.initialized) return
 
-            try {
-                const response: any = await $fetch('https://wotgospel.ru/api/register', {
-                    method: 'POST',
-                    body: data,
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json'
+            if (process.client) {
+                const token = localStorage.getItem('auth_token')
+                const userStr = localStorage.getItem('auth_user')
+                const rolesStr = localStorage.getItem('auth_roles')
+                const consentHistoryStr = localStorage.getItem('consent_history')
+
+                if (token && userStr) {
+                    this.token = token
+                    this.user = JSON.parse(userStr)
+                    this.roles = rolesStr ? JSON.parse(rolesStr) : []
+                    
+                    if (consentHistoryStr) {
+                        this.consentHistory = JSON.parse(consentHistoryStr)
+                        if (this.consentHistory.length > 0) {
+                            const latest = this.consentHistory[0]
+                            this.consentVersion = latest.version
+                            this.consentDate = latest.date
+                            this.consentIp = latest.ip
+                        }
                     }
-                })
-
-                return {
-                    success: true,
-                    requiresVerification: true,
-                    message: response.message || 'Письмо с подтверждением отправлено на ваш email'
+                    
+                    const isValid = await this.validateToken()
+                    if (!isValid) {
+                        this.initialized = true
+                        return
+                    }
+                    
+                    await this.fetchConsentHistory()
                 }
-
-            } catch (err: any) {
-                console.error('Register error:', err)
-                return {
-                    success: false,
-                    error: err?.data?.message || err?.message || 'Ошибка регистрации'
-                }
-            } finally {
-                this.loading = false
             }
+
+            this.initialized = true
         },
+
+        async register(data) {
+  this.loading = true
+
+  try {
+    const response = await $fetch('https://wotgospel.ru/api/register', {
+      method: 'POST',
+      body: data,
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      }
+    })
+
+    return {
+      success: true,
+      requiresVerification: true,
+      message: response.message || 'Письмо с подтверждением отправлено на ваш email'
+    }
+
+  } catch (err) {
+    console.error('Register error:', err)
+    
+    // ✅ Проверяем, что ошибка связана с существующим пользователем
+    if (err?.data?.error_code === 'user_exists') {
+      return {
+        success: false,
+        error: err.data.message,
+        error_code: 'user_exists',
+        can_reset_password: true,
+        reset_url: err.data.reset_url
+      }
+    }
+    
+    return {
+      success: false,
+      error: err?.data?.message || err?.message || 'Ошибка регистрации'
+    }
+  } finally {
+    this.loading = false
+  }
+},
 
         async fetchUser() {
             if (!this.token || !process.client) return
@@ -246,8 +303,8 @@ export const useAuthStore = defineStore('auth', {
                     }
                 })
 
-                if (response.user) {
-                    this.user = response.user
+                if (response && response.id) {
+                    this.user = response
                     this.roles = response.roles || []
 
                     if (process.client) {
@@ -259,6 +316,34 @@ export const useAuthStore = defineStore('auth', {
                 console.error('Error fetching user:', err)
             }
         },
+
+        async refreshSession() {
+  if (!this.token) return false
+  
+  try {
+    const response: any = await $fetch('https://wotgospel.ru/api/user', {
+      headers: {
+        'Authorization': `Bearer ${this.token}`,
+        'Accept': 'application/json'
+      }
+    })
+    
+    if (response && response.id) {
+      this.user = response
+      this.roles = response.roles || []
+      
+      if (process.client) {
+        localStorage.setItem('auth_user', JSON.stringify(this.user))
+        localStorage.setItem('auth_roles', JSON.stringify(this.roles))
+      }
+      return true
+    }
+    return false
+  } catch (err) {
+    console.error('Session refresh failed:', err)
+    return false
+  }
+},
 
         async resendVerification() {
             if (!this.token) {
@@ -394,6 +479,7 @@ export const useAuthStore = defineStore('auth', {
                 localStorage.removeItem('consent_version')
                 localStorage.removeItem('consent_ip')
                 localStorage.removeItem('consent_history')
+                localStorage.removeItem('auth_remember')
                 window.location.href = '/'
             }
         },
@@ -465,6 +551,6 @@ export const useAuthStore = defineStore('auth', {
             } finally {
                 this.loading = false
             }
-        }
+        },
     }
 })

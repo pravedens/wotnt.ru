@@ -26,9 +26,17 @@ export const useScrollLock = () => {
         isLocked.value = false
     }
 
+    // ✅ Добавляем автоматическое восстановление при размонтировании
+    const autoUnlock = () => {
+        if (isLocked.value) {
+            unlockScroll()
+        }
+    }
+
     return {
         lockScroll,
         unlockScroll,
+        autoUnlock,
         isLocked
     }
 }

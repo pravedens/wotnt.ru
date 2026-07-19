@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { useApi } from '~/composables/useApi'
 
 interface PostStats {
   views_count: number
@@ -10,7 +11,7 @@ interface PostStats {
 export const useStatsStore = defineStore('stats', {
   state: () => ({
     postsStats: {} as Record<number, PostStats>,
-    loadingStates: {} as Record<number, boolean>, // Индивидуальные состояния загрузки
+    loadingStates: {} as Record<number, boolean>,
     fetchingInProgress: new Set<number>()
   }),
 
@@ -45,17 +46,14 @@ export const useStatsStore = defineStore('stats', {
     },
 
     async fetchPostStats(postId: number) {
-      if (this.fetchingInProgress.has(postId)) {
-        return
-      }
+      if (this.fetchingInProgress.has(postId)) return
 
       this.fetchingInProgress.add(postId)
       this.setLoading(postId, true)
       
       try {
-        const response = await $fetch(`/api/posts/${postId}/stats`, {
-          credentials: 'include'
-        })
+        const { $api } = useApi()
+        const response = await $api(`/posts/${postId}/stats`)
         
         if (response) {
           this.updatePostStats(postId, {
@@ -67,7 +65,7 @@ export const useStatsStore = defineStore('stats', {
         }
         return response
       } catch (err) {
-        console.error('📊 Error fetching stats:', err)
+        console.error('Error fetching stats:', err)
       } finally {
         this.fetchingInProgress.delete(postId)
         this.setLoading(postId, false)
@@ -78,18 +76,9 @@ export const useStatsStore = defineStore('stats', {
       this.setLoading(postId, true)
       
       try {
-        const xsrfToken = document.cookie
-          .split('; ')
-          .find(row => row.startsWith('XSRF-TOKEN='))
-          ?.split('=')[1]
-
-        const response = await $fetch(`/api/posts/${postId}/like`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-XSRF-TOKEN': decodeURIComponent(xsrfToken || '')
-          },
-          credentials: 'include'
+        const { $api } = useApi()
+        const response = await $api(`/posts/${postId}/like`, {
+          method: 'POST'
         })
 
         if (response) {
@@ -102,7 +91,7 @@ export const useStatsStore = defineStore('stats', {
 
         return response
       } catch (err) {
-        console.error('👍 Error toggling like:', err)
+        console.error('Error toggling like:', err)
         throw err
       } finally {
         this.setLoading(postId, false)
@@ -111,18 +100,9 @@ export const useStatsStore = defineStore('stats', {
 
     async trackView(postId: number) {
       try {
-        const xsrfToken = document.cookie
-          .split('; ')
-          .find(row => row.startsWith('XSRF-TOKEN='))
-          ?.split('=')[1]
-
-        const response = await $fetch(`/api/posts/${postId}/view`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-XSRF-TOKEN': decodeURIComponent(xsrfToken || '')
-          },
-          credentials: 'include'
+        const { $api } = useApi()
+        const response = await $api(`/posts/${postId}/view`, {
+          method: 'POST'
         })
 
         if (response) {
@@ -135,7 +115,7 @@ export const useStatsStore = defineStore('stats', {
 
         return response
       } catch (err) {
-        console.error('👁️ Error tracking view:', err)
+        console.error('Error tracking view:', err)
       }
     },
 

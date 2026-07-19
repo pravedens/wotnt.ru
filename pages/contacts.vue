@@ -2,17 +2,14 @@
   <div class="min-h-screen bg-gradient-to-br from-blue-900 to-purple-900 py-12">
     <div class="container mx-auto px-4">
       <!-- Хлебные крошки -->
-      <div class="mb-6">
-        <nav class="flex items-center gap-2 text-white/70">
-          <NuxtLink to="/" class="hover:text-white transition">Главная</NuxtLink>
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-          </svg>
-          <span class="text-white">Контакты</span>
-        </nav>
-      </div>
+      <nav class="flex items-center gap-2 text-white/70 mb-6">
+        <NuxtLink to="/" class="hover:text-white transition">Главная</NuxtLink>
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+        </svg>
+        <span class="text-white">Контакты</span>
+      </nav>
       
-      <!-- Заголовок -->
       <h1 class="text-4xl md:text-5xl font-bold text-white text-center mb-12">
         Контакты
       </h1>
@@ -31,9 +28,7 @@
               </div>
               <div>
                 <h2 class="text-xl font-semibold text-white mb-2">Адрес</h2>
-                <p class="text-white/80">
-                  г. Нижний Тагил, ул. Чехова, 10
-                </p>
+                <p class="text-white/80">г. Нижний Тагил, ул. Чехова, 10</p>
               </div>
             </div>
           </div>
@@ -48,9 +43,7 @@
               </div>
               <div>
                 <h2 class="text-xl font-semibold text-white mb-2">Телефон</h2>
-                <a href="tel:+79991234567" class="text-white/80 hover:text-white transition block">
-                  +7 (999) ....
-                </a>
+                <a href="tel:+79991234567" class="text-white/80 hover:text-white transition block">+7 (999) ...</a>
               </div>
             </div>
           </div>
@@ -65,14 +58,12 @@
               </div>
               <div>
                 <h2 class="text-xl font-semibold text-white mb-2">Email</h2>
-                <a href="mailto:admin@wotgospel.ru" class="text-white/80 hover:text-white transition block">
-                  admin@wotgospel.ru
-                </a>
+                <a href="mailto:admin@wotgospel.ru" class="text-white/80 hover:text-white transition block">admin@wotgospel.ru</a>
               </div>
             </div>
           </div>
           
-          <!-- Социальные сети (только ВКонтакте) -->
+          <!-- Социальные сети -->
           <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
             <div class="flex items-start gap-4">
               <div class="w-12 h-12 rounded-full bg-blue-600/20 flex items-center justify-center flex-shrink-0">
@@ -118,43 +109,121 @@
           </div>
         </div>
         
-        <!-- Карта (Яндекс.Карты) -->
+        <!-- Карта -->
         <div class="bg-white/10 backdrop-blur-lg rounded-2xl overflow-hidden border border-white/20 h-[500px] lg:h-auto min-h-[500px]">
           <iframe
             class="w-full h-full"
             src="https://yandex.ru/map-widget/v1/?ll=60.008460%2C57.899827&mode=whatshere&whatshere%5Bpoint%5D=60.009365%2C57.900183&whatshere%5Bzoom%5D=17&z=16.8"
             frameborder="0"
             loading="lazy"
-            referrerpolicy="no-referrer-when-downgrade"
+            referrerpolicy="strict-origin-when-cross-origin"
             allowfullscreen
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
             title="Церковь Слово Истины — Нижний Тагил, ул. Чехова, 10"
-        ></iframe>
+          ></iframe>
         </div>
       </div>
       
-      <!-- Форма обратной связи (только для авторизованных) -->
-      <div v-if="isAuthenticated" class="max-w-2xl mx-auto mt-12">
+      <!-- Форма обратной связи -->
+      <div class="max-w-2xl mx-auto mt-12">
         <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
           <h2 class="text-2xl font-bold text-white text-center mb-6">Напишите нам</h2>
           
           <form @submit.prevent="sendMessage" class="space-y-4">
-            <!-- Имя и Email скрыты, так как данные берутся из профиля -->
-            <div class="bg-white/5 rounded-lg p-3 text-white/70 text-sm">
+            <!-- Для неавторизованных — поля имени и email -->
+            <template v-if="!isAuthenticated">
+              <div>
+                <label class="block text-white/80 mb-2 text-sm">
+                  Ваше имя <span class="text-red-300">*</span>
+                </label>
+                <input
+                  v-model="form.name"
+                  type="text"
+                  required
+                  class="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-blue-400 transition"
+                  placeholder="Иван Петров"
+                />
+              </div>
+              
+              <div>
+                <label class="block text-white/80 mb-2 text-sm">
+                  Ваш Email <span class="text-red-300">*</span>
+                </label>
+                <input
+                  v-model="form.email"
+                  type="email"
+                  required
+                  class="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-blue-400 transition"
+                  placeholder="ivan@example.com"
+                />
+              </div>
+            </template>
+            
+            <!-- Для авторизованных — показываем данные из профиля -->
+            <div v-else class="bg-white/5 rounded-lg p-3 text-white/70 text-sm">
               <p>📧 От: <strong>{{ userEmail }}</strong></p>
               <p>👤 Имя: <strong>{{ userName }}</strong></p>
             </div>
             
+            <!-- Выбор получателя -->
             <div>
-              <label class="block text-white/80 mb-2 text-sm">Сообщение</label>
+              <label class="block text-white/80 mb-2 text-sm">
+                Кому отправить <span class="text-red-300">*</span>
+              </label>
+              
+              <select
+                v-model="form.recipientRole"
+                required
+                class="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-blue-400 transition"
+                @change="onRecipientChange"
+              >
+                <option value="" disabled>Выберите получателя</option>
+                <option 
+                  v-for="recipient in recipients" 
+                  :key="recipient.role"
+                  :value="recipient.role"
+                  :disabled="!recipient.has_recipients"
+                  :class="{ 'opacity-50': !recipient.has_recipients }"
+                >
+                  {{ recipient.name }} 
+                  ({{ recipient.count }} {{ getRecipientWord(recipient.count) }})
+                  <span v-if="!recipient.has_recipients"> - нет получателей</span>
+                </option>
+              </select>
+              
+              <!-- Описание выбранного получателя -->
+              <div v-if="selectedRecipientDescription" class="mt-2 text-sm text-blue-300 bg-blue-500/10 p-2 rounded-lg">
+                <svg class="inline w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                {{ selectedRecipientDescription }}
+              </div>
+            </div>
+            
+            <!-- Сообщение -->
+            <div>
+              <label class="block text-white/80 mb-2 text-sm">Сообщение <span class="text-red-300">*</span></label>
               <textarea
                 v-model="form.message"
                 required
                 rows="4"
-                class="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-blue-400 transition"
+                class="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-blue-400 transition resize-none"
                 placeholder="Ваше сообщение..."
                 @input="sanitizeMessage"
               ></textarea>
             </div>
+            
+            <!-- Капча (только для неавторизованных) -->
+            <div v-if="!isAuthenticated" class="flex justify-center">
+              <div
+                id="contacts-captcha-container"
+                class="smart-captcha"
+                :data-sitekey="siteKey"
+                data-hl="ru"
+                style="height: 80px;"
+              ></div>
+            </div>
+            
             <div class="text-center">
               <button
                 type="submit"
@@ -164,6 +233,7 @@
                 {{ sending ? 'Отправка...' : 'Отправить' }}
               </button>
             </div>
+            
             <div v-if="formSuccess" class="text-green-300 text-sm text-center">
               Сообщение отправлено! Мы свяжемся с вами.
             </div>
@@ -173,19 +243,6 @@
           </form>
         </div>
       </div>
-      
-      <!-- Сообщение для неавторизованных -->
-      <div v-else class="max-w-2xl mx-auto mt-12 text-center">
-        <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
-          <p class="text-white/80">
-            🔒 Чтобы написать сообщение, пожалуйста, 
-            <NuxtLink :to="loginLink" class="text-blue-300 hover:text-blue-200 underline">
-              войдите
-            </NuxtLink> 
-            в свой аккаунт.
-          </p>
-        </div>
-      </div>
     </div>
   </div>
 </template>
@@ -193,81 +250,88 @@
 <script setup lang="ts">
 import { useAuthStore } from '~/stores/auth'
 import { useRoute } from 'vue-router'
-
-// ============================================
-// РОУТИНГ
-// ============================================
+import { onMounted, watch } from 'vue'
 
 const route = useRoute()
-
-// Ссылка на логин с сохранением текущего URL
-const loginLink = computed(() => ({
-  path: '/auth/login',
-  query: { redirect: route.fullPath }
-}))
-
-// ============================================
-// SEO МЕТА-ТЕГИ
-// ============================================
-
-useServerSeoMeta({
-  title: 'Контакты | Церковь Слово Истины',
-  description: 'Адрес, телефон, email и карта проезда церкви Слово Истины. Режим работы, социальные сети и форма обратной связи.',
-  ogTitle: 'Контакты | Церковь Слово Истины',
-  ogDescription: 'Адрес, телефон, email и карта проезда церкви Слово Истины. Режим работы, социальные сети и форма обратной связи.',
-  ogType: 'website',
-  ogUrl: 'https://wotnt.ru/contacts',
-  ogSiteName: 'Церковь Слово Истины',
-  ogLocale: 'ru_RU',
-  twitterCard: 'summary_large_image',
-  twitterTitle: 'Контакты | Церковь Слово Истины',
-  twitterDescription: 'Адрес, телефон, email и карта проезда церкви Слово Истины.'
-})
-
-useHead({
-  meta: [
-    { 
-      name: 'description', 
-      content: 'Адрес, телефон, email и карта проезда церкви Слово Истины. Режим работы, социальные сети и форма обратной связи.' 
-    },
-    { 
-      name: 'keywords', 
-      content: 'контакты, адрес, телефон, email, карта проезда, режим работы, обратная связь, церковь, слово истины' 
-    }
-  ],
-  link: [
-    { rel: 'canonical', href: 'https://wotnt.ru/contacts' }
-  ]
-})
-
-// ============================================
-// АВТОРИЗАЦИЯ
-// ============================================
-
 const authStore = useAuthStore()
 const isAuthenticated = computed(() => authStore.isAuthenticated)
 const token = computed(() => authStore.token)
+const siteKey = useRuntimeConfig().public.yandexCaptchaSiteKey
 
-// Данные пользователя из стора
 const userName = computed(() => authStore.user?.name || authStore.user?.email?.split('@')[0] || 'Пользователь')
 const userEmail = computed(() => authStore.user?.email || '')
 
 // ============================================
-// ФОРМА ОБРАТНОЙ СВЯЗИ
+// ПОЛУЧАТЕЛИ
+// ============================================
+
+interface Recipient {
+  role: string
+  name: string
+  emails: string[]
+  count: number
+  description: string
+  has_recipients: boolean
+}
+
+const recipients = ref<Recipient[]>([])
+const loadingRecipients = ref(false)
+const selectedRecipientDescription = ref('')
+
+const getRecipientWord = (count: number) => {
+  if (count === 1) return 'получатель'
+  if (count >= 2 && count <= 4) return 'получателя'
+  return 'получателей'
+}
+
+const loadRecipients = async () => {
+  loadingRecipients.value = true
+  
+  try {
+    const url = isAuthenticated.value ? '/api/contacts/recipients' : '/api/contacts/recipients-public'
+    const headers = isAuthenticated.value ? { 'Authorization': `Bearer ${token.value}` } : {}
+    
+    const response = await $fetch(url, {
+      headers: {
+        ...headers,
+        'Accept': 'application/json'
+      },
+      credentials: 'include'
+    })
+    
+    if (response.success) {
+      recipients.value = response.recipients
+    }
+  } catch (err) {
+    console.error('Error loading recipients:', err)
+  } finally {
+    loadingRecipients.value = false
+  }
+}
+
+const onRecipientChange = () => {
+  const selected = recipients.value.find(r => r.role === form.recipientRole)
+  selectedRecipientDescription.value = selected?.description || ''
+}
+
+// ============================================
+// ФОРМА
 // ============================================
 
 const form = reactive({
-  message: ''
+  name: '',
+  email: '',
+  message: '',
+  recipientRole: '',
+  captchaToken: ''
 })
 
 const sending = ref(false)
 const formSuccess = ref(false)
 const formError = ref('')
 
-// Получение CSRF-токена из cookies
 const getCsrfToken = (): string | null => {
   if (typeof document === 'undefined') return null
-  
   const cookies = document.cookie.split(';').map(c => c.trim())
   for (const cookie of cookies) {
     const [name, value] = cookie.split('=')
@@ -278,14 +342,28 @@ const getCsrfToken = (): string | null => {
   return null
 }
 
-// Санитизация сообщения (удаление HTML-тегов и скриптов)
 const sanitizeMessage = () => {
-  // Удаляем HTML-теги
   form.message = form.message.replace(/<[^>]*>/g, '')
-  // Удаляем потенциально опасные конструкции
   form.message = form.message.replace(/javascript:/gi, '')
   form.message = form.message.replace(/on\w+=/gi, '')
-  form.message = form.message.replace(/&lt;script.*?&gt;.*?&lt;\/script&gt;/gi, '')
+}
+
+const getCaptchaToken = (): string | null => {
+  const container = document.getElementById('contacts-captcha-container')
+  if (!container) return null
+  const input = container.querySelector('input[name="smart-token"]') as HTMLInputElement
+  return input?.value || null
+}
+
+const initCaptcha = () => {
+  if (isAuthenticated.value) return
+  if (document.querySelector('#yandex-captcha-script')) return
+  
+  const script = document.createElement('script')
+  script.id = 'yandex-captcha-script'
+  script.src = 'https://smartcaptcha.cloud.yandex.ru/captcha.js'
+  script.defer = true
+  document.head.appendChild(script)
 }
 
 const sendMessage = async () => {
@@ -293,7 +371,6 @@ const sendMessage = async () => {
   formSuccess.value = false
   formError.value = ''
   
-  // Дополнительная санитизация перед отправкой
   sanitizeMessage()
   
   if (!form.message.trim()) {
@@ -302,27 +379,68 @@ const sendMessage = async () => {
     return
   }
   
-  // Получаем CSRF-токен
+  if (!form.recipientRole) {
+    formError.value = 'Пожалуйста, выберите получателя сообщения'
+    sending.value = false
+    return
+  }
+  
   const xsrfToken = getCsrfToken()
   
+  const body: any = {
+    message: form.message.trim(),
+    recipient_role: form.recipientRole
+  }
+  
+  if (!isAuthenticated.value) {
+    if (!form.name.trim() || !form.email.trim()) {
+      formError.value = 'Пожалуйста, заполните имя и email'
+      sending.value = false
+      return
+    }
+    
+    const captchaToken = getCaptchaToken()
+    if (!captchaToken) {
+      formError.value = 'Пожалуйста, подтвердите, что вы не робот'
+      sending.value = false
+      return
+    }
+    
+    body.name = form.name.trim()
+    body.email = form.email.trim()
+    body.captcha_token = captchaToken
+  }
+  
   try {
+    const headers: Record<string, string> = {
+      'X-XSRF-TOKEN': xsrfToken || '',
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    }
+    
+    if (isAuthenticated.value && token.value) {
+      headers['Authorization'] = `Bearer ${token.value}`
+    }
+    
     const response = await $fetch('/api/contacts', {
       method: 'POST',
-      body: {
-        message: form.message.trim()
-      },
-      headers: {
-        'Authorization': `Bearer ${token.value}`,
-        'X-XSRF-TOKEN': xsrfToken || '',
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
+      body,
+      headers,
       credentials: 'include'
     })
     
     if (response.success) {
       formSuccess.value = true
       form.message = ''
+      form.recipientRole = ''
+      selectedRecipientDescription.value = ''
+      if (!isAuthenticated.value) {
+        form.name = ''
+        form.email = ''
+        const container = document.getElementById('contacts-captcha-container')
+        if (container) container.innerHTML = ''
+        initCaptcha()
+      }
       
       setTimeout(() => {
         formSuccess.value = false
@@ -332,16 +450,32 @@ const sendMessage = async () => {
     }
   } catch (err: any) {
     console.error('Error sending message:', err)
-    
-    if (err.response?.status === 419) {
-      formError.value = 'Сессия истекла. Пожалуйста, обновите страницу и попробуйте снова.'
-    } else if (err.response?.status === 401) {
-      formError.value = 'Пожалуйста, войдите в систему заново.'
-    } else {
-      formError.value = err.data?.message || 'Ошибка отправки. Попробуйте позже.'
-    }
+    formError.value = err.data?.message || 'Ошибка отправки. Попробуйте позже.'
   } finally {
     sending.value = false
   }
 }
+
+onMounted(() => {
+  loadRecipients()
+  if (!isAuthenticated.value) {
+    setTimeout(initCaptcha, 100)
+  }
+})
+
+watch(isAuthenticated, (newVal) => {
+  loadRecipients()
+  if (!newVal) {
+    setTimeout(initCaptcha, 100)
+  }
+}, { immediate: true })
 </script>
+
+<style scoped>
+.smart-captcha {
+  min-height: 80px;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+</style>

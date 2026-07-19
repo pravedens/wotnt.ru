@@ -3,20 +3,21 @@
     <NuxtLayout name="default">
       <NuxtPage />
     </NuxtLayout>
+
+    <!-- Все компоненты, которые не нужны при первой загрузке, загружаем только на клиенте -->
+    <ClientOnly>
+      <CookieBanner />
+      <IOSInstallGuide />
+      <PWAInstallButton />
+      <NotificationContainer />
+    </ClientOnly>
+
     <noscript>
       <div>
         <img src="https://mc.yandex.ru/watch/95320948" style="position:absolute; left:-9999px;" alt="" />
       </div>
     </noscript>
-    <noscript>
-      <iframe 
-        src="https://www.googletagmanager.com/ns.html?id=G-46QQ5SPH5V"
-        height="0" 
-        width="0" 
-        style="display:none;visibility:hidden"
-      ></iframe>
-    </noscript>
-    
+
     <!-- Уведомление об обновлении -->
     <div v-if="needRefresh" class="fixed bottom-4 right-4 z-50 bg-blue-600 text-white p-4 rounded-lg shadow-lg max-w-sm">
       <p class="mb-2">Доступна новая версия сайта!</p>
@@ -27,33 +28,182 @@
         Обновить
       </button>
     </div>
-    
-    <NotificationContainer />
   </div>
 </template>
 
 <script setup>
-import NotificationContainer from '~/components/NotificationContainer.vue'
-import { useAuthStore } from '~/stores/auth'
-import { useVersionCheck } from '~/composables/useVersionCheck'
+// ============================================
+// АСИНХРОННЫЕ ИМПОРТЫ (загружаются только когда понадобятся)
+// ============================================
+const CookieBanner = defineAsyncComponent(() => import('~/components/CookieBanner.vue'))
+const IOSInstallGuide = defineAsyncComponent(() => import('~/components/IOSInstallGuide.vue'))
+const PWAInstallButton = defineAsyncComponent(() => import('~/components/PWAInstallButton.vue'))
+const NotificationContainer = defineAsyncComponent(() => import('~/components/NotificationContainer.vue'))
 
-const { needRefresh, checkVersion, refreshApp } = useVersionCheck()
+// ============================================
+// COMPOSABLES
+// ============================================
+const { needRefresh, checkVersion, refreshApp, startPeriodicCheck, stopPeriodicCheck } = useVersionCheck()
+const router = useRouter()
 
-// ✅ Проверка версии только на клиенте
-if (process.client) {
-  onMounted(() => {
-    checkVersion()
-    // Проверяем каждые 5 минут
-    const interval = setInterval(() => {
-      checkVersion()
-    }, 5 * 60 * 1000)
-    
-    // Очищаем интервал при размонтировании
-    onUnmounted(() => {
-      clearInterval(interval)
-    })
-  })
+// ============================================
+// PWA INSTALL PROMPT
+// ============================================
+
+let deferredPrompt = null;
+
+const handleBeforeInstallPrompt = (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  
+  const event = new CustomEvent('pwa-install-ready', { detail: { deferredPrompt: e } });
+  window.dispatchEvent(event);
 }
+
+const showInstallPrompt = () => {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then((choiceResult) => {
+      deferredPrompt = null;
+    });
+  }
+}
+
+// ============================================
+// PROTOCOL HANDLER SUPPORT
+// ============================================
+
+const registerProtocolHandler = () => {
+  if (process.client && 'registerProtocolHandler' in navigator) {
+    try {
+      navigator.registerProtocolHandler('web+wotnt', 'https://wotnt.ru/?from=%s');
+    } catch (e) {
+      // Ошибка регистрации protocol handler
+    }
+  }
+}
+
+const handleProtocolHandler = () => {
+  if (process.client) {
+    const urlParams = new URLSearchParams(window.location.search);
+    const fromProtocol = urlParams.get('from');
+    
+    if (fromProtocol) {
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+      
+      if (fromProtocol.startsWith('event/')) {
+        const eventSlug = fromProtocol.replace('event/', '');
+        setTimeout(() => router.push(`/events/${eventSlug}`), 100);
+      } else if (fromProtocol.startsWith('post/')) {
+        const postSlug = fromProtocol.replace('post/', '');
+        setTimeout(() => router.push(`/posts/${postSlug}`), 100);
+      } else if (fromProtocol === 'events') {
+        setTimeout(() => router.push('/events'), 100);
+      } else if (fromProtocol === 'contacts') {
+        setTimeout(() => router.push('/contacts'), 100);
+      }
+    }
+  }
+}
+
+// ============================================
+// SERVICE WORKER UPDATE HANDLER
+// ============================================
+
+if (process.client && 'serviceWorker' in navigator) {
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    window.location.reload();
+  });
+}
+
+const handleAppUpdate = (event) => {
+  needRefresh.value = true;
+};
+
+// ============================================
+// ВАЛИДАЦИЯ ВЕРСИИ
+// ============================================
+
+const isValidVersion = (version) => {
+  if (!version) return false;
+  return /^\d+$/.test(version) || /^\d+\.\d+\.\d+$/.test(version);
+};
+
+const cleanupInvalidVersion = () => {
+  if (process.client) {
+    const savedVersion = localStorage.getItem('app_version');
+    if (!isValidVersion(savedVersion)) {
+      localStorage.removeItem('app_version');
+    }
+  }
+}
+
+// ============================================
+// ПРОВЕРКА ВЕРСИИ
+// ============================================
+
+const forceVersionCheck = async () => {
+  if (process.client) {
+    await checkVersion();
+  }
+}
+
+// ============================================
+// ВОССТАНОВЛЕНИЕ СКРОЛЛА
+// ============================================
+
+const restoreScroll = () => {
+  if (process.client) {
+    document.body.style.overflow = '';
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.width = '';
+    document.documentElement.style.overflow = '';
+  }
+}
+
+// ============================================
+// ИНИЦИАЛИЗАЦИЯ
+// ============================================
+
+if (process.client) {
+  cleanupInvalidVersion();
+  
+  onMounted(async () => {
+    registerProtocolHandler();
+    handleProtocolHandler();
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('app-update-available', handleAppUpdate);
+    
+    await forceVersionCheck();
+    startPeriodicCheck(5 * 60 * 1000);
+    
+    restoreScroll();
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) restoreScroll();
+    });
+    window.addEventListener('error', () => restoreScroll());
+  });
+  
+  onUnmounted(() => {
+    stopPeriodicCheck();
+    window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.removeEventListener('app-update-available', handleAppUpdate);
+  });
+}
+
+// ============================================
+// РОУТЕР
+// ============================================
+
+router.afterEach(() => {
+  setTimeout(() => restoreScroll(), 100);
+});
+
+// ============================================
+// SEO META ТЕГИ
+// ============================================
 
 useHead({
   title: 'Церковь Слово Истины',
@@ -63,67 +213,18 @@ useHead({
     { property: 'og:description', content: 'Проповеди и события церкви Слово Истины' },
     { property: 'og:image', content: 'https://storage.yandexcloud.net/wotgospel-media/og-images/default-og-image.png' },
     { property: 'og:type', content: 'website' },
-    { property: 'vk:title', content: 'Церковь Слово Истины' },
-    { property: 'vk:description', content: 'Проповеди и события церкви Слово Истины' },
-    { property: 'vk:image', content: 'https://storage.yandexcloud.net/wotgospel-media/og-images/default-og-image.png' },
+    { name: 'apple-mobile-web-app-capable', content: 'yes' },
+    { name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' },
+    { name: 'apple-mobile-web-app-title', content: 'WoTNT' },
+    { name: 'theme-color', content: '#4f46e5' },
+    { name: 'msapplication-TileColor', content: '#4f46e5' }
+  ],
+  link: [
+    { rel: 'manifest', href: '/manifest.webmanifest' },
+    { rel: 'apple-touch-icon', href: '/favicon/apple-touch-icon.png' },
+    { rel: 'icon', type: 'image/png', sizes: '32x32', href: '/favicon/favicon-32.png' }
   ]
-})
-
-// Функция восстановления скролла
-const restoreScroll = () => {
-  if (process.client) {
-    document.body.style.overflow = ''
-    document.body.style.position = ''
-    document.body.style.top = ''
-    document.body.style.width = ''
-    document.documentElement.style.overflow = ''
-  }
-}
-
-// Глобальное восстановление скролла после навигации
-const router = useRouter()
-router.afterEach(() => {
-  setTimeout(() => {
-    restoreScroll()
-  }, 100)
-})
-
-// Проверяем валидность токена при загрузке
-const checkAuth = async () => {
-  const authStore = useAuthStore()
-  
-  if (!authStore.initialized) {
-    await authStore.init()
-  }
-  
-  if (authStore.token && authStore.user) {
-    try {
-      await authStore.fetchUser()
-    } catch (error) {
-      console.error('Auth check failed:', error)
-      await authStore.logout()
-    }
-  }
-}
-
-// Жизненный цикл
-onMounted(() => {
-  restoreScroll()
-  checkAuth()
-  
-  document.addEventListener('visibilitychange', () => {
-    if (!document.hidden) {
-      restoreScroll()
-    }
-  })
-})
-
-// Восстанавливаем скролл при ошибке
-if (process.client) {
-  window.addEventListener('error', () => {
-    restoreScroll()
-  })
-}
+});
 </script>
 
 <style>

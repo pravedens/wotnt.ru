@@ -1,27 +1,19 @@
 import type { Post } from '~/types/sermon'
+import { useApi } from '~/composables/useApi'
+
+interface FavoritesResponse {
+    data?: Post[]
+    [key: string]: any
+}
 
 export const useFavorites = () => {
+    const { $api } = useApi()
     const authStore = useAuthStore()
     const router = useRouter()
     
     const favorites = ref<Post[]>([])
     const loading = ref(false)
     const error = ref<string | null>(null)
-
-    // Получение заголовков с Bearer токеном
-    const getHeaders = () => {
-        const headers: Record<string, string> = {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-        }
-        
-        const token = authStore.token
-        if (token) {
-            headers['Authorization'] = `Bearer ${token}`
-        }
-        
-        return headers
-    }
 
     // Загрузка избранных проповедей пользователя
     const loadFavorites = async () => {
@@ -34,10 +26,7 @@ export const useFavorites = () => {
         error.value = null
 
         try {
-            // ✅ Используем прокси
-            const response = await $fetch('/api/favorites', {
-                headers: getHeaders()
-            })
+            const response = await $api<Post[] | FavoritesResponse>('/favorites')
 
             // Обрабатываем ответ в зависимости от формата
             if (Array.isArray(response)) {
@@ -65,10 +54,9 @@ export const useFavorites = () => {
         }
 
         try {
-            await $fetch('/api/favorites', {
+            await $api('/favorites', {
                 method: 'POST',
-                body: { post_id: postId },
-                headers: getHeaders()
+                body: { post_id: postId }
             })
 
             await loadFavorites()
@@ -88,9 +76,8 @@ export const useFavorites = () => {
         }
 
         try {
-            await $fetch(`/api/favorites/${postId}`, {
-                method: 'DELETE',
-                headers: getHeaders()
+            await $api(`/favorites/${postId}`, {
+                method: 'DELETE'
             })
 
             await loadFavorites()
@@ -126,12 +113,8 @@ export const useFavorites = () => {
         }
 
         try {
-            const response = await $fetch<{ is_favorite: boolean }>(`/api/favorites/check/${postId}`, {
-                headers: getHeaders()
-            })
-
+            const response = await $api<{ is_favorite: boolean }>(`/favorites/check/${postId}`)
             return response?.is_favorite === true
-            
         } catch (err) {
             console.error('Error checking favorite status:', err)
             return false

@@ -39,7 +39,7 @@
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
-          <span>{{ event?.display_date_time || formatDate(event?.event_date) }}</span>
+          <span>{{ displayDateTime }}</span>
         </div>
         
         <!-- Состояние загрузки -->
@@ -89,23 +89,19 @@ defineEmits<{
 const imageUrl = computed(() => {
   if (!props.event?.thumbnail) return null
   
-  // Если уже полный URL
   if (props.event.thumbnail.startsWith('http')) {
     return props.event.thumbnail
   }
   
-  // Если путь начинается с events/thumbnails/ (новый формат S3)
   if (props.event.thumbnail.startsWith('events/thumbnails/')) {
     return `https://storage.yandexcloud.net/wotgospel-media/${props.event.thumbnail}`
   }
   
-  // Если путь начинается с public/ (старый формат)
   if (props.event.thumbnail.startsWith('public/')) {
     return `https://wotgospel.ru/storage/${props.event.thumbnail.replace('public/', '')}`
   }
   
-  // Fallback для старого формата
-  return `https://wotgospel.ru/storage/${props.event.thumbnail.replace('public/', '')}`
+  return `https://wotgospel.ru/storage/${props.event.thumbnail}`
 })
 
 // Форматирование даты
@@ -118,6 +114,26 @@ const formatDate = (dateString: string) => {
     year: 'numeric' 
   })
 }
+
+// ⭐ Отображаемая дата и время
+const displayDateTime = computed(() => {
+  if (!props.event) return ''
+  
+  const parts = []
+  
+  // Дата
+  const dateStr = props.event?.display_date_time || formatDate(props.event?.event_date) || formatDate(props.event?.startDate)
+  if (dateStr) {
+    parts.push(dateStr)
+  }
+  
+  // Время из поля time (уже локальное)
+  if (props.event?.time && props.event.time !== '') {
+    parts.push(props.event.time)
+  }
+  
+  return parts.join(' • ') || 'Дата уточняется'
+})
 </script>
 
 <style scoped>

@@ -6,6 +6,17 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
             await authStore.init()
         }
         
+        // ✅ Пропускаем страницу сброса пароля
+        if (to.path === '/auth/reset-password') {
+            return
+        }
+        
+        // ✅ Если не авторизован, но токен есть - пробуем восстановить сессию
+        if (!authStore.isAuthenticated && authStore.token) {
+            console.log('🔄 Attempting to restore session...')
+            await authStore.fetchUser()
+        }
+        
         if (!authStore.isAuthenticated) {
             return navigateTo({
                 path: '/auth/login',
