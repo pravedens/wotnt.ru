@@ -84,6 +84,7 @@
 import { useChatStore } from '~/stores/chat'
 import { useNotificationStore } from '~/stores/notification'
 import { useAuthStore } from '~/stores/auth'
+import { useApi } from '~/composables/useApi'  // ✅ ДОБАВЛЕН ИМПОРТ
 import ChatList from '~/components/chat/ChatList.vue'
 import ChatWindow from '~/components/chat/ChatWindow.vue'
 
@@ -99,6 +100,7 @@ const emit = defineEmits<{
 const chatStore = useChatStore()
 const notificationStore = useNotificationStore()
 const authStore = useAuthStore()
+const { $api } = useApi()  // ✅ ДОБАВЛЕНО
 
 const selectedConversationId = ref<number | null>(null)
 const selectedStudent = ref<any | null>(null)
@@ -160,12 +162,9 @@ const sendFirstMessage = async () => {
 
   sending.value = true
   try {
-    const response = await $fetch('/api/bible-school/chat/send', {
+    // ✅ Используем $api вместо $fetch
+    const response = await $api('/bible-school/chat/send', {
       method: 'POST',
-      headers: {
-        Authorization: `Bearer ${authStore.token}`,
-        'Content-Type': 'application/json'
-      },
       body: {
         receiver_id: selectedStudent.value.id,
         message: newMessage.value.trim()

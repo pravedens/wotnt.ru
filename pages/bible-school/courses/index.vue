@@ -55,11 +55,14 @@
 <script setup lang="ts">
 import { useAuthStore } from '~/stores/auth';
 import { useImageUrl } from '~/composables/useImageUrl';
+import { useApi } from '~/composables/useApi';  // ✅ ДОБАВЛЕН ИМПОРТ
 
 definePageMeta({ layout: 'default' });
 
 const authStore = useAuthStore();
 const { getImageUrl } = useImageUrl();
+const { $api } = useApi();  // ✅ ДОБАВЛЕНО
+
 const courses = ref<any[]>([]);
 const loading = ref(true);
 
@@ -71,9 +74,8 @@ const stripTags = (html: string | null | undefined): string => {
 
 const fetchCourses = async () => {
   try {
-    const response = await $fetch('/api/bible-school/courses', {
-      headers: authStore.token ? { Authorization: `Bearer ${authStore.token}` } : {}
-    });
+    // ✅ Используем $api вместо $fetch
+    const response = await $api('/bible-school/courses');
     courses.value = response.courses || [];
   } catch (err) {
     console.error('Fetch courses error:', err);

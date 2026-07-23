@@ -1,5 +1,6 @@
 import Echo from 'laravel-echo'
 import Pusher from 'pusher-js'
+import { useApi } from '~/composables/useApi'  // ✅ ДОБАВЛЕН ИМПОРТ
 
 declare global {
     interface Window {
@@ -10,6 +11,7 @@ declare global {
 export default defineNuxtPlugin(() => {
     const config = useRuntimeConfig()
     const authStore = useAuthStore()
+    const { $api } = useApi()  // ✅ ДОБАВЛЕНО
 
     window.Pusher = Pusher
 
@@ -44,13 +46,9 @@ export default defineNuxtPlugin(() => {
             return {
                 authorize: async (socketId: string, callback: Function) => {
                     try {
-                        const response: any = await $fetch('https://wotgospel.ru/api/broadcasting/auth', {
+                        // ✅ Исправлено: используем $api вместо $fetch с жёсткой ссылкой
+                        const response: any = await $api('/broadcasting/auth', {
                             method: 'POST',
-                            headers: {
-                                Authorization: authStore.token ? `Bearer ${authStore.token}` : '',
-                                Accept: 'application/json',
-                                'Content-Type': 'application/json',
-                            },
                             body: {
                                 socket_id: socketId,
                                 channel_name: channel.name,

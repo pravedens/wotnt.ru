@@ -94,7 +94,6 @@
         <section class="mb-8">
           <h2 class="text-2xl font-semibold text-white text-center mb-4">Поделиться проповедью</h2>
           <div class="flex flex-wrap gap-3 justify-center">
-            <!-- ⭐ Новая кнопка "Ссылка" вместо ВКонтакте -->
             <button
               @click="copyLinkToClipboard"
               class="flex items-center gap-2 px-5 py-2.5 bg-gray-600 hover:bg-gray-700 text-white rounded-xl transition-all shadow-lg hover:shadow-xl cursor-pointer"
@@ -121,29 +120,29 @@
         </section>
         
         <!-- Видео Rutube -->
-<ClientOnly v-if="post.rutube">
-  <section class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 mb-8">
-    <h2 class="text-2xl font-semibold text-white mb-3">Видео проповеди на Rutube</h2>
-    <div class="aspect-video rounded-lg overflow-hidden">
-      <iframe 
-        width="100%" 
-        height="100%" 
-        :src="`https://rutube.ru/play/embed/${post.rutube}`"
-        frameborder="0" 
-        allow="clipboard-write; autoplay"
-        allowfullscreen
-        loading="lazy"
-        :title="`Видео проповеди: ${post.title}`"
-        referrerpolicy="strict-origin-when-cross-origin"
-        sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-presentation"
-      ></iframe>
-    </div>
-  </section>
-  
-  <template #fallback>
-    <div class="aspect-video bg-white/5 rounded-lg animate-pulse"></div>
-  </template>
-</ClientOnly>
+        <ClientOnly v-if="post.rutube">
+          <section class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 mb-8">
+            <h2 class="text-2xl font-semibold text-white mb-3">Видео проповеди на Rutube</h2>
+            <div class="aspect-video rounded-lg overflow-hidden">
+              <iframe 
+                width="100%" 
+                height="100%" 
+                :src="`https://rutube.ru/play/embed/${post.rutube}`"
+                frameborder="0" 
+                allow="clipboard-write; autoplay"
+                allowfullscreen
+                loading="lazy"
+                :title="`Видео проповеди: ${post.title}`"
+                referrerpolicy="strict-origin-when-cross-origin"
+                sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-presentation"
+              ></iframe>
+            </div>
+          </section>
+          
+          <template #fallback>
+            <div class="aspect-video bg-white/5 rounded-lg animate-pulse"></div>
+          </template>
+        </ClientOnly>
         
         <!-- Другие источники просмотра -->
         <section v-if="hasMediaLinks" class="mb-8">
@@ -226,23 +225,75 @@ import PostsBreadcrumbs from '~/components/posts/Breadcrumbs.vue'
 import AudioPlayer from '~/components/posts/AudioPlayer.vue'
 import TextFile from '~/components/posts/TextFile.vue'
 import CommentSection from '~/components/comments/CommentSection.vue'
+import { useApi } from '~/composables/useApi'
+
+// ✅ Добавляем интерфейс для проповеди
+interface Category {
+  id: number
+  title: string
+  slug: string
+}
+
+interface Group {
+  id: number
+  title: string
+  slug: string
+}
+
+interface Conference {
+  id: number
+  title: string
+  slug: string
+}
+
+interface Sermon {
+  id: number
+  title: string
+  slug: string
+  thumbnail?: string
+  thumbnail_url?: string
+  description?: string
+  content?: string
+  clean_description?: string
+  clean_content?: string
+  created_at?: string
+  updated_at?: string
+  views?: number
+  category?: Category
+  group?: Group
+  conference?: Conference
+  youtube?: string
+  dzen?: string
+  vkVideo?: string
+  rutube?: string
+  audio_url?: string
+  audio_filename?: string
+  audio_size_formatted?: string
+  text_url?: string
+  text_filename?: string
+  display_text_filename?: string
+  text_size_formatted?: string
+  text_mime?: string
+  og_image?: string
+}
 
 const route = useRoute()
 const router = useRouter()
 const statsStore = useStatsStore()
+const { $api } = useApi()
 
 // Получаем slug из параметров
 const slug = computed(() => route.params.slug as string)
 
-// Загружаем данные с прямым URL API
-const { data: post, pending, error: fetchError } = useAsyncData(
+// ✅ Исправлено: добавляем тип и убираем initialCache
+const { data: post, pending, error: fetchError } = useAsyncData<Sermon>(
   () => `post-${slug.value}`,
   async () => {
-    return await $fetch(`https://wotgospel.ru/api/posts/${slug.value}`)
+    return await $api<Sermon>(`/posts/${slug.value}`)
   },
   { 
-    server: true,
-    initialCache: false
+    server: true
+    // ✅ Убираем initialCache — его нет в Nuxt 3
   }
 )
 
@@ -253,18 +304,29 @@ const error = computed(() => {
 })
 
 // ============================================
+// КОНФИГУРАЦИЯ
+// ============================================
+const config = useRuntimeConfig()
+const { apiBase, storageUrl, siteUrl } = config.public
+
+// ============================================
 // YANDEX METRIKA ТРЕКИНГ
 // ============================================
 
+// ✅ Расширяем Window интерфейс
+declare global {
+  interface Window {
+    ym?: (counterId: number, action: string, eventName: string, params?: Record<string, any>) => void
+    showNotification?: (message: string, type?: 'success' | 'error' | 'warning' | 'info') => void
+  }
+}
+
 // Отправка события в Яндекс.Метрику
 const trackEvent = (eventName: string, eventParams: Record<string, any> = {}) => {
-  if (process.client) {
-    
-    // Яндекс.Метрика
+  if (import.meta.client) { // ✅ Заменяем process.client на import.meta.client
     if (typeof window !== 'undefined' && window.ym) {
       window.ym(95320948, 'reachGoal', eventName, eventParams)
     }
-    
   }
 }
 
@@ -275,14 +337,13 @@ const copyLinkToClipboard = async () => {
   try {
     await navigator.clipboard.writeText(url)
     
-    // Уведомление пользователю
+    // ✅ Используем стандартный Notification API
     if (window.showNotification) {
       window.showNotification('Ссылка скопирована!', 'success')
     } else {
       alert('Ссылка скопирована в буфер обмена')
     }
     
-    // Трекинг
     trackEvent('copy_link', {
       event_category: 'share',
       event_label: 'Copy Link',
@@ -297,33 +358,36 @@ const copyLinkToClipboard = async () => {
 
 // Отслеживание прослушивания аудио
 const trackAudioPlay = () => {
+  if (!post.value) return
   trackEvent('audio_play', {
     event_category: 'sermons',
-    event_label: post.value?.title,
-    sermon_id: post.value?.id,
-    sermon_slug: post.value?.slug
+    event_label: post.value.title,
+    sermon_id: post.value.id,
+    sermon_slug: post.value.slug
   })
 }
 
 // Отслеживание скачивания файлов
 const trackFileDownload = (fileType: string) => {
+  if (!post.value) return
   trackEvent('file_download', {
     event_category: 'sermons',
-    event_label: `${fileType} - ${post.value?.title}`,
+    event_label: `${fileType} - ${post.value.title}`,
     file_type: fileType,
-    sermon_id: post.value?.id,
-    sermon_title: post.value?.title
+    sermon_id: post.value.id,
+    sermon_title: post.value.title
   })
 }
 
 // Отслеживание внешних ссылок
 const trackExternalLink = (platform: string) => {
+  if (!post.value) return
   trackEvent('external_link_click', {
     event_category: 'social',
     event_label: platform,
     platform: platform,
-    sermon_id: post.value?.id,
-    sermon_title: post.value?.title
+    sermon_id: post.value.id,
+    sermon_title: post.value.title
   })
 }
 
@@ -335,12 +399,13 @@ const shareOnOK = () => {
 
 // Отслеживание шаринга в OK
 const handleShareOK = () => {
+  if (!post.value) return
   trackEvent('share', {
     event_category: 'social',
     event_label: 'Odnoklassniki',
     platform: 'ok',
-    sermon_id: post.value?.id,
-    sermon_title: post.value?.title
+    sermon_id: post.value.id,
+    sermon_title: post.value.title
   })
   shareOnOK()
 }
@@ -407,16 +472,16 @@ const imageUrl = computed(() => {
   if (post.value.thumbnail) {
     if (post.value.thumbnail.startsWith('http')) return post.value.thumbnail
     if (post.value.thumbnail.startsWith('posts/')) {
-      return `https://storage.yandexcloud.net/wotgospel-media/${post.value.thumbnail}`
+      return `${storageUrl}/${post.value.thumbnail}`
     }
-    return `https://wotgospel.ru/storage/${post.value.thumbnail.replace('public/', '')}`
+    return `${apiBase}/storage/${post.value.thumbnail.replace('public/', '')}`
   }
   return null
 })
 
 // Полный URL текущей страницы
 const currentUrl = computed(() => {
-  return `https://wotnt.ru${route.fullPath}`
+  return `${siteUrl}${route.fullPath}`
 })
 
 // Очищенное описание (без HTML)
@@ -426,7 +491,7 @@ const cleanDescription = computed(() => {
 })
 
 // Форматированная дата
-const formatDate = (dateString: string) => {
+const formatDate = (dateString?: string) => {
   if (!dateString) return ''
   const d = new Date(dateString)
   return `${d.getDate()} ${d.toLocaleString('ru-RU', { month: 'long' })} ${d.getFullYear()}`
@@ -461,8 +526,7 @@ const shareTitle = computed(() => {
 const socialImage = computed(() => {
   if (post.value?.og_image) return post.value.og_image
   if (imageUrl.value && !imageUrl.value.endsWith('.webp')) return imageUrl.value
-
-  return 'https://storage.yandexcloud.net/wotgospel-media/og-images/default-og-image.jpg'
+  return `${storageUrl}/og-images/default-og-image.jpg`
 })
 
 // SEO мета-теги
@@ -488,8 +552,8 @@ useServerSeoMeta({
   twitterImage: () => socialImage.value
 })
 
-// Добавляем VK-specific мета-теги
-useHead(() => ({
+// ✅ Исправлено: добавляем правильную типизацию для useHead
+useHead({
   meta: [
     {
       name: 'description', 
@@ -509,29 +573,29 @@ useHead(() => ({
     },
     {
       property: 'vk:image',
-      content: socialImage.value
+      content: socialImage.value || ''
     }
   ],
   link: [
     { rel: 'canonical', href: currentUrl.value },
     ...(imageUrl.value ? [{
-      rel: 'preload',
-      as: 'image',
+      rel: 'preload' as const,
+      as: 'image' as const,
       href: imageUrl.value
     }] : [])
   ]
-}))
+})
 
 // Проверка наличия медиа-ссылок
 const hasMediaLinks = computed(() => {
-  return post.value?.youtube || post.value?.dzen || post.value?.vkVideo || post.value?.audio || post.value?.text
+  return !!(post.value?.youtube || post.value?.dzen || post.value?.vkVideo || post.value?.audio_url || post.value?.text_url)
 })
 
 // Отслеживаем просмотр после загрузки
 watch(
   () => post.value?.id,
   async (id) => {
-    if (!id || !process.client) return
+    if (!id || !import.meta.client) return // ✅ import.meta.client
     
     await statsStore.trackView(id)
     await statsStore.fetchPostStats(id)

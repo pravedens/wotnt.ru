@@ -4,7 +4,6 @@
       <NuxtPage />
     </NuxtLayout>
 
-    <!-- Все компоненты, которые не нужны при первой загрузке, загружаем только на клиенте -->
     <ClientOnly>
       <CookieBanner />
       <IOSInstallGuide />
@@ -18,10 +17,9 @@
       </div>
     </noscript>
 
-    <!-- Уведомление об обновлении -->
     <div v-if="needRefresh" class="fixed bottom-4 right-4 z-50 bg-blue-600 text-white p-4 rounded-lg shadow-lg max-w-sm">
       <p class="mb-2">Доступна новая версия сайта!</p>
-      <button 
+      <button
         @click="refreshApp"
         class="bg-white text-blue-600 px-4 py-2 rounded-lg hover:bg-gray-100 transition w-full"
       >
@@ -32,8 +30,16 @@
 </template>
 
 <script setup>
+import { useRuntimeConfig } from '#app'
+
 // ============================================
-// АСИНХРОННЫЕ ИМПОРТЫ (загружаются только когда понадобятся)
+// ПОЛУЧАЕМ КОНФИГУРАЦИЮ
+// ============================================
+const config = useRuntimeConfig()
+const { siteUrl, storageUrl } = config.public
+
+// ============================================
+// АСИНХРОННЫЕ ИМПОРТЫ
 // ============================================
 const CookieBanner = defineAsyncComponent(() => import('~/components/CookieBanner.vue'))
 const IOSInstallGuide = defineAsyncComponent(() => import('~/components/IOSInstallGuide.vue'))
@@ -49,34 +55,22 @@ const router = useRouter()
 // ============================================
 // PWA INSTALL PROMPT
 // ============================================
-
-let deferredPrompt = null;
+let deferredPrompt = null
 
 const handleBeforeInstallPrompt = (e) => {
-  e.preventDefault();
-  deferredPrompt = e;
-  
-  const event = new CustomEvent('pwa-install-ready', { detail: { deferredPrompt: e } });
-  window.dispatchEvent(event);
-}
-
-const showInstallPrompt = () => {
-  if (deferredPrompt) {
-    deferredPrompt.prompt();
-    deferredPrompt.userChoice.then((choiceResult) => {
-      deferredPrompt = null;
-    });
-  }
+  e.preventDefault()
+  deferredPrompt = e
+  const event = new CustomEvent('pwa-install-ready', { detail: { deferredPrompt: e } })
+  window.dispatchEvent(event)
 }
 
 // ============================================
-// PROTOCOL HANDLER SUPPORT
+// PROTOCOL HANDLER
 // ============================================
-
 const registerProtocolHandler = () => {
   if (process.client && 'registerProtocolHandler' in navigator) {
     try {
-      navigator.registerProtocolHandler('web+wotnt', 'https://wotnt.ru/?from=%s');
+      navigator.registerProtocolHandler('web+wotnt', `${siteUrl}/?from=%s`)
     } catch (e) {
       // Ошибка регистрации protocol handler
     }
@@ -85,133 +79,117 @@ const registerProtocolHandler = () => {
 
 const handleProtocolHandler = () => {
   if (process.client) {
-    const urlParams = new URLSearchParams(window.location.search);
-    const fromProtocol = urlParams.get('from');
-    
+    const urlParams = new URLSearchParams(window.location.search)
+    const fromProtocol = urlParams.get('from')
+
     if (fromProtocol) {
-      const newUrl = window.location.pathname;
-      window.history.replaceState({}, '', newUrl);
-      
+      const newUrl = window.location.pathname
+      window.history.replaceState({}, '', newUrl)
+
       if (fromProtocol.startsWith('event/')) {
-        const eventSlug = fromProtocol.replace('event/', '');
-        setTimeout(() => router.push(`/events/${eventSlug}`), 100);
+        const eventSlug = fromProtocol.replace('event/', '')
+        setTimeout(() => router.push(`/events/${eventSlug}`), 100)
       } else if (fromProtocol.startsWith('post/')) {
-        const postSlug = fromProtocol.replace('post/', '');
-        setTimeout(() => router.push(`/posts/${postSlug}`), 100);
+        const postSlug = fromProtocol.replace('post/', '')
+        setTimeout(() => router.push(`/posts/${postSlug}`), 100)
       } else if (fromProtocol === 'events') {
-        setTimeout(() => router.push('/events'), 100);
+        setTimeout(() => router.push('/events'), 100)
       } else if (fromProtocol === 'contacts') {
-        setTimeout(() => router.push('/contacts'), 100);
+        setTimeout(() => router.push('/contacts'), 100)
       }
     }
   }
 }
 
 // ============================================
-// SERVICE WORKER UPDATE HANDLER
+// SERVICE WORKER
 // ============================================
-
 if (process.client && 'serviceWorker' in navigator) {
   navigator.serviceWorker.addEventListener('controllerchange', () => {
-    window.location.reload();
-  });
+    window.location.reload()
+  })
 }
 
 const handleAppUpdate = (event) => {
-  needRefresh.value = true;
-};
+  needRefresh.value = true
+}
 
 // ============================================
 // ВАЛИДАЦИЯ ВЕРСИИ
 // ============================================
-
 const isValidVersion = (version) => {
-  if (!version) return false;
-  return /^\d+$/.test(version) || /^\d+\.\d+\.\d+$/.test(version);
-};
+  if (!version) return false
+  return /^\d+$/.test(version) || /^\d+\.\d+\.\d+$/.test(version)
+}
 
 const cleanupInvalidVersion = () => {
   if (process.client) {
-    const savedVersion = localStorage.getItem('app_version');
+    const savedVersion = localStorage.getItem('app_version')
     if (!isValidVersion(savedVersion)) {
-      localStorage.removeItem('app_version');
+      localStorage.removeItem('app_version')
     }
   }
 }
 
-// ============================================
-// ПРОВЕРКА ВЕРСИИ
-// ============================================
-
 const forceVersionCheck = async () => {
   if (process.client) {
-    await checkVersion();
+    await checkVersion()
   }
 }
 
-// ============================================
-// ВОССТАНОВЛЕНИЕ СКРОЛЛА
-// ============================================
-
 const restoreScroll = () => {
   if (process.client) {
-    document.body.style.overflow = '';
-    document.body.style.position = '';
-    document.body.style.top = '';
-    document.body.style.width = '';
-    document.documentElement.style.overflow = '';
+    document.body.style.overflow = ''
+    document.body.style.position = ''
+    document.body.style.top = ''
+    document.body.style.width = ''
+    document.documentElement.style.overflow = ''
   }
 }
 
 // ============================================
 // ИНИЦИАЛИЗАЦИЯ
 // ============================================
-
 if (process.client) {
-  cleanupInvalidVersion();
-  
+  cleanupInvalidVersion()
+
   onMounted(async () => {
-    registerProtocolHandler();
-    handleProtocolHandler();
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    window.addEventListener('app-update-available', handleAppUpdate);
-    
-    await forceVersionCheck();
-    startPeriodicCheck(5 * 60 * 1000);
-    
-    restoreScroll();
+    registerProtocolHandler()
+    handleProtocolHandler()
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+    window.addEventListener('app-update-available', handleAppUpdate)
+
+    await forceVersionCheck()
+    startPeriodicCheck(5 * 60 * 1000)
+
+    restoreScroll()
     document.addEventListener('visibilitychange', () => {
-      if (!document.hidden) restoreScroll();
-    });
-    window.addEventListener('error', () => restoreScroll());
-  });
-  
+      if (!document.hidden) restoreScroll()
+    })
+    window.addEventListener('error', () => restoreScroll())
+  })
+
   onUnmounted(() => {
-    stopPeriodicCheck();
-    window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    window.removeEventListener('app-update-available', handleAppUpdate);
-  });
+    stopPeriodicCheck()
+    window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+    window.removeEventListener('app-update-available', handleAppUpdate)
+  })
 }
 
-// ============================================
-// РОУТЕР
-// ============================================
-
 router.afterEach(() => {
-  setTimeout(() => restoreScroll(), 100);
-});
+  setTimeout(() => restoreScroll(), 100)
+})
 
 // ============================================
 // SEO META ТЕГИ
 // ============================================
-
 useHead({
   title: 'Церковь Слово Истины',
   meta: [
     { name: 'description', content: 'Проповеди и события церкви Слово Истины' },
     { property: 'og:title', content: 'Церковь Слово Истины' },
     { property: 'og:description', content: 'Проповеди и события церкви Слово Истины' },
-    { property: 'og:image', content: 'https://storage.yandexcloud.net/wotgospel-media/og-images/default-og-image.png' },
+    { property: 'og:image', content: `${storageUrl}/og-images/default-og-image.png` },
     { property: 'og:type', content: 'website' },
     { name: 'apple-mobile-web-app-capable', content: 'yes' },
     { name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' },
@@ -224,11 +202,10 @@ useHead({
     { rel: 'apple-touch-icon', href: '/favicon/apple-touch-icon.png' },
     { rel: 'icon', type: 'image/png', sizes: '32x32', href: '/favicon/favicon-32.png' }
   ]
-});
+})
 </script>
 
 <style>
-/* Глобальные стили для восстановления скролла */
 body {
   overflow: auto !important;
   position: relative !important;
@@ -236,7 +213,6 @@ body {
   width: auto !important;
 }
 
-/* Плавный скролл */
 html {
   scroll-behavior: smooth;
 }

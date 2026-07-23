@@ -31,6 +31,8 @@
 </template>
 
 <script setup lang="ts">
+import { useApi } from '~/composables/useApi'  // ✅ ДОБАВЛЕН ИМПОРТ
+
 interface BibleVerse {
   id: number
   title: string
@@ -38,6 +40,9 @@ interface BibleVerse {
   slug: string
   date: string | null
 }
+
+// ✅ ПОЛУЧАЕМ $api
+const { $api } = useApi()
 
 const verse = ref<BibleVerse | null>(null)
 const loading = ref(true)
@@ -55,7 +60,8 @@ const fetchVerseOfTheDay = async () => {
   error.value = null
   
   try {
-    const response = await $fetch<{ success: boolean; data: BibleVerse | null; message: string }>('/api/bible/verse-of-the-day')
+    // ✅ Используем $api вместо $fetch
+    const response = await $api<{ success: boolean; data: BibleVerse | null; message: string }>('/bible/verse-of-the-day')
     verse.value = response.data
   } catch (err: any) {
     console.error('Error fetching verse:', err)

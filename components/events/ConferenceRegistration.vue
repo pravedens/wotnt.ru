@@ -90,6 +90,7 @@
 <script setup lang="ts">
 import { useAuthStore } from '~/stores/auth'
 import { useNotificationStore } from '~/stores/notification'
+import { useApi } from '~/composables/useApi'  // ✅ ДОБАВЛЕН ИМПОРТ
 
 const props = defineProps<{
   event: {
@@ -112,6 +113,7 @@ const emit = defineEmits(['registered'])
 
 const authStore = useAuthStore()
 const notificationStore = useNotificationStore()
+const { $api } = useApi()  // ✅ ДОБАВЛЕНО
 
 const loading = ref(false)
 const submitting = ref(false)
@@ -147,9 +149,8 @@ const checkRegistration = async () => {
   if (!authStore.isAuthenticated) return
   
   try {
-    const data = await $fetch(`/api/events/${props.event.id}/my-registration`, {
-      headers: { 'Authorization': `Bearer ${authStore.token}` }
-    })
+    // ✅ Используем $api вместо $fetch
+    const data = await $api(`/events/${props.event.id}/my-registration`)
     
     if (data.registered) {
       isRegistered.value = true
@@ -179,13 +180,10 @@ const submitRegistration = async () => {
   submitting.value = true
   
   try {
-    const data = await $fetch(`/api/events/${props.event.id}/register`, {
+    // ✅ Используем $api вместо $fetch
+    const data = await $api(`/events/${props.event.id}/register`, {
       method: 'POST',
-      body: { selected_service_ids: selectedServiceIds.value },
-      headers: {
-        'Authorization': `Bearer ${authStore.token}`,
-        'Content-Type': 'application/json'
-      }
+      body: { selected_service_ids: selectedServiceIds.value }
     })
     
     if (data.success) {

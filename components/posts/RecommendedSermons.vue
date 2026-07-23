@@ -48,14 +48,17 @@
 <script setup lang="ts">
 import { useStatsStore } from '~/stores/stats'
 import PostCard from '~/components/posts/PostCard.vue'
+import { useApi } from '~/composables/useApi'
+import type { Post } from '~/types/sermon'
 
 const props = defineProps<{
   limit?: number
 }>()
 
 const statsStore = useStatsStore()
+const { $api } = useApi()
 
-const sermons = ref<any[]>([])
+const sermons = ref<Post[]>([]) 
 const loading = ref(true)
 const error = ref<string | null>(null)
 
@@ -65,14 +68,15 @@ const loadRecommendedSermons = async () => {
   error.value = null
   
   try {
-    const response = await $fetch('/api/posts/random', {
-      params: {
+    // ✅ Указываем тип ответа
+    const response = await $api<Post[]>('/posts/random', {
+      query: {
         limit: props.limit || 4
       }
     })
     
-    
-    sermons.value = response || []
+    // ✅ Проверяем, что response - это массив
+    sermons.value = Array.isArray(response) ? response : []
     
     // Загружаем статистику для каждой проповеди
     await Promise.all(
@@ -84,6 +88,7 @@ const loadRecommendedSermons = async () => {
   } catch (err: any) {
     console.error('❌ Error loading recommended sermons:', err)
     error.value = 'Не удалось загрузить проповеди'
+    sermons.value = [] // ✅ Сбрасываем на пустой массив при ошибке
   } finally {
     loading.value = false
   }

@@ -30,6 +30,12 @@
 <script setup>
 import { computed } from 'vue'
 
+// ============================================
+// ПОЛУЧАЕМ КОНФИГУРАЦИЮ
+// ============================================
+const config = useRuntimeConfig()
+const { apiBase, storageUrl } = config.public
+
 const props = defineProps({
   src: {
     type: String,
@@ -106,16 +112,16 @@ const avatarUrl = computed(() => {
   
   // Если аватар на S3 (Yandex Cloud)
   if (props.src.startsWith('avatars/')) {
-    return `https://storage.yandexcloud.net/wotgospel-media/${props.src}`
+    return `${storageUrl}/${props.src}` 
   }
   
   // Если путь начинается с storage/
-  if (props.src.startsWith('storage/')) {
-    return `https://wotgospel.ru/${props.src}`
+ if (props.src.startsWith('storage/')) {
+    return `${apiBase}/${props.src}`  
   }
   
   // Fallback для локальных аватаров
-  return `https://wotgospel.ru/storage/${props.src}`
+  return `${apiBase}/storage/${props.src}` 
 })
 
 const initials = computed(() => {

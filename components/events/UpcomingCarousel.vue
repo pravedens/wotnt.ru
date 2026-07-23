@@ -1,10 +1,10 @@
 <template>
   <Head>
     <link 
-      v-if="events.length && events[0].thumbnail"
+      v-if="events.length && events[0]?.thumbnail"
       rel="preload" 
       as="image" 
-      :href="getImageUrl(events[0].thumbnail)"
+      :href="getImageUrl(events[0].thumbnail) ?? undefined"
       fetchpriority="high"
     />
   </Head>
@@ -61,7 +61,7 @@
         <!-- Текущий слайд -->
         <div class="transition-all duration-500 ease-out">
           <NuxtLink
-            :to="`/events/${events[currentIndex].slug}`"
+            :to="`/events/${currentEvent?.slug || ''}`"
             class="block group"
           >
             <div class="relative rounded-xl sm:rounded-2xl overflow-hidden border border-white/20 hover:border-white/40 transition-all">
@@ -69,9 +69,9 @@
               <!-- Изображение с затемнением -->
               <div class="relative w-full aspect-[4/3] overflow-hidden bg-gray-100">
                 <NuxtImg
-                  v-if="events[currentIndex].thumbnail"
-                  :src="getImageUrl(events[currentIndex].thumbnail)"
-                  :alt="events[currentIndex].title"
+                  v-if="currentEvent?.thumbnail"
+                  :src="getImageUrl(currentEvent.thumbnail) ?? undefined"
+                  :alt="currentEvent?.title || 'Событие'"
                   width="1024"
                   height="768"
                   format="webp"
@@ -99,7 +99,7 @@
 
               <!-- Индикатор "только для прихожан" -->
               <div 
-                v-if="events[currentIndex].members_only && !isAdmin"
+                v-if="currentEvent?.members_only && !isAdmin"
                 class="absolute top-3 left-3 sm:top-4 sm:left-4 bg-yellow-500/80 backdrop-blur-sm px-2 py-1 rounded-full border border-yellow-300/50 text-white text-xs z-10"
               >
                 🔒 Только для прихожан
@@ -117,12 +117,12 @@
 
                 <!-- Заголовок -->
                 <h3 class="text-sm sm:text-xl md:text-2xl font-bold text-white mb-0.5 sm:mb-2 group-hover:text-blue-300 transition line-clamp-1 sm:line-clamp-2">
-                  {{ events[currentIndex].title }}
+                  {{ currentEvent?.title || 'Без названия' }}
                 </h3>
 
                 <!-- Описание (только на планшетах и выше) -->
-                <p v-if="events[currentIndex].description && !isMobile" class="text-white/70 text-xs sm:text-sm line-clamp-2 max-w-2xl mb-1 sm:mb-3">
-                  {{ events[currentIndex].description }}
+                <p v-if="currentEvent?.description && !isMobile" class="text-white/70 text-xs sm:text-sm line-clamp-2 max-w-2xl mb-1 sm:mb-3">
+                  {{ currentEvent?.description }}
                 </p>
 
                 <!-- Кнопка подробнее -->
@@ -165,7 +165,7 @@
         <!-- Пагинация (точки) -->
         <div class="flex justify-center gap-1 sm:gap-2 mt-2 sm:mt-4">
           <button
-            v-for="(event, index) in events"
+            v-for="(_, index) in events"
             :key="`dot-${index}`"
             @click="goToSlide(index)"
             class="h-1 sm:h-2 rounded-full border border-white/20 transition-colors duration-300"
@@ -182,8 +182,16 @@
 import { useAuthStore } from '~/stores/auth'
 import { storeToRefs } from 'pinia'
 import { useWindowSize } from '@vueuse/core'
+import { useApi } from '~/composables/useApi'  // ✅ ДОБАВЛЕН ИМПОРТ
 
-// Типы
+// ============================================
+// ПОЛУЧАЕМ КОНФИГУРАЦИЮ
+// ============================================
+const config = useRuntimeConfig()
+const { apiBase, storageUrl, carouselLimit } = config.public
+const { $api } = useApi()  // ✅ ДОБАВЛЕНО
+
+// Интерфейсы
 interface Event {
   id: number
   title: string
@@ -192,9 +200,14 @@ interface Event {
   description?: string
   startDate?: string
   startTime?: string
+  time?: string
   members_only?: boolean
   is_published?: boolean
   is_past?: boolean
+}
+
+interface EventsResponse {
+  data: Event[]
 }
 
 // Props
@@ -203,7 +216,6 @@ const props = defineProps<{
 }>()
 
 // Composables
-const config = useRuntimeConfig()
 const authStore = useAuthStore()
 const { isAdmin } = storeToRefs(authStore)
 const { width } = useWindowSize()
@@ -222,16 +234,19 @@ const touchEndX = ref(0)
 const minSwipeDistance = 50
 
 // Вычисляемые значения
-const limit = computed(() => props.limit || config.public.carouselLimit || 6)
+const limit = computed(() => props.limit || carouselLimit || 6)
 const isMobile = computed(() => width.value < 768)
 
-// 🔥 ОПТИМИЗАЦИЯ: вычисляем дату один раз, а не при каждом рендере
+const currentEvent = computed<Event | undefined>(() => {
+  return events.value[currentIndex.value]
+})
+
 const currentEventDate = computed(() => {
-  const event = events.value[currentIndex.value]
+  const event = currentEvent.value
   if (!event) return 'Дата уточняется'
   
   const parts: string[] = []
-  if (event?.startDate) {
+  if (event.startDate) {
     const date = new Date(event.startDate)
     parts.push(
       date.toLocaleDateString('ru-RU', {
@@ -240,35 +255,40 @@ const currentEventDate = computed(() => {
       })
     )
   }
-  if (event?.time && event.time !== '') {
-    parts.push(event.time)
+  const timeValue = event.startTime || event.time
+  if (timeValue && timeValue !== '') {
+    parts.push(timeValue)
   }
   return parts.join(' • ') || 'Дата уточняется'
 })
 
-// Получение URL изображения
-const getImageUrl = (thumbnail: string): string | null => {
-  if (!thumbnail) return null
+const getImageUrl = (thumbnail: string | undefined): string | undefined => {
+  if (!thumbnail) return undefined
 
   if (thumbnail.startsWith('http')) {
     return thumbnail
   }
 
   if (thumbnail.startsWith('events/thumbnails/')) {
-    return `https://storage.yandexcloud.net/wotgospel-media/${thumbnail}`
+    return `${storageUrl}/${thumbnail}`
   }
 
   if (thumbnail.startsWith('public/')) {
-    return `https://wotgospel.ru/storage/${thumbnail.replace('public/', '')}`
+    return `${apiBase}/storage/${thumbnail.replace('public/', '')}`
   }
 
-  return `https://wotgospel.ru/storage/${thumbnail}`
+  return `${apiBase}/storage/${thumbnail}`
 }
 
-// Обработка ошибки изображения
-const handleImageError = (event: Event) => {
-  const img = event.target as HTMLImageElement
-  img.style.display = 'none'
+const handleImageError = (event: any) => {
+  try {
+    const target = event?.target || event?.currentTarget || event
+    if (target && target.tagName && target.tagName === 'IMG') {
+      target.style.display = 'none'
+    }
+  } catch (e) {
+    console.debug('Image error handling failed:', e)
+  }
 }
 
 // Загрузка событий
@@ -277,19 +297,20 @@ const loadUpcomingEvents = async () => {
   error.value = null
 
   try {
-    const response = await $fetch('/api/events/upcoming', {
-      params: { limit: limit.value }
+    // ✅ Используем $api вместо $fetch
+    const response = await $api<EventsResponse>('/events/upcoming', {
+      query: { limit: limit.value }  // ✅ используем query вместо params
     })
 
-    if (Array.isArray(response)) {
-      events.value = response
+    if (response && Array.isArray(response)) {
+      events.value = response as unknown as Event[]
     } else if (response?.data) {
       events.value = response.data
     } else {
       events.value = []
     }
 
-    if (currentIndex.value >= events.value.length) {
+    if (currentIndex.value >= events.value.length && events.value.length > 0) {
       currentIndex.value = 0
     }
 
@@ -309,7 +330,7 @@ const retryLoad = () => {
 
 // Навигация
 const prevSlide = () => {
-  if (!events.value.length) return
+  if (events.value.length === 0) return
   currentIndex.value = currentIndex.value === 0 
     ? events.value.length - 1 
     : currentIndex.value - 1
@@ -317,7 +338,7 @@ const prevSlide = () => {
 }
 
 const nextSlide = () => {
-  if (!events.value.length) return
+  if (events.value.length === 0) return
   currentIndex.value = currentIndex.value === events.value.length - 1 
     ? 0 
     : currentIndex.value + 1
@@ -333,11 +354,17 @@ const goToSlide = (index: number) => {
 
 // Свайп
 const onTouchStart = (e: TouchEvent) => {
-  touchStartX.value = e.touches[0].clientX
+  const touch = e.touches[0]
+  if (touch) {
+    touchStartX.value = touch.clientX
+  }
 }
 
 const onTouchMove = (e: TouchEvent) => {
-  touchEndX.value = e.touches[0].clientX
+  const touch = e.touches[0]
+  if (touch) {
+    touchEndX.value = touch.clientX
+  }
 }
 
 const onTouchEnd = () => {
@@ -358,7 +385,7 @@ const onTouchEnd = () => {
 // Автопрокрутка
 const startAutoplay = () => {
   if (isPaused.value) return
-  if (!events.value.length) return
+  if (events.value.length === 0) return
 
   if (autoplayInterval) {
     clearInterval(autoplayInterval)
@@ -366,7 +393,7 @@ const startAutoplay = () => {
 
   autoplayInterval = setInterval(() => {
     if (isPaused.value) return
-    if (!events.value.length) return
+    if (events.value.length === 0) return
     currentIndex.value = (currentIndex.value + 1) % events.value.length
   }, 6000)
 }
@@ -388,7 +415,7 @@ const pauseAutoplay = () => {
 
 const resumeAutoplay = () => {
   isPaused.value = false
-  if (!autoplayInterval && events.value.length) {
+  if (!autoplayInterval && events.value.length > 0) {
     startAutoplay()
   }
 }
@@ -511,6 +538,7 @@ img {
   display: -webkit-box;
   -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
+  line-clamp: 1;
   overflow: hidden;
 }
 
@@ -518,6 +546,7 @@ img {
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
+  line-clamp: 2;
   overflow: hidden;
 }
 

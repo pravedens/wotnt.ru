@@ -74,6 +74,7 @@
 import { useChatStore } from '~/stores/chat'
 import { useNotificationStore } from '~/stores/notification'
 import { useAuthStore } from '~/stores/auth'
+import { useApi } from '~/composables/useApi'  // ✅ ДОБАВЛЕН ИМПОРТ
 
 const props = defineProps<{
   conversationId: number
@@ -82,6 +83,7 @@ const props = defineProps<{
 const chatStore = useChatStore()
 const notificationStore = useNotificationStore()
 const authStore = useAuthStore()
+const { $api } = useApi()  // ✅ ДОБАВЛЕНО
 
 const messagesContainer = ref<HTMLElement | null>(null)
 const newMessage = ref('')
@@ -153,9 +155,9 @@ const sendTypingStarted = async () => {
   if (!props.conversationId || !authStore.isAuthenticated) return
 
   try {
-    await $fetch(`/api/bible-school/chat/conversations/${props.conversationId}/typing/start`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${authStore.token}` }
+    // ✅ Используем $api вместо $fetch
+    await $api(`/bible-school/chat/conversations/${props.conversationId}/typing/start`, {
+      method: 'POST'
     })
   } catch (error) {
     // Ошибка типинга не критична
@@ -173,9 +175,9 @@ const sendTypingStopped = async () => {
   }
 
   try {
-    await $fetch(`/api/bible-school/chat/conversations/${props.conversationId}/typing/stop`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${authStore.token}` }
+    // ✅ Используем $api вместо $fetch
+    await $api(`/bible-school/chat/conversations/${props.conversationId}/typing/stop`, {
+      method: 'POST'
     })
   } catch (error) {
     // Ошибка типинга не критична

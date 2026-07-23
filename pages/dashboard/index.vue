@@ -610,6 +610,7 @@ import { useRoute } from 'vue-router';
 import { useAuthStore } from '~/stores/auth'
 import { useNotificationStore } from '~/stores/notification'
 import { useFavorites } from '~/composables/useFavorites'
+import { useApi } from '~/composables/useApi'
 import Avatar from '~/components/auth/Avatar.vue'
 import NotificationSettings from '~/components/NotificationSettings.vue'
 import SocialLinksManager from '~/components/dashboard/SocialLinksManager.vue'
@@ -626,6 +627,7 @@ const authStore = useAuthStore()
 const notificationStore = useNotificationStore()
 const router = useRouter()
 const { favorites, loadFavorites } = useFavorites()
+const { $api } = useApi() 
 const favoritesCount = ref(0)
 const activeTab = ref('profile')
 const unreadMessagesCount = ref(0)
@@ -646,9 +648,7 @@ const registrationsLoading = ref(false)
 const loadMyRegistrations = async () => {
   registrationsLoading.value = true
   try {
-    const response = await $fetch('/api/user/registrations', {
-      headers: { 'Authorization': `Bearer ${authStore.token}` }
-    })
+    const response = await $api('/user/registrations')
     if (response.success) {
       myRegistrations.value = response.registrations
     }
@@ -693,9 +693,9 @@ const cancelRegistration = async (registrationId: number) => {
   if (!confirm('Вы уверены, что хотите отменить регистрацию?')) return
   
   try {
-    const response = await $fetch(`/api/registrations/${registrationId}/cancel`, {
-      method: 'PUT',
-      headers: { 'Authorization': `Bearer ${authStore.token}` }
+    // ✅ Используем $api вместо $fetch
+    const response = await $api(`/registrations/${registrationId}/cancel`, {
+      method: 'PUT'
     })
     if (response.success) {
       notificationStore.success('Регистрация отменена', response.message)
@@ -883,10 +883,10 @@ const uploadAvatar = async () => {
   const formData = new FormData()
   formData.append('avatar', selectedFile.value)
   try {
-    const response = await $fetch('https://wotgospel.ru/api/user/avatar', {
+    // ✅ Используем $api вместо $fetch с жёсткой ссылкой
+    const response = await $api('/user/avatar', {
       method: 'POST',
-      body: formData,
-      headers: { 'Authorization': `Bearer ${authStore.token}`, 'Accept': 'application/json' }
+      body: formData
     })
     if (response.avatar && user.value) {
       user.value.avatar = response.avatar
@@ -946,9 +946,10 @@ const updateProfile = async () => {
     updateData.new_password_confirmation = passwordForm.value.new_password_confirmation
   }
   try {
-    const response = await $fetch('https://wotgospel.ru/api/user/profile', {
-      method: 'PUT', body: updateData,
-      headers: { 'Authorization': `Bearer ${authStore.token}`, 'Accept': 'application/json', 'Content-Type': 'application/json' }
+    // ✅ Используем $api вместо $fetch с жёсткой ссылкой
+    const response = await $api('/user/profile', {
+      method: 'PUT',
+      body: updateData
     })
     if (response.user && user.value) {
       Object.assign(user.value, response.user)
@@ -975,9 +976,8 @@ const loadFavoritesCount = async () => {
 
 const loadEnrollmentStatus = async () => {
   try {
-    const response = await $fetch('/api/bible-school/enroll/status', {
-      headers: { 'Authorization': `Bearer ${authStore.token}` }
-    })
+    // ✅ Используем $api вместо $fetch
+    const response = await $api('/bible-school/enroll/status')
     if (response.is_enrolled) {
       isBibleStudent.value = true
     } else if (response.has_request) {
@@ -988,8 +988,8 @@ const loadEnrollmentStatus = async () => {
   }
 }
 
+
 const submitEnrollmentRequest = async () => {
-  // Проверяем, что анкета заполнена
   if (!profileForm.value.marital_status) {
     notificationStore.warning('Внимание', 'Пожалуйста, выберите семейное положение')
     return
@@ -1001,9 +1001,9 @@ const submitEnrollmentRequest = async () => {
   
   enrollmentLoading.value = true
   try {
-    const response = await $fetch('/api/bible-school/enroll', {
+    // ✅ Используем $api вместо $fetch
+    const response = await $api('/bible-school/enroll', {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${authStore.token}`, 'Content-Type': 'application/json' },
       body: {
         city: profileForm.value.city,
         church_name: profileForm.value.church_name,
@@ -1030,9 +1030,8 @@ const submitEnrollmentRequest = async () => {
 
 const loadStudentProgress = async () => {
   try {
-    const response = await $fetch('/api/bible-school/my/progress', {
-      headers: { 'Authorization': `Bearer ${authStore.token}` }
-    })
+    // ✅ Используем $api вместо $fetch
+    const response = await $api('/bible-school/my/progress')
     if (response.success) {
       overallProgress.value = response.overall
       bibleStudentLevel.value = response.overall?.level || 'Ученик'
@@ -1045,9 +1044,8 @@ const loadStudentProgress = async () => {
 
 const loadCertificates = async () => {
   try {
-    const response = await $fetch('/api/bible-school/my/certificates', {
-      headers: { 'Authorization': `Bearer ${authStore.token}` }
-    })
+    // ✅ Используем $api вместо $fetch
+    const response = await $api('/bible-school/my/certificates')
     if (response.success) {
       certificates.value = response.certificates || []
       certificatesCount.value = response.certificates?.length || 0
@@ -1059,9 +1057,8 @@ const loadCertificates = async () => {
 
 const loadMyParty = async () => {
   try {
-    const response = await $fetch('/api/bible-school/party/my', {
-      headers: { 'Authorization': `Bearer ${authStore.token}` }
-    })
+    // ✅ Используем $api вместо $fetch
+    const response = await $api('/bible-school/party/my')
     if (response.has_party) {
       myParty.value = response.party
     }
@@ -1073,9 +1070,9 @@ const loadMyParty = async () => {
 const joinParty = async () => {
   joinLoading.value = true
   try {
-    const response = await $fetch('/api/bible-school/party/join', {
+    // ✅ Используем $api вместо $fetch
+    const response = await $api('/bible-school/party/join', {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${authStore.token}`, 'Content-Type': 'application/json' },
       body: { join_code: joinCode.value.toUpperCase() }
     })
     if (response.success) {
@@ -1127,9 +1124,8 @@ const savingBibleSchoolSettings = ref(false)
 
 const loadBibleSchoolNotificationSettings = async () => {
   try {
-    const response = await $fetch('/api/user/notification-settings', {
-      headers: { 'Authorization': `Bearer ${authStore.token}` }
-    })
+    // ✅ Используем $api вместо $fetch
+    const response = await $api('/user/notification-settings')
     if (response.success) {
       bibleSchoolSettings.value = {
         notify_enrollment_rejected_email: response.settings.notify_enrollment_rejected_email || false,
@@ -1146,15 +1142,12 @@ const loadBibleSchoolNotificationSettings = async () => {
 const saveBibleSchoolNotificationSettings = async () => {
   savingBibleSchoolSettings.value = true
   try {
-    const response = await $fetch('/api/user/notification-settings', {
+    // ✅ Используем $api вместо $fetch
+    const response = await $api('/user/notification-settings', {
       method: 'PUT',
       body: {
         ...bibleSchoolSettings.value,
         consent_given: true
-      },
-      headers: {
-        'Authorization': `Bearer ${authStore.token}`,
-        'Content-Type': 'application/json'
       }
     })
     if (response.success) {
@@ -1170,13 +1163,10 @@ const saveBibleSchoolNotificationSettings = async () => {
 // Обновление статуса студента - всегда загружаем свежие данные
 const refreshStudentStatus = async () => {
   try {
-    // Обновляем роли пользователя с сервера
     await authStore.refreshSession()
     
-    // Перепроверяем статус в школе
-    const response = await $fetch('/api/bible-school/enroll/status', {
-      headers: { 'Authorization': `Bearer ${authStore.token}` }
-    })
+    // ✅ Используем $api вместо $fetch
+    const response = await $api('/bible-school/enroll/status')
     
     if (response.is_enrolled && authStore.isStudent) {
       isBibleStudent.value = true
@@ -1188,6 +1178,7 @@ const refreshStudentStatus = async () => {
     console.error('Refresh student status error:', err)
   }
 }
+
 
 // Следим за сменой вкладки - всегда обновляем при переходе на библейскую школу
 watch(activeTab, async (newTab) => {

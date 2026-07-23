@@ -2,7 +2,7 @@
   <div v-if="visible" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" @click.self="close">
     <div class="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
       <div class="sticky top-0 bg-gray-900/95 p-4 border-b border-gray-700 flex justify-between items-center">
-        <h3 class="text-xl font-bold text-white">✉️ Написать {{ minister.full_name || minister.name }}</h3>
+        <h3 class="text-xl font-bold text-white">✉️ Написать {{ minister.full_name || minister.name || 'Служителю' }}</h3>
         <button @click="close" class="text-gray-400 hover:text-white text-2xl">&times;</button>
       </div>
       
@@ -48,19 +48,60 @@
 <script setup lang="ts">
 import { useAuthStore } from '~/stores/auth'
 import { useNotificationStore } from '~/stores/notification'
+import { useApi } from '~/composables/useApi'  // ✅ ДОБАВЛЕН ИМПОРТ
 
-const props = defineProps({
-  visible: { type: Boolean, default: false },
-  minister: { type: Object, required: true }
-})
+// Интерфейсы
+interface User {
+  id: number
+  name: string
+  full_name?: string
+  last_name?: string
+  middle_name?: string
+  email: string
+  email_verified_at: string | null
+  phone?: string
+  city?: string
+}
 
-const emit = defineEmits(['close', 'sent'])
+interface Minister {
+  id: number
+  full_name?: string
+  name?: string
+  last_name?: string
+  email?: string
+}
+
+const props = defineProps<{
+  visible: boolean
+  minister: Minister
+}>()
+
+const emit = defineEmits<{
+  (e: 'close'): void
+  (e: 'sent'): void
+}>()
 
 const authStore = useAuthStore()
 const notificationStore = useNotificationStore()
+const { $api } = useApi()  // ✅ ДОБАВЛЕНО
 
 const isAuthenticated = computed(() => authStore.isAuthenticated)
 const siteKey = useRuntimeConfig().public.yandexCaptchaSiteKey
+
+// Геттер для полного имени пользователя
+const userFullName = computed(() => {
+  const user = authStore.user as User | null
+  if (!user) return ""
+  
+  if (user.full_name) return user.full_name
+  
+  const parts = []
+  if (user.last_name) parts.push(user.last_name)
+  if (user.name) parts.push(user.name)
+  if (user.middle_name) parts.push(user.middle_name)
+  
+  return parts.join(" ").trim() || user.name || ""
+})
 
 const form = ref({ name: '', email: '', message: '', captchaToken: '' })
 const sending = ref(false)
@@ -102,15 +143,14 @@ const submitMessage = async () => {
       body.sender_email = form.value.email
       body.captcha_token = captchaToken
     } else {
-      // ✅ Для авторизованных пользователей передаём данные из профиля
-      body.sender_name = authStore.user?.full_name || authStore.user?.name
-      body.sender_email = authStore.user?.email
+      const user = authStore.user as User | null
+      body.sender_name = userFullName.value || user?.name || 'Пользователь'
+      body.sender_email = user?.email || ''
     }
     
-    await $fetch(`/api/ministers/${props.minister.id}/message`, {
+    // ✅ Используем $api вместо $fetch с baseURL
+    await $api(`/ministers/${props.minister.id}/message`, {
       method: 'POST',
-      baseURL: 'https://wotgospel.ru',
-      headers: isAuthenticated.value ? { 'Authorization': `Bearer ${authStore.token}` } : {},
       body
     })
     

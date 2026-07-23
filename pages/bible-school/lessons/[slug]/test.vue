@@ -241,6 +241,7 @@
 
 <script setup>
 import { useAuthStore } from '~/stores/auth';
+import { useApi } from '~/composables/useApi';  // ✅ ДОБАВЛЕН ИМПОРТ
 
 definePageMeta({
   middleware: 'auth'
@@ -248,6 +249,8 @@ definePageMeta({
 
 const route = useRoute();
 const authStore = useAuthStore();
+const { $api } = useApi();  // ✅ ДОБАВЛЕНО
+
 const questions = ref([]);
 const lessonTitle = ref('');
 const loading = ref(true);
@@ -398,9 +401,8 @@ const getFillBlankPreview = (question) => {
 // Загрузка теста
 const fetchTest = async () => {
   try {
-    const response = await $fetch(`/api/bible-school/lessons/${route.params.slug}/test`, {
-      headers: { Authorization: `Bearer ${authStore.token}` }
-    });
+    // ✅ Используем $api вместо $fetch
+    const response = await $api(`/bible-school/lessons/${route.params.slug}/test`);
     questions.value = response.questions || [];
     lessonTitle.value = response.lesson_title || '';
     
@@ -502,12 +504,9 @@ const submitTest = async () => {
   }
   
   try {
-    const response = await $fetch(`/api/bible-school/lessons/${route.params.slug}/test`, {
+    // ✅ Используем $api вместо $fetch
+    const response = await $api(`/bible-school/lessons/${route.params.slug}/test`, {
       method: 'POST',
-      headers: { 
-        Authorization: `Bearer ${authStore.token}`,
-        'Content-Type': 'application/json'
-      },
       body: payload
     });
     

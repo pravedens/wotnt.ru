@@ -3,7 +3,7 @@ import { useAuthStore } from '~/stores/auth'
 import { useApi } from '~/composables/useApi'
 
 export const useEvents = () => {
-    const { getImageUrl, $api } = useApi()
+    const { getImageUrl, $api } = useApi()  // ✅ УЖЕ ЕСТЬ
     const authStore = useAuthStore()
 
     const monthData = ref<MonthData | null>(null)
@@ -45,7 +45,7 @@ export const useEvents = () => {
 
             // ✅ Используем $api для автоматического добавления timestamp и заголовков
             const response = await $api<MonthData>('/events', {
-                params: {
+                query: {  // ✅ Исправлено: query вместо params
                     month: targetMonth,
                     year: targetYear
                 }
@@ -72,9 +72,8 @@ export const useEvents = () => {
         try {
             await ensureAuthReady()
             
-            // ✅ Используем $api для автоматического добавления timestamp и заголовков
+            // ✅ Используем $api
             const event = await $api<Event>(`/events/${slug}`)
-
             return event
         } catch (err) {
             console.error('Event load error:', err)
@@ -125,81 +124,60 @@ export const useEvents = () => {
     })
     
     // 🆕 Кнопка «Я приду»
-const attendEvent = async (slug: string): Promise<{ success: boolean; attending: boolean; count: number; message?: string }> => {
-    try {
-        await ensureAuthReady()
-        
-        const authStore = useAuthStore()
-        const token = authStore.token
-        
-        if (!token) {
-            return { success: false, attending: false, count: 0, message: 'Необходимо авторизоваться' }
-        }
-        
-        const response: any = await $fetch(`/api/events/${slug}/attend`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Accept': 'application/json'
+    const attendEvent = async (slug: string): Promise<{ success: boolean; attending: boolean; count: number; message?: string }> => {
+        try {
+            await ensureAuthReady()
+            
+            // ✅ Используем $api вместо $fetch
+            const response = await $api<any>(`/events/${slug}/attend`, {
+                method: 'POST'
+            })
+            
+            return {
+                success: true,
+                attending: response.attending,
+                count: response.attendees_count,
+                message: response.message
             }
-        })
-        
-        return {
-            success: true,
-            attending: response.attending,
-            count: response.attendees_count,
-            message: response.message
+        } catch (err: any) {
+            console.error('Attend event error:', err)
+            const message = err?.data?.message || err?.message || 'Ошибка записи на событие'
+            return { success: false, attending: false, count: 0, message }
         }
-    } catch (err: any) {
-        console.error('Attend event error:', err)
-        const message = err?.data?.message || err?.message || 'Ошибка записи на событие'
-        return { success: false, attending: false, count: 0, message }
     }
-}
 
-const unattendEvent = async (slug: string): Promise<{ success: boolean; attending: boolean; count: number; message?: string }> => {
-    try {
-        await ensureAuthReady()
-        
-        const authStore = useAuthStore()
-        const token = authStore.token
-        
-        if (!token) {
-            return { success: false, attending: false, count: 0, message: 'Необходимо авторизоваться' }
-        }
-        
-        const response: any = await $fetch(`/api/events/${slug}/attend`, {
-            method: 'DELETE',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Accept': 'application/json'
+    const unattendEvent = async (slug: string): Promise<{ success: boolean; attending: boolean; count: number; message?: string }> => {
+        try {
+            await ensureAuthReady()
+            
+            // ✅ Используем $api вместо $fetch
+            const response = await $api<any>(`/events/${slug}/attend`, {
+                method: 'DELETE'
+            })
+            
+            return {
+                success: true,
+                attending: response.attending,
+                count: response.attendees_count,
+                message: response.message
             }
-        })
-        
-        return {
-            success: true,
-            attending: response.attending,
-            count: response.attendees_count,
-            message: response.message
+        } catch (err: any) {
+            console.error('Unattend event error:', err)
+            const message = err?.data?.message || err?.message || 'Ошибка отмены записи'
+            return { success: false, attending: false, count: 0, message }
         }
-    } catch (err: any) {
-        console.error('Unattend event error:', err)
-        const message = err?.data?.message || err?.message || 'Ошибка отмены записи'
-        return { success: false, attending: false, count: 0, message }
     }
-}
 
-const getAttendeesCount = async (slug: string): Promise<number> => {
-    try {
-        const response: any = await $fetch(`/api/events/${slug}/attendees-count`, {
-            headers: { 'Accept': 'application/json' }
-        })
-        return response.attendees_count || 0
-    } catch (err) {
-        console.error('Get attendees count error:', err)
-        return 0
+    const getAttendeesCount = async (slug: string): Promise<number> => {
+        try {
+            // ✅ Используем $api вместо $fetch
+            const response = await $api<any>(`/events/${slug}/attendees-count`)
+            return response.attendees_count || 0
+        } catch (err) {
+            console.error('Get attendees count error:', err)
+            return 0
+        }
     }
-}
 
     return {
         monthData,

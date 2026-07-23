@@ -4,8 +4,7 @@ export default defineNuxtPlugin({
   enforce: 'post',
   
   setup() {
-    if (process.client) {
-      // Откладываем загрузку на 3 секунды после загрузки страницы
+    if (import.meta.client) {
       if (document.readyState === 'complete') {
         setTimeout(loadMetrika, 3000);
       } else {
@@ -18,21 +17,29 @@ export default defineNuxtPlugin({
 })
 
 function loadMetrika() {
+  if (document.querySelector('script[src*="mc.yandex.ru/metrika/tag.js"]')) {
+    return
+  }
+
   const script = document.createElement('script');
   script.src = 'https://mc.yandex.ru/metrika/tag.js';
   script.async = true;
   script.defer = true;
+  
   script.onload = () => {
-    if (window.ym) {
-      window.ym(95320948, 'init', {
+    // ✅ Самый простой способ: приведение к any
+    const ym = window.ym as any;
+    if (ym) {
+      ym(95320948, 'init', {
         clickmap: true,
         referrer: document.referrer,
         url: location.href,
         accurateTrackBounce: true,
         trackLinks: true,
-        webvisor: false // отключаем для ускорения
+        webvisor: false
       });
     }
   };
+  
   document.head.appendChild(script);
 }

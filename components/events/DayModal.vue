@@ -40,7 +40,7 @@
                 <!-- Миниатюра события -->
                 <div v-if="event.thumbnail" class="flex-shrink-0">
                   <img 
-                    :src="getImageUrl(event.thumbnail)"
+                    :src="getImageUrl(event.thumbnail) ?? undefined"
                     :alt="event.title"
                     class="w-12 h-12 sm:w-16 sm:h-16 rounded-lg object-cover"
                     loading="lazy"
@@ -116,7 +116,13 @@
 </template>
 
 <script setup lang="ts">
-interface Event {
+// ============================================
+// ПОЛУЧАЕМ КОНФИГУРАЦИЮ
+// ============================================
+const config = useRuntimeConfig()
+const { apiBase, storageUrl } = config.public
+
+interface CalendarEvent {
   id: number
   title: string
   slug: string
@@ -130,7 +136,7 @@ interface Event {
 const props = defineProps<{
   visible: boolean
   date: string
-  events: Event[]
+  events: CalendarEvent[]
 }>()
 
 const emit = defineEmits<{
@@ -140,7 +146,7 @@ const emit = defineEmits<{
 
 // Сортировка событий по времени
 const sortedEvents = computed(() => {
-  return [...props.events].sort((a, b) => {
+  return [...props.events].sort((a: CalendarEvent, b: CalendarEvent) => {
     if (!a.time && !b.time) return 0
     if (!a.time) return 1
     if (!b.time) return -1
@@ -159,33 +165,36 @@ const formattedDate = computed(() => {
   })
 })
 
-// Получение URL изображения из S3
-const getImageUrl = (thumbnail: string) => {
-  if (!thumbnail) return null
+// Получение URL изображения
+const getImageUrl = (thumbnail: string): string | undefined => {
+  if (!thumbnail) return undefined
   
   if (thumbnail.startsWith('http')) {
     return thumbnail
   }
   
   if (thumbnail.startsWith('events/thumbnails/')) {
-    return `https://storage.yandexcloud.net/wotgospel-media/${thumbnail}`
+    return `${storageUrl}/${thumbnail}`
   }
   
   if (thumbnail.startsWith('public/')) {
-    return `https://wotgospel.ru/storage/${thumbnail.replace('public/', '')}`
+    return `${apiBase}/storage/${thumbnail.replace('public/', '')}`
   }
   
-  return `https://wotgospel.ru/storage/${thumbnail}`
+  return `${apiBase}/storage/${thumbnail}`
 }
 
-// Обработка ошибки изображения
+// ✅ ИСПРАВЛЕНО: правильная типизация для onError
 const handleImageError = (event: Event) => {
+  // Используем as HTMLImageElement для доступа к target
   const img = event.target as HTMLImageElement
-  img.style.display = 'none'
+  if (img && img.tagName === 'IMG') {
+    img.style.display = 'none'
+  }
 }
 
 // Обработчик клика по событию
-const handleEventClick = (event: Event) => {
+const handleEventClick = (event: CalendarEvent) => {
   if (event.slug) {
     emit('select-event', event.slug)
     emit('close')
@@ -194,7 +203,7 @@ const handleEventClick = (event: Event) => {
 
 // Блокировка скролла при открытом модальном окне
 watch(() => props.visible, (isVisible) => {
-  if (process.client) {
+  if (import.meta.client) {
     if (isVisible) {
       document.body.style.overflow = 'hidden'
     } else {
@@ -237,6 +246,7 @@ watch(() => props.visible, (isVisible) => {
   display: -webkit-box;
   -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
+  line-clamp: 1;
   overflow: hidden;
 }
 
@@ -244,6 +254,7 @@ watch(() => props.visible, (isVisible) => {
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
+  line-clamp: 2;
   overflow: hidden;
 }
 </style>

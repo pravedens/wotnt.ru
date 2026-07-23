@@ -108,6 +108,12 @@
 <script setup lang="ts">
 import { useScrollLock } from '~/composables/useScrollLock'
 
+// ============================================
+// ПОЛУЧАЕМ КОНФИГУРАЦИЮ
+// ============================================
+const config = useRuntimeConfig()
+const { apiBase, storageUrl } = config.public
+
 const { lockScroll, unlockScroll } = useScrollLock()
 
 const props = defineProps<{
@@ -121,7 +127,7 @@ const emit = defineEmits<{
   (e: 'edit'): void
 }>()
 
-// Получение URL изображения из S3
+// ✅ Получение URL изображения из S3 (исправлено)
 const imageUrl = computed(() => {
   if (!props.event?.thumbnail) return null
   
@@ -130,17 +136,17 @@ const imageUrl = computed(() => {
   }
   
   if (props.event.thumbnail.startsWith('events/thumbnails/')) {
-    return `https://storage.yandexcloud.net/wotgospel-media/${props.event.thumbnail}`
+    return `${storageUrl}/${props.event.thumbnail}`  // ✅ Исправлено
   }
   
   if (props.event.thumbnail.startsWith('public/')) {
-    return `https://wotgospel.ru/storage/${props.event.thumbnail.replace('public/', '')}`
+    return `${apiBase}/storage/${props.event.thumbnail.replace('public/', '')}`  // ✅ Исправлено
   }
   
-  return `https://wotgospel.ru/storage/${props.event.thumbnail}`
+  return `${apiBase}/storage/${props.event.thumbnail}`  // ✅ Исправлено
 })
 
-// ⭐ Форматированная дата и время
+// Форматированная дата и время
 const formattedDateTime = computed(() => {
   if (!props.event) return ''
   

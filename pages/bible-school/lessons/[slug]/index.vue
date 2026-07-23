@@ -317,6 +317,7 @@
 
 <script setup>
 import { useAuthStore } from '~/stores/auth';
+import { useApi } from '~/composables/useApi';  // ✅ ДОБАВЛЕН ИМПОРТ
 
 definePageMeta({
   middleware: 'auth'
@@ -324,6 +325,8 @@ definePageMeta({
 
 const route = useRoute();
 const authStore = useAuthStore();
+const { $api } = useApi();  // ✅ ДОБАВЛЕНО
+
 const lesson = ref(null);
 const progress = ref(null);
 const courseSlug = ref('');
@@ -378,9 +381,8 @@ const getCurrentStepName = () => {
 
 const fetchLesson = async () => {
   try {
-    const response = await $fetch(`/api/bible-school/lessons/${route.params.slug}`, {
-      headers: { Authorization: `Bearer ${authStore.token}` }
-    });
+    // ✅ Используем $api вместо $fetch
+    const response = await $api(`/bible-school/lessons/${route.params.slug}`);
     lesson.value = response.lesson;
     await loadEssay();
     progress.value = response.progress;
@@ -520,10 +522,10 @@ const completeStep = async (stepName) => {
   let apiEndpoint = '';
   switch(stepName) {
     case 'call':
-      apiEndpoint = `/api/bible-school/lessons/${route.params.slug}/call`;
+      apiEndpoint = `/bible-school/lessons/${route.params.slug}/call`;
       break;
     case 'scripture':
-      apiEndpoint = `/api/bible-school/lessons/${route.params.slug}/scripture`;
+      apiEndpoint = `/bible-school/lessons/${route.params.slug}/scripture`;
       break;
     case 'content':
       stepCompleted.value.content = true;
@@ -536,10 +538,10 @@ const completeStep = async (stepName) => {
       setTimeout(() => scrollToCurrentStep(100), 200);
       return;
     case 'video':
-      apiEndpoint = `/api/bible-school/lessons/${route.params.slug}/video-watch`;
+      apiEndpoint = `/bible-school/lessons/${route.params.slug}/video-watch`;
       break;
     case 'practice':
-      apiEndpoint = `/api/bible-school/lessons/${route.params.slug}/practice`;
+      apiEndpoint = `/bible-school/lessons/${route.params.slug}/practice`;
       break;
     case 'test':
       // ✅ Для теста — просто переходим, НЕ скроллим
@@ -557,9 +559,9 @@ const completeStep = async (stepName) => {
   }
   
   try {
-    await $fetch(apiEndpoint, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${authStore.token}` }
+    // ✅ Используем $api вместо $fetch
+    await $api(apiEndpoint, {
+      method: 'POST'
     });
     
     stepCompleted.value[stepName] = true;
@@ -593,8 +595,8 @@ const goToTest = () => {
 const downloadLesson = async () => {
     downloading.value = true;
     try {
-        const response = await $fetch(`/api/bible-school/lessons/${lesson.value.slug}/download`, {
-            headers: { Authorization: `Bearer ${authStore.token}` },
+        // ✅ Используем $api вместо $fetch
+        const response = await $api(`/bible-school/lessons/${lesson.value.slug}/download`, {
             responseType: 'blob'
         });
         
@@ -618,9 +620,8 @@ const downloadLesson = async () => {
 // Загрузка списка учителей
 const loadTeachers = async () => {
     try {
-        const response = await $fetch('/api/bible-school/teachers', {
-            headers: { Authorization: `Bearer ${authStore.token}` }
-        });
+        // ✅ Используем $api вместо $fetch
+        const response = await $api('/bible-school/teachers');
         teachersList.value = response.teachers || [];
     } catch (err) {
         console.error('Load teachers error:', err);
@@ -630,9 +631,8 @@ const loadTeachers = async () => {
 // Загрузка существующего эссе
 const loadEssay = async () => {
     try {
-        const response = await $fetch(`/api/bible-school/my/essays`, {
-            headers: { Authorization: `Bearer ${authStore.token}` }
-        });
+        // ✅ Используем $api вместо $fetch
+        const response = await $api(`/bible-school/my/essays`);
         const existing = response.essays?.find(e => e.lesson_id === lesson.value?.id);
         if (existing) {
             essayContent.value = existing.content;
@@ -671,12 +671,11 @@ const submitEssay = async () => {
     
     submittingEssay.value = true;
     try {
-        // ✅ ИСПРАВЛЕНО: новый маршрут без параметра в URL
-        const response = await $fetch(`/api/bible-school/essay-store`, {
+        // ✅ Используем $api вместо $fetch
+        const response = await $api(`/bible-school/essay-store`, {
             method: 'POST',
-            headers: { Authorization: `Bearer ${authStore.token}`, 'Content-Type': 'application/json' },
             body: { 
-                lesson_slug: lesson.value.slug,  // ← передаём slug в теле запроса
+                lesson_slug: lesson.value.slug,
                 content: essayContent.value,
                 teacher_id: selectedTeacherId.value
             }
@@ -705,9 +704,8 @@ const fetchNextLesson = async () => {
   if (!lesson.value) return
   
   try {
-    const response = await $fetch(`/api/bible-school/lessons/${lesson.value.slug}/next`, {
-      headers: { Authorization: `Bearer ${authStore.token}` }
-    })
+    // ✅ Используем $api вместо $fetch
+    const response = await $api(`/bible-school/lessons/${lesson.value.slug}/next`)
     nextLessonSlug.value = response.next_lesson?.slug || null
   } catch (err) {
     console.error('Fetch next lesson error:', err)

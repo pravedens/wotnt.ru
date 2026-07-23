@@ -100,6 +100,7 @@ import { useRoute, useRouter } from 'vue-router'
 import EventsBreadcrumbs from '~/components/events/Breadcrumbs.vue'
 import ConferenceRegistration from '~/components/events/ConferenceRegistration.vue'
 import EventAttendButton from '~/components/events/EventAttendButton.vue'
+import { useApi } from '~/composables/useApi'  // ✅ ДОБАВЛЕН ИМПОРТ
 
 // Типы
 interface Event {
@@ -116,12 +117,17 @@ interface Event {
   display_date_time?: string
   members_only?: boolean
   is_published?: boolean
+  is_cancelled?: boolean
+  is_past?: boolean
+  user_attending?: boolean
+  attendees_count?: number
 }
 
 // Composables
 const route = useRoute()
 const router = useRouter()
 const config = useRuntimeConfig()
+const { $api } = useApi()  // ✅ ДОБАВЛЕНО
 
 // Состояния
 const slug = computed(() => route.params.slug as string)
@@ -129,35 +135,18 @@ const event = ref<Event | null>(null)
 const pending = ref(true)
 const error = ref<string | null>(null)
 
-// Получение токена авторизации
-const getAuthToken = (): string | null => {
-  if (process.client) {
-    return localStorage.getItem('auth_token')
-  }
-  return null
-}
-
 const handleRegistered = () => {
   // Опционально: обновить данные события
 }
 
-// Загрузка события (используем прокси для избежания CORS)
+// Загрузка события
 const loadEvent = async () => {
   pending.value = true
   error.value = null
   
   try {
-    const headers: Record<string, string> = {
-      'Accept': 'application/json'
-    }
-    
-    const token = getAuthToken()
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`
-    }
-    
-    // Используем прокси вместо прямого URL
-    const data = await $fetch(`/api/events/${slug.value}`, { headers })
+    // ✅ Используем $api вместо $fetch
+    const data = await $api<Event>(`/events/${slug.value}`)
     event.value = data
   } catch (err: any) {
     console.error('Error loading event:', err)
@@ -199,22 +188,25 @@ const goBack = () => {
     }
     router.back()
 }
+
 // =====================================================
 // ИЗОБРАЖЕНИЕ ИЗ S3
 // =====================================================
 
+const { storageUrl, apiBase } = config.public  // ✅ Добавлено
+
 const getStorageUrl = (thumbnail: string): string => {
   if (thumbnail.startsWith('http')) return thumbnail
   if (thumbnail.startsWith('events/thumbnails/')) {
-    return `https://storage.yandexcloud.net/wotgospel-media/${thumbnail}`
+    return `${storageUrl}/${thumbnail}`  // ✅ Исправлено
   }
   if (thumbnail.startsWith('posts/thumbnails/')) {
-    return `https://storage.yandexcloud.net/wotgospel-media/${thumbnail}`
+    return `${storageUrl}/${thumbnail}`  // ✅ Исправлено
   }
   if (thumbnail.startsWith('public/')) {
-    return `https://wotgospel.ru/storage/${thumbnail.replace('public/', '')}`
+    return `${apiBase}/storage/${thumbnail.replace('public/', '')}`  // ✅ Исправлено
   }
-  return `https://wotgospel.ru/storage/${thumbnail}`
+  return `${apiBase}/storage/${thumbnail}`  // ✅ Исправлено
 }
 
 const imageUrl = computed(() => {
@@ -231,7 +223,7 @@ const socialImage = computed(() => {
     }
     return image
   }
-  return 'https://storage.yandexcloud.net/wotgospel-media/og-images/default-og-image.jpg'
+  return `${storageUrl}/og-images/default-og-image.jpg`  // ✅ Исправлено
 })
 
 // =====================================================
@@ -260,7 +252,9 @@ const displayDate = computed(() => {
 // SEO
 // =====================================================
 
-const currentUrl = computed(() => `https://wotnt.ru${route.fullPath}`)
+const siteUrl = config.public.siteUrl  // ✅ Добавлено
+
+const currentUrl = computed(() => `${siteUrl}${route.fullPath}`)  // ✅ Исправлено
 
 const cleanDescription = computed(() => {
   if (!event.value?.description) return ''

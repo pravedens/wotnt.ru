@@ -75,6 +75,12 @@
 </template>
 
 <script setup lang="ts">
+// ============================================
+// ПОЛУЧАЕМ КОНФИГУРАЦИЮ
+// ============================================
+const config = useRuntimeConfig()
+const { apiBase, storageUrl } = config.public
+
 const props = defineProps<{
   visible: boolean
   event: any
@@ -85,7 +91,7 @@ defineEmits<{
   (e: 'close'): void
 }>()
 
-// Получение URL изображения из S3
+// ✅ Получение URL изображения из S3 (исправлено)
 const imageUrl = computed(() => {
   if (!props.event?.thumbnail) return null
   
@@ -94,14 +100,14 @@ const imageUrl = computed(() => {
   }
   
   if (props.event.thumbnail.startsWith('events/thumbnails/')) {
-    return `https://storage.yandexcloud.net/wotgospel-media/${props.event.thumbnail}`
+    return `${storageUrl}/${props.event.thumbnail}`  // ✅ Исправлено
   }
   
   if (props.event.thumbnail.startsWith('public/')) {
-    return `https://wotgospel.ru/storage/${props.event.thumbnail.replace('public/', '')}`
+    return `${apiBase}/storage/${props.event.thumbnail.replace('public/', '')}`  // ✅ Исправлено
   }
   
-  return `https://wotgospel.ru/storage/${props.event.thumbnail}`
+  return `${apiBase}/storage/${props.event.thumbnail}`  // ✅ Исправлено
 })
 
 // Форматирование даты
@@ -115,7 +121,7 @@ const formatDate = (dateString: string) => {
   })
 }
 
-// ⭐ Отображаемая дата и время
+// Отображаемая дата и время
 const displayDateTime = computed(() => {
   if (!props.event) return ''
   

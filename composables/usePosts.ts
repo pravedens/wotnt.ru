@@ -46,7 +46,6 @@ export const usePosts = () => {
 
     const loadFilterData = async () => {
         try {
-            // ✅ Используем $api для автоматического добавления timestamp и заголовков
             const [categoriesRes, groupsRes, conferencesRes] = await Promise.all([
                 $api<Category[]>('/categories'),
                 $api<Group[]>('/groups'),
@@ -85,10 +84,15 @@ export const usePosts = () => {
                 params.search = filters.value.search
             }
 
-            // ✅ Используем $api для автоматического добавления timestamp и заголовков
+            // ✅ Добавляем логирование для отладки
+            console.log('🔍 Fetching posts with params:', params)
+            
             const response = await $api<PaginatedResponse<Post>>('/posts', { params })
             
-            if (response?.data) {
+            console.log('📦 API Response:', response)
+            
+            // ✅ Правильная обработка ответа
+            if (response?.data && Array.isArray(response.data)) {
                 posts.value = response.data
                 pagination.value = {
                     current_page: response.current_page,
@@ -101,15 +105,20 @@ export const usePosts = () => {
                     prev_page_url: response.prev_page_url,
                     links: response.links
                 }
+                console.log('✅ Posts loaded:', posts.value.length)
             } else {
-                posts.value = response || []
+                // ✅ Если ответ не соответствует ожидаемому формату
+                console.warn('⚠️ Unexpected response format:', response)
+                posts.value = []
+                pagination.value = {}
             }
             
             updateURL()
             
         } catch (err: any) {
+            console.error('❌ Error loading posts:', err)
             error.value = err.message || 'Ошибка загрузки'
-            console.error('Error loading posts:', err)
+            posts.value = []
         } finally {
             loading.value = false
         }

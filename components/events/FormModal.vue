@@ -196,11 +196,59 @@
 <script setup lang="ts">
 import { useAuthStore } from '~/stores/auth'
 import { useCarouselStats } from '~/composables/useCarouselStats'
+import { useApi } from '~/composables/useApi'  // ✅ ДОБАВЛЕН ИМПОРТ
+
+// Интерфейсы
+interface ConferenceService {
+  service_date: string
+  title: string
+  description: string
+  start_time: string
+  speaker: string
+  capacity: number
+}
+
+interface EventForm {
+  title: string
+  startDate: string
+  startTime: string
+  color: string
+  description: string
+  content: string
+  info: string
+  show_in_carousel: boolean
+  is_published: boolean
+  is_past: boolean
+  members_only: boolean
+  ministers_only: boolean
+  thumbnail: File | null
+  is_conference: boolean
+  conferenceServices: ConferenceService[]
+}
+
+interface EventData {
+  id: number
+  title: string
+  startDate?: string
+  startTime?: string
+  color?: string
+  description?: string
+  content?: string
+  info?: string
+  thumbnail?: string
+  show_in_carousel?: boolean
+  is_published?: boolean
+  is_past?: boolean
+  members_only?: boolean
+  ministers_only?: boolean
+  is_conference?: boolean
+  conference_services?: ConferenceService[]
+}
 
 const props = defineProps<{
   visible: boolean
   mode: 'create' | 'edit'
-  event?: any
+  event?: EventData
   date?: string
   canEdit?: boolean
 }>()
@@ -209,6 +257,13 @@ const emit = defineEmits<{
   (e: 'close'): void
   (e: 'saved'): void
 }>()
+
+// ============================================
+// ПОЛУЧАЕМ КОНФИГУРАЦИЮ
+// ============================================
+const config = useRuntimeConfig()
+const { apiBase, storageUrl } = config.public
+const { $api } = useApi()  // ✅ ДОБАВЛЕНО
 
 const authStore = useAuthStore()
 
@@ -221,7 +276,7 @@ const colors = [
   { value: '#ec4899', name: 'Розовый' },
 ]
 
-const localForm = ref({
+const localForm = ref<EventForm>({
   title: '',
   startDate: '',
   startTime: '',
@@ -234,16 +289,9 @@ const localForm = ref({
   is_past: false,
   members_only: false,
   ministers_only: false,
-  thumbnail: null as File | null,
+  thumbnail: null,
   is_conference: false,
-  conferenceServices: [] as Array<{
-    service_date: string
-    title: string
-    description: string
-    start_time: string
-    speaker: string
-    capacity: number
-  }>
+  conferenceServices: []
 })
 
 const imagePreview = ref<string | null>(null)
@@ -287,13 +335,13 @@ const progressBarClass = computed(() => {
   return 'bg-green-500'
 })
 
-const getImageUrl = (thumbnail: string) => {
+const getImageUrl = (thumbnail: string): string | null => {
   if (!thumbnail) return null
   if (thumbnail.startsWith('http')) return thumbnail
   if (thumbnail.startsWith('events/thumbnails/')) {
-    return `https://storage.yandexcloud.net/wotgospel-media/${thumbnail}`
+    return `${storageUrl}/${thumbnail}`
   }
-  return `https://wotgospel.ru/storage/${thumbnail}`
+  return `${apiBase}/storage/${thumbnail}`
 }
 
 const handleClose = () => emit('close')
@@ -320,7 +368,7 @@ watch(() => props.visible, (visible) => {
         thumbnail: null,
         is_conference: false,
         conferenceServices: []
-      }
+      } as EventForm
     } 
     else if (props.mode === 'edit' && props.event) {
       localForm.value = {
@@ -339,9 +387,10 @@ watch(() => props.visible, (visible) => {
         thumbnail: null,
         is_conference: props.event.is_conference || false,
         conferenceServices: props.event.conference_services || []
-      }
+      } as EventForm
+
       if (props.event.thumbnail) {
-        imagePreview.value = getImageUrl(props.event.thumbnail)
+        imagePreview.value = getImageUrl(props.event.thumbnail) || null
       }
     }
   } else {
@@ -361,7 +410,8 @@ watch(() => props.visible, (visible) => {
       thumbnail: null,
       is_conference: false,
       conferenceServices: []
-    }
+    } as EventForm
+    
     imagePreview.value = null
     error.value = ''
     if (fileInput.value) fileInput.value.value = ''
@@ -372,6 +422,11 @@ const handleFileChange = (e: Event) => {
   const input = e.target as HTMLInputElement
   if (input.files?.length) {
     const file = input.files[0]
+    if (!file) {
+      error.value = 'Файл не выбран'
+      return
+    }
+    
     if (file.size > 800 * 1024) {
       error.value = 'Файл слишком большой. Максимум 800KB'
       input.value = ''
@@ -403,7 +458,9 @@ const handleSubmit = async () => {
     formData.append('ministers_only', localForm.value.ministers_only ? '1' : '0')
     if (localForm.value.color) formData.append('color', localForm.value.color)
     if (localForm.value.info) formData.append('info', localForm.value.info)
-    if (localForm.value.thumbnail) formData.append('thumbnail', localForm.value.thumbnail)
+    if (localForm.value.thumbnail) {
+      formData.append('thumbnail', localForm.value.thumbnail)
+    }
     
     if (localForm.value.is_conference) {
       // Конференция
@@ -426,19 +483,18 @@ const handleSubmit = async () => {
         }
       }
       
-      // Для конференции: startDate и startTime берём из первого служения
       const firstService = localForm.value.conferenceServices[0]
-      formData.append('startDate', firstService.service_date)
-      if (firstService.start_time) formData.append('startTime', firstService.start_time)
+      if (firstService) {
+        formData.append('startDate', firstService.service_date)
+        if (firstService.start_time) formData.append('startTime', firstService.start_time)
+      }
       formData.append('description', `Конференция с ${localForm.value.conferenceServices.length} служениями`)
       
-      // Генерируем content
       const servicesList = localForm.value.conferenceServices.map((s, i) => 
         `${i+1}. ${s.title} — ${s.service_date}${s.start_time ? ` в ${s.start_time}` : ''}${s.speaker ? ` (спикер: ${s.speaker})` : ''}${s.description ? `\n   ${s.description}` : ''}`
       ).join('\n\n')
       formData.append('content', `📅 Программа конференции:\n\n${servicesList}`)
       
-      // Отправляем служения как JSON
       formData.append('conference_services', JSON.stringify(localForm.value.conferenceServices))
       
     } else {
@@ -460,18 +516,22 @@ const handleSubmit = async () => {
       if (localForm.value.content) formData.append('content', localForm.value.content)
     }
     
-    const headers = {
-      'Authorization': `Bearer ${authStore.token}`,
-      'Accept': 'application/json'
-    }
-    
+    // ✅ Используем $api вместо $fetch
     if (props.mode === 'create') {
-      await $fetch('/api/events', { method: 'POST', body: formData, headers })
+      await $api('/events', { 
+        method: 'POST', 
+        body: formData 
+      })
     } else {
-      await $fetch(`/api/events/${props.event.id}`, {
+      if (!props.event) {
+        error.value = 'Событие не найдено'
+        saving.value = false
+        return
+      }
+      await $api(`/events/${props.event.id}`, {
         method: 'POST',
         body: formData,
-        headers: { ...headers, 'X-HTTP-Method-Override': 'PUT' }
+        headers: { 'X-HTTP-Method-Override': 'PUT' }
       })
     }
     
@@ -500,9 +560,14 @@ const deleteEvent = async () => {
   error.value = ''
   
   try {
-    await $fetch(`/api/events/${props.event.id}`, {
-      method: 'DELETE',
-      headers: { 'Authorization': `Bearer ${authStore.token}`, 'Accept': 'application/json' }
+    if (!props.event) {
+      error.value = 'Событие не найдено'
+      deleting.value = false
+      return
+    }
+    // ✅ Используем $api вместо $fetch
+    await $api(`/events/${props.event.id}`, {
+      method: 'DELETE'
     })
     await loadStats()
     emit('saved')

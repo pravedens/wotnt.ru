@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import type { Post } from '~/types/sermon'
+import { useApi } from '~/composables/useApi'  // ✅ ДОБАВЛЕН ИМПОРТ
 
 export const useFavoritesStore = defineStore('favorites', {
   state: () => ({
@@ -17,16 +18,10 @@ export const useFavoritesStore = defineStore('favorites', {
   },
 
   actions: {
-    // Вспомогательная функция для получения CSRF токена
-    getCookie(name: string): string | null {
-      if (process.client) {
-        const value = `; ${document.cookie}`
-        const parts = value.split(`; ${name}=`)
-        if (parts.length === 2) {
-          return decodeURIComponent(parts.pop()?.split(';').shift() || '')
-        }
-      }
-      return null
+    // Получение $api внутри действий
+    getApi() {
+      const { $api } = useApi()
+      return $api
     },
 
     // Загрузка избранных проповедей
@@ -43,12 +38,9 @@ export const useFavoritesStore = defineStore('favorites', {
       this.error = null
 
       try {
-        const response = await $fetch<Post[]>('/api/favorites', {
-          headers: {
-            'Authorization': `Bearer ${authStore.token}`,
-            'Accept': 'application/json'
-          }
-        })
+        const $api = this.getApi()
+        // ✅ Исправлено: используем $api вместо $fetch
+        const response = await $api<Post[]>('/favorites')
 
         this.favorites = response || []
         this.favoriteIds = new Set(this.favorites.map(f => f.id))
@@ -71,23 +63,11 @@ export const useFavoritesStore = defineStore('favorites', {
       }
 
       try {
-        const xsrfToken = this.getCookie('XSRF-TOKEN')
-        
-        const headers: Record<string, string> = {
-          'Authorization': `Bearer ${authStore.token}`,
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        }
-
-        if (xsrfToken) {
-          headers['X-XSRF-TOKEN'] = xsrfToken
-        }
-
-        await $fetch('/api/favorites', {
+        const $api = this.getApi()
+        // ✅ Исправлено: используем $api вместо $fetch
+        await $api('/favorites', {
           method: 'POST',
-          body: { post_id: postId },
-          headers,
-          credentials: 'include'
+          body: { post_id: postId }
         })
 
         // Обновляем список избранного
@@ -110,21 +90,10 @@ export const useFavoritesStore = defineStore('favorites', {
       }
 
       try {
-        const xsrfToken = this.getCookie('XSRF-TOKEN')
-        
-        const headers: Record<string, string> = {
-          'Authorization': `Bearer ${authStore.token}`,
-          'Accept': 'application/json'
-        }
-
-        if (xsrfToken) {
-          headers['X-XSRF-TOKEN'] = xsrfToken
-        }
-
-        await $fetch(`/api/favorites/${postId}`, {
-          method: 'DELETE',
-          headers,
-          credentials: 'include'
+        const $api = this.getApi()
+        // ✅ Исправлено: используем $api вместо $fetch
+        await $api(`/favorites/${postId}`, {
+          method: 'DELETE'
         })
 
         // Обновляем список избранного

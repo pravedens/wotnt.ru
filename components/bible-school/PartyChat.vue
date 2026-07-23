@@ -152,6 +152,7 @@
 <script setup>
 import { useAuthStore } from '~/stores/auth';
 import { useNotificationStore } from '~/stores/notification';
+import { useApi } from '~/composables/useApi';  // ✅ ДОБАВЛЕН ИМПОРТ
 
 const props = defineProps({
   partyId: {
@@ -162,6 +163,7 @@ const props = defineProps({
 
 const authStore = useAuthStore();
 const notificationStore = useNotificationStore();
+const { $api } = useApi();  // ✅ ДОБАВЛЕНО
 
 const party = ref({});
 const students = ref([]);
@@ -183,9 +185,8 @@ const formatTime = (date) => {
 // Загрузка информации о группе
 const loadParty = async () => {
   try {
-    const response = await $fetch('/api/bible-school/party/my', {
-      headers: { Authorization: `Bearer ${authStore.token}` }
-    });
+    // ✅ Используем $api вместо $fetch
+    const response = await $api('/bible-school/party/my');
     if (response.has_party) {
       party.value = response.party;
       students.value = response.party.students || [];
@@ -199,9 +200,8 @@ const loadParty = async () => {
 const loadMessages = async () => {
   loadingMessages.value = true;
   try {
-    const response = await $fetch('/api/bible-school/party/messages', {
-      headers: { Authorization: `Bearer ${authStore.token}` }
-    });
+    // ✅ Используем $api вместо $fetch
+    const response = await $api('/bible-school/party/messages');
     messages.value = response.messages || [];
     // Скролл вниз
     setTimeout(() => {
@@ -222,12 +222,9 @@ const sendMessage = async () => {
   
   sending.value = true;
   try {
-    await $fetch('/api/bible-school/party/messages', {
+    // ✅ Используем $api вместо $fetch
+    await $api('/bible-school/party/messages', {
       method: 'POST',
-      headers: { 
-        Authorization: `Bearer ${authStore.token}`,
-        'Content-Type': 'application/json'
-      },
       body: { message: newMessage.value.trim() }
     });
     newMessage.value = '';
@@ -248,9 +245,9 @@ const deleteMessage = async (messageId) => {
   if (!confirm('Удалить сообщение?')) return;
   
   try {
-    await $fetch(`/api/bible-school/party/messages/${messageId}`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${authStore.token}` }
+    // ✅ Используем $api вместо $fetch
+    await $api(`/bible-school/party/messages/${messageId}`, {
+      method: 'DELETE'
     });
     await loadMessages();
     notificationStore.success('Удалено', 'Сообщение удалено');
@@ -264,9 +261,9 @@ const removeStudent = async (userId) => {
   if (!confirm('Удалить участника из группы?')) return;
   
   try {
-    await $fetch(`/api/bible-school/party/students/${userId}`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${authStore.token}` }
+    // ✅ Используем $api вместо $fetch
+    await $api(`/bible-school/party/students/${userId}`, {
+      method: 'DELETE'
     });
     await loadParty();
     notificationStore.success('Участник удалён', 'Пользователь исключён из группы');

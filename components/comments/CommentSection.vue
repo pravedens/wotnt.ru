@@ -87,8 +87,20 @@
 <script setup lang="ts">
 import { useAuthStore } from '~/stores/auth'
 import { useNotificationStore } from '~/stores/notification'
+import { useApi } from '~/composables/useApi'  // ✅ ДОБАВЛЕН ИМПОРТ
 import type { Comment, CommentForm } from '~/types/comment'
 import CommentItem from './CommentItem.vue'
+
+// Интерфейсы для ответов API
+interface CommentsResponse {
+  comments: Comment[]
+}
+
+interface CommentResponse {
+  success: boolean
+  message?: string
+  comment?: Comment
+}
 
 const props = defineProps<{
   postId: number
@@ -97,6 +109,7 @@ const props = defineProps<{
 const route = useRoute()
 const authStore = useAuthStore()
 const notificationStore = useNotificationStore()
+const { $api } = useApi()  // ✅ ДОБАВЛЕНО
 
 const isAuthenticated = computed(() => authStore.isAuthenticated)
 
@@ -112,9 +125,8 @@ const commentsCount = computed(() => comments.value.length)
 const loadComments = async () => {
   loading.value = true
   try {
-    const response = await $fetch(`/api/posts/${props.postId}/comments`, {
-      baseURL: 'https://wotgospel.ru'
-    })
+    // ✅ Используем $api вместо $fetch с baseURL
+    const response = await $api<CommentsResponse>(`/posts/${props.postId}/comments`)
     comments.value = response.comments || []
   } catch (error) {
     console.error('Failed to load comments:', error)
@@ -130,13 +142,9 @@ const submitComment = async () => {
   
   submitting.value = true
   try {
-    const response = await $fetch(`/api/posts/${props.postId}/comments`, {
+    // ✅ Используем $api вместо $fetch с baseURL
+    const response = await $api<CommentResponse>(`/posts/${props.postId}/comments`, {
       method: 'POST',
-      baseURL: 'https://wotgospel.ru',
-      headers: {
-        'Authorization': `Bearer ${authStore.token}`,
-        'Content-Type': 'application/json'
-      },
       body: commentForm.value
     })
     
@@ -176,10 +184,9 @@ const handleDeleteComment = async (commentId: number) => {
   if (!confirm('Удалить комментарий?')) return
   
   try {
-    await $fetch(`/api/comments/${commentId}`, {
-      method: 'DELETE',
-      baseURL: 'https://wotgospel.ru',
-      headers: { 'Authorization': `Bearer ${authStore.token}` }
+    // ✅ Используем $api вместо $fetch с baseURL
+    await $api(`/comments/${commentId}`, {
+      method: 'DELETE'
     })
     notificationStore.success('Успешно', 'Комментарий удалён')
     await loadComments()
@@ -196,10 +203,9 @@ const handleLikeComment = async (commentId: number) => {
   }
   
   try {
-    await $fetch(`/api/comments/${commentId}/like`, {
-      method: 'POST',
-      baseURL: 'https://wotgospel.ru',
-      headers: { 'Authorization': `Bearer ${authStore.token}` }
+    // ✅ Используем $api вместо $fetch с baseURL
+    await $api(`/comments/${commentId}/like`, {
+      method: 'POST'
     })
     await loadComments()
   } catch (error) {

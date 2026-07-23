@@ -181,12 +181,14 @@
 import { useAuthStore } from '~/stores/auth';
 import { useImageUrl } from '~/composables/useImageUrl';
 import { useNotificationStore } from '~/stores/notification';
+import { useApi } from '~/composables/useApi';  // ✅ ДОБАВЛЕН ИМПОРТ
 import CoursePreviewModal from '~/components/bible-school/CoursePreviewModal.vue';
 import EnrollmentModal from '~/components/bible-school/EnrollmentModal.vue';
 
 const authStore = useAuthStore();
 const notificationStore = useNotificationStore();
 const { getImageUrl } = useImageUrl();
+const { $api } = useApi();  // ✅ ДОБАВЛЕНО
 const { isTeacher, isSuperAdmin, isAuthenticated } = storeToRefs(authStore);
 
 const pageData = ref({
@@ -239,11 +241,12 @@ const filteredGraduates = computed(() => {
 
 const fetchGraduates = async () => {
   try {
-    const res = await $fetch('/api/bible-school/graduates');
+    // ✅ Используем $api вместо $fetch
+    const res = await $api('/bible-school/graduates');
     graduates.value = res.graduates || [];
     graduateYears.value = res.years || [];
   } catch (err) {
-    console.error(err);
+    console.error('Fetch graduates error:', err);
   }
 };
 
@@ -255,14 +258,12 @@ const stripTags = (html) => {
 const fetchPageData = async () => {
   loading.value = true;
   try {
-    const response = await $fetch('/api/bible-school/page-data', {
-      headers: authStore.token ? { Authorization: `Bearer ${authStore.token}` } : {}
-    });
+    // ✅ Используем $api вместо $fetch
+    const response = await $api('/bible-school/page-data');
     pageData.value = response;
     
-    const coursesResponse = await $fetch('/api/bible-school/courses', {
-      headers: authStore.token ? { Authorization: `Bearer ${authStore.token}` } : {}
-    });
+    // ✅ Используем $api вместо $fetch
+    const coursesResponse = await $api('/bible-school/courses');
     coursesList.value = coursesResponse.courses || [];
   } catch (err) {
     console.error('Fetch page data error:', err);
@@ -278,7 +279,7 @@ const submitEnrollment = async (course) => {
   }
   
   try {
-    const { $api } = useApi();
+    // ✅ Используем $api вместо $fetch
     const response = await $api('/bible-school/enroll', {
       method: 'POST',
       body: {
@@ -324,9 +325,9 @@ const handleApplyFromPreview = () => {
 const repeatCourse = async (course) => {
   if (confirm('Вы уверены, что хотите повторить курс? Весь прогресс будет сброшен.')) {
     try {
-      await $fetch(`/api/bible-school/courses/${course.slug}/reset`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${authStore.token}` }
+      // ✅ Используем $api вместо $fetch
+      await $api(`/bible-school/courses/${course.slug}/reset`, {
+        method: 'POST'
       });
       alert('Курс сброшен. Можете начинать заново.');
       await fetchPageData();
@@ -347,6 +348,7 @@ onMounted(() => {
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
+  line-clamp: 2;
   overflow: hidden;
 }
 </style>

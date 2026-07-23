@@ -135,7 +135,7 @@ const FriendsCarousel = defineAsyncComponent(() => import('~/components/friends/
 // ============================================
 // SEO МЕТА-ТЕГИ
 // ============================================
-useServerSeoMeta({
+useSeoMeta({
   title: 'Церковь Слово Истины | Главная',
   description: 'Церковь Слово Истины — рекомендуемые проповеди, видео и аудио записи, текстовые, события, стих дня. Присоединяйтесь к нашим служениям!',
   ogTitle: 'Церковь Слово Истины',
@@ -158,11 +158,12 @@ useServerSeoMeta({
 // ============================================
 // МИКРОРАЗМЕТКА SCHEMA.ORG
 // ============================================
-useHead(() => ({
+useHead({
   script: [
+    // Organization
     {
       type: 'application/ld+json',
-      children: JSON.stringify({
+      innerHTML: JSON.stringify({
         '@context': 'https://schema.org',
         '@type': 'Organization',
         name: 'Церковь Слово Истины',
@@ -187,9 +188,10 @@ useHead(() => ({
         }
       })
     },
+    // WebSite
     {
       type: 'application/ld+json',
-      children: JSON.stringify({
+      innerHTML: JSON.stringify({
         '@context': 'https://schema.org',
         '@type': 'WebSite',
         name: 'Церковь Слово Истины',
@@ -205,9 +207,10 @@ useHead(() => ({
         }
       })
     },
+    // Event
     {
       type: 'application/ld+json',
-      children: JSON.stringify({
+      innerHTML: JSON.stringify({
         '@context': 'https://schema.org',
         '@type': 'Event',
         name: 'Воскресное служение',
@@ -241,7 +244,7 @@ useHead(() => ({
   link: [
     { rel: 'canonical', href: 'https://wotnt.ru' }
   ]
-}))
+})
 </script>
 
 <style scoped>

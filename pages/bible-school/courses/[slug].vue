@@ -139,10 +139,13 @@
 <script setup>
 import { useAuthStore } from '~/stores/auth';
 import { useImageUrl } from '~/composables/useImageUrl';
+import { useApi } from '~/composables/useApi';  // ✅ ДОБАВЛЕН ИМПОРТ
 
 const route = useRoute();
 const authStore = useAuthStore();
 const { getImageUrl } = useImageUrl();
+const { $api } = useApi();  // ✅ ДОБАВЛЕНО
+
 const course = ref(null);
 const loading = ref(true);
 const expandedThemes = ref([]);
@@ -171,9 +174,8 @@ const expandFirstTheme = () => {
 
 const fetchCourse = async () => {
   try {
-    const response = await $fetch(`/api/bible-school/courses/${route.params.slug}`, {
-      headers: authStore.token ? { Authorization: `Bearer ${authStore.token}` } : {}
-    });
+    // ✅ Используем $api вместо $fetch
+    const response = await $api(`/bible-school/courses/${route.params.slug}`);
     course.value = response.course || null;
     expandFirstTheme();
   } catch (err) {
@@ -194,6 +196,7 @@ onMounted(() => {
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
+  line-clamp: 2;
   overflow: hidden;
 }
 </style>

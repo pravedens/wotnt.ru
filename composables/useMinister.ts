@@ -1,40 +1,69 @@
 export const useMinister = () => {
-    const { $api } = useApi();
+    const { $api, baseUrl } = useApi();  // ✅ УЖЕ ЕСТЬ
     
+    // Интерфейсы для типизации ответов
+    interface MinistersResponse {
+        ministers: any[];
+    }
+    
+    interface MinisterResponse {
+        minister: any;
+    }
+    
+    interface CategoriesResponse {
+        categories: any[];
+    }
+    
+    interface SocialLinksResponse {
+        social_links: any[];
+    }
+    
+    interface FieldVisibilitiesResponse {
+        visibilities: Record<string, boolean>;
+    }
+    
+    interface MyCategoriesResponse {
+        categories: any[];
+        minister_categories?: any[];
+    }
+    
+    interface MessagesResponse {
+        data: any[];
+        pagination?: any;
+        [key: string]: any;
+    }
+    
+    interface UnreadCountResponse {
+        count: number;
+    }
+    
+    interface NotificationSettingsResponse {
+        settings: { email: boolean; webpush: boolean };
+    }
+    
+    // ✅ Исправлено: используем $api вместо $fetch с baseURL
     const getMinisters = async () => {
-        const response = await $fetch('/api/ministers', {
-            baseURL: 'https://wotgospel.ru',
-            headers: { 'Accept': 'application/json' }
-        });
+        const response = await $api<MinistersResponse>('/ministers');
         return response.ministers || [];
     };
     
     const getMinisterById = async (id: number) => {
-        const response = await $fetch(`/api/ministers/${id}`, {
-            baseURL: 'https://wotgospel.ru',
-            headers: { 'Accept': 'application/json' }
-        });
+        const response = await $api<MinisterResponse>(`/ministers/${id}`);
         return response.minister;
     };
     
     const getAllCategories = async () => {
-        const response = await $fetch('/api/ministers/categories', {
-            baseURL: 'https://wotgospel.ru',
-            headers: { 'Accept': 'application/json' }
-        });
+        const response = await $api<CategoriesResponse>('/ministers/categories');
         return response.categories || [];
     };
     
     const getMinistersByCategory = async (slug: string) => {
-        const response = await $fetch(`/api/ministers/category/${slug}`, {
-            baseURL: 'https://wotgospel.ru',
-            headers: { 'Accept': 'application/json' }
-        });
+        const response = await $api<any>(`/ministers/category/${slug}`);
         return response;
     };
     
     const getSocialLinks = async () => {
-        const response = await $api('/user/social-links');
+        const response = await $api<SocialLinksResponse>('/user/social-links');
         return response.social_links || [];
     };
     
@@ -46,7 +75,7 @@ export const useMinister = () => {
     };
     
     const getFieldVisibilities = async () => {
-        const response = await $api('/user/field-visibilities');
+        const response = await $api<FieldVisibilitiesResponse>('/user/field-visibilities');
         return response.visibilities || {};
     };
     
@@ -58,7 +87,7 @@ export const useMinister = () => {
     };
     
     const getMyCategories = async () => {
-        const response = await $api('/user/minister-categories');
+        const response = await $api<MyCategoriesResponse>('/user/minister-categories');
         return response;
     };
     
@@ -71,46 +100,46 @@ export const useMinister = () => {
     
     // ============ СООБЩЕНИЯ СЛУЖИТЕЛЯМ ============
 
-const sendMessageToMinister = async (ministerId: number, data: {
-    sender_name?: string;
-    sender_email?: string;
-    message: string;
-    captcha_token?: string;
-}) => {
-    return await $fetch(`/api/ministers/${ministerId}/message`, {
-        method: 'POST',
-        baseURL: 'https://wotgospel.ru',
-        body: data
-    });
-};
+    const sendMessageToMinister = async (ministerId: number, data: {
+        sender_name?: string;
+        sender_email?: string;
+        message: string;
+        captcha_token?: string;
+    }) => {
+        // ✅ УЖЕ ИСПОЛЬЗУЕТ $api
+        return await $api(`/ministers/${ministerId}/message`, {
+            method: 'POST',
+            body: data
+        });
+    };
 
-const getMyMessages = async (page = 1) => {
-    const response = await $api(`/my-messages?page=${page}`);
-    return response;
-};
+    const getMyMessages = async (page = 1) => {
+        const response = await $api<MessagesResponse>(`/my-messages?page=${page}`);
+        return response;
+    };
 
-const markMessageAsRead = async (messageId: number) => {
-    return await $api(`/my-messages/${messageId}/read`, {
-        method: 'PUT'
-    });
-};
+    const markMessageAsRead = async (messageId: number) => {
+        return await $api(`/my-messages/${messageId}/read`, {
+            method: 'PUT'
+        });
+    };
 
-const getUnreadCount = async () => {
-    const response = await $api('/my-messages/unread-count');
-    return response.count || 0;
-};
+    const getUnreadCount = async () => {
+        const response = await $api<UnreadCountResponse>('/my-messages/unread-count');
+        return response.count || 0;
+    };
 
-const getMinisterNotificationSettings = async () => {
-    const response = await $api('/user/minister-notification-settings');
-    return response.settings || { email: true, webpush: false };
-};
+    const getMinisterNotificationSettings = async () => {
+        const response = await $api<NotificationSettingsResponse>('/user/minister-notification-settings');
+        return response.settings || { email: true, webpush: false };
+    };
 
-const updateMinisterNotificationSettings = async (settings: { email: boolean; webpush: boolean }) => {
-    return await $api('/user/minister-notification-settings', {
-        method: 'PUT',
-        body: { settings }
-    });
-};
+    const updateMinisterNotificationSettings = async (settings: { email: boolean; webpush: boolean }) => {
+        return await $api('/user/minister-notification-settings', {
+            method: 'PUT',
+            body: { settings }
+        });
+    };
     
     return {
         getMinisters,

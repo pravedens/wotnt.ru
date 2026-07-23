@@ -95,6 +95,12 @@
 
 <script setup lang="ts">
 import type { LiveStream, LiveStreamResponse } from '~/types/live'
+import { useApi } from '~/composables/useApi'  // ✅ ДОБАВЛЕН ИМПОРТ
+
+// ============================================
+// ПОЛУЧАЕМ $api
+// ============================================
+const { $api } = useApi()  // ✅ ДОБАВЛЕНО
 
 // ============================================
 // РЕАКТИВНЫЕ ПЕРЕМЕННЫЕ
@@ -115,7 +121,8 @@ let saveProgressInterval: NodeJS.Timeout | null = null
 // ============================================
 const loadStreamStatus = async () => {
   try {
-    const response = await $fetch<LiveStreamResponse>('/api/live/current')
+    // ✅ Используем $api вместо $fetch
+    const response = await $api<LiveStreamResponse>('/live/current')
     
     if (response.success && response.data) {
       streamData.value = response.data

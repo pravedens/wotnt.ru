@@ -1,8 +1,11 @@
 // composables/useWebPush.ts
 
+import { useApi } from '~/composables/useApi'  // ✅ ДОБАВЛЕН ИМПОРТ
+
 export const useWebPush = () => {
     const authStore = useAuthStore()
     const config = useRuntimeConfig()
+    const { $api } = useApi()  // ✅ ДОБАВЛЕНО
     
     // ⭐ ВСЕГДА true
     const isSupported = ref(true)
@@ -78,15 +81,12 @@ export const useWebPush = () => {
             console.log('WebPush: subscription created')
             console.log('WebPush: endpoint:', subscription.endpoint.substring(0, 100) + '...')
             
-            const response = await $fetch('/api/push-subscription', {
+            // ✅ Используем $api вместо $fetch
+            const response = await $api<{ success: boolean }>('/push-subscription', {
                 method: 'POST',
                 body: {
                     endpoint: subscription.endpoint,
                     keys: subscription.toJSON().keys
-                },
-                headers: {
-                    'Authorization': `Bearer ${authStore.token}`,
-                    'Content-Type': 'application/json'
                 }
             })
             
@@ -119,13 +119,10 @@ export const useWebPush = () => {
             const subscription = await registration.pushManager.getSubscription()
             
             if (subscription) {
-                await $fetch('/api/push-subscription', {
+                // ✅ Используем $api вместо $fetch
+                await $api('/push-subscription', {
                     method: 'DELETE',
-                    body: { endpoint: subscription.endpoint },
-                    headers: {
-                        'Authorization': `Bearer ${authStore.token}`,
-                        'Content-Type': 'application/json'
-                    }
+                    body: { endpoint: subscription.endpoint }
                 })
                 
                 await subscription.unsubscribe()

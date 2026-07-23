@@ -2,16 +2,16 @@
   <div class="relative group rounded-2xl overflow-hidden shadow-xl transition-all duration-300 hover:scale-105 hover:shadow-2xl h-full flex flex-col bg-transparent">
     <!-- Фоновое изображение -->
     <img 
-    v-if="imageUrl"
-    :src="imageUrl"
-    :alt="post?.title || 'Изображение проповеди'"
-    width="400"
-    height="300"
-    class="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-    loading="lazy"
-    decoding="async"
-    @error="handleImageError"
-/>
+      v-if="imageUrl"
+      :src="imageUrl"
+      :alt="post?.title || 'Изображение проповеди'"
+      width="400"
+      height="300"
+      class="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+      loading="lazy"
+      decoding="async"
+      @error="handleImageError"
+    />
     
     <!-- Затемнение -->
     <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/60 to-black/40"></div>
@@ -71,13 +71,29 @@ import { usePosts } from '~/composables/usePosts'
 import FavoriteButton from '~/components/posts/FavoriteButton.vue'
 import LikeButton from '~/components/posts/LikeButton.vue'
 import ViewsCount from '~/components/posts/ViewsCount.vue'
+import type { Post } from '~/types/sermon'
 
+// ============================================
+// КОНФИГУРАЦИЯ
+// ============================================
+const config = useRuntimeConfig()
+const { apiBase, storageUrl } = config.public
+
+// ============================================
+// PROPS
+// ============================================
 const props = defineProps<{
-  post: any
+  post: Post
 }>()
 
+// ============================================
+// COMPOSABLES
+// ============================================
 const { filters } = usePosts()
 
+// ============================================
+// UTILITY FUNCTIONS
+// ============================================
 const stripHtml = (html: string) => {
   if (!html) return ''
   return html.replace(/<[^>]*>/g, '')
@@ -90,52 +106,45 @@ const decodeHtml = (html: string) => {
   return txt.value
 }
 
+// ============================================
+// COMPUTED
+// ============================================
+
+// ✅ Очищенное описание
 const cleanDescription = computed(() => {
-  let text = ''
+  const text = props.post.clean_description || props.post.description || props.post.content || ''
   
-  if (props.post.clean_description) {
-    text = props.post.clean_description
-  } else if (props.post.description) {
-    text = props.post.description
-  } else if (props.post.content) {
-    text = props.post.content
-  } else {
-    return ''
-  }
+  if (!text) return ''
   
-  text = decodeHtml(text)
-  text = stripHtml(text)
-  text = text.replace(/\s+/g, ' ').trim()
-  
-  if (text.length > 150) {
-    text = text.substring(0, 150) + '...'
-  }
-  
-  return text
+  return decodeHtml(text)
+    .replace(/<[^>]*>/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 150)
+    .concat('...')
 })
 
+// ✅ URL изображения с более чистой логикой
 const imageUrl = computed(() => {
-  if (props.post.thumbnail_url) {
-    return props.post.thumbnail_url;
+  const thumbnail = props.post.thumbnail_url || props.post.thumbnail
+  
+  if (!thumbnail) return null
+  
+  if (thumbnail.startsWith('http')) {
+    return thumbnail
   }
   
-  if (props.post.thumbnail) {
-    if (props.post.thumbnail.startsWith('http')) {
-      return props.post.thumbnail;
-    }
-    if (props.post.thumbnail.startsWith('posts/')) {
-      return `https://storage.yandexcloud.net/wotgospel-media/${props.post.thumbnail}`;
-    }
-    return `https://wotgospel.ru/storage/${props.post.thumbnail.replace('public/', '')}`;
+  if (thumbnail.startsWith('posts/')) {
+    return `${storageUrl}/${thumbnail}`
   }
   
-  return null;
+  return `${apiBase}/storage/${thumbnail.replace('public/', '')}`
 })
 
+// ✅ Ссылка на пост с фильтрами
 const postLink = computed(() => {
-  const query: any = {}
+  const query: Record<string, string> = {}
   
-  // Сохраняем только фильтры, КРОМЕ search и page
   if (filters.value.category_id) {
     query.category_id = String(filters.value.category_id)
   }
@@ -145,8 +154,6 @@ const postLink = computed(() => {
   if (filters.value.conference_id) {
     query.conference_id = String(filters.value.conference_id)
   }
-  // search НЕ сохраняем
-  // page НЕ сохраняем (возвращаемся на первую страницу)
   
   return {
     path: `/sermons/${props.post.slug}`,
@@ -154,7 +161,12 @@ const postLink = computed(() => {
   }
 })
 
-const formatDate = (dateString: string) => {
+// ============================================
+// METHODS
+// ============================================
+
+// ✅ Форматирование даты
+const formatDate = (dateString: string | null) => {
   if (!dateString) return ''
   return new Date(dateString).toLocaleDateString('ru-RU', { 
     day: 'numeric', 
@@ -163,7 +175,18 @@ const formatDate = (dateString: string) => {
   })
 }
 
+// ✅ Обработка ошибки изображения
+const handleImageError = (event: Event) => {
+  const img = event.target as HTMLImageElement
+  if (img) {
+    img.style.display = 'none'
+    img.parentElement?.classList.add('image-error')
+  }
+}
+
+// ✅ Обработка переключения избранного
 const handleFavoriteToggle = ({ postId, isFavorite }: { postId: number, isFavorite: boolean }) => {
+  console.log('Favorite toggled:', { postId, isFavorite })
 }
 </script>
 
@@ -172,6 +195,7 @@ const handleFavoriteToggle = ({ postId, isFavorite }: { postId: number, isFavori
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
+  line-clamp: 2;
   overflow: hidden;
 }
 
@@ -179,6 +203,21 @@ const handleFavoriteToggle = ({ postId, isFavorite }: { postId: number, isFavori
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
+  line-clamp: 3;
   overflow: hidden;
+}
+
+.image-error {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+}
+
+.image-error::after {
+  content: '🖼️';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 3rem;
+  opacity: 0.3;
 }
 </style>

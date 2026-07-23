@@ -174,6 +174,12 @@
 <script setup lang="ts">
 import { useAuthStore } from '~/stores/auth'
 
+// ============================================
+// ПОЛУЧАЕМ КОНФИГУРАЦИЮ
+// ============================================
+const config = useRuntimeConfig()
+const { apiBase, storageUrl } = config.public
+
 const props = defineProps<{
   event: any
 }>()
@@ -209,7 +215,7 @@ const displayTime = computed(() => {
   return null
 })
 
-// URL изображения
+// ✅ URL изображения (исправлено)
 const imageUrl = computed(() => {
   if (!props.event.thumbnail) return null
   
@@ -218,14 +224,14 @@ const imageUrl = computed(() => {
   }
   
   if (props.event.thumbnail.startsWith('events/thumbnails/')) {
-    return `https://storage.yandexcloud.net/wotgospel-media/${props.event.thumbnail}`
+    return `${storageUrl}/${props.event.thumbnail}`  // ✅ Исправлено
   }
   
   if (props.event.thumbnail.startsWith('public/')) {
-    return `https://wotgospel.ru/storage/${props.event.thumbnail.replace('public/', '')}`
+    return `${apiBase}/storage/${props.event.thumbnail.replace('public/', '')}`  // ✅ Исправлено
   }
   
-  return `https://wotgospel.ru/storage/${props.event.thumbnail}`
+  return `${apiBase}/storage/${props.event.thumbnail}`  // ✅ Исправлено
 })
 
 // Отображаемая дата
@@ -268,6 +274,7 @@ const handleImageError = (event: Event) => {
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
+  line-clamp: 2;
   overflow: hidden;
 }
 </style>

@@ -1,5 +1,16 @@
 export const useTeacher = () => {
-    const { $api } = useApi();
+    const { $api, baseUrl } = useApi();
+    
+    // ✅ Добавляем интерфейсы для типизации ответов
+    interface MessagesResponse {
+        data: any[];
+        pagination?: any;
+        [key: string]: any;
+    }
+    
+    interface UnreadCountResponse {
+        count: number;
+    }
     
     const sendMessageToTeacher = async (teacherId: number, data: {
         sender_name?: string;
@@ -7,30 +18,26 @@ export const useTeacher = () => {
         message: string;
         captcha_token?: string;
     }) => {
-        // ✅ ИСПРАВЛЕНО: добавлен префикс /bible-school
-        return await $fetch(`/api/bible-school/teachers/${teacherId}/message`, {
+        // ✅ Исправлено: используем $api вместо жёсткой ссылки
+        return await $api(`/bible-school/teachers/${teacherId}/message`, {
             method: 'POST',
-            baseURL: 'https://wotgospel.ru',
             body: data
         });
     };
     
     const getMyTeacherMessages = async (page = 1) => {
-        // ✅ ИСПРАВЛЕНО: добавлен префикс /bible-school
-        const response = await $api(`/bible-school/teacher-messages?page=${page}`);
+        const response = await $api<MessagesResponse>(`/bible-school/teacher-messages?page=${page}`);
         return response;
     };
     
     const markTeacherMessageAsRead = async (messageId: number) => {
-        // ✅ ИСПРАВЛЕНО: добавлен префикс /bible-school
         return await $api(`/bible-school/teacher-messages/${messageId}/read`, {
             method: 'PUT'
         });
     };
     
     const getTeacherUnreadCount = async () => {
-        // ✅ ИСПРАВЛЕНО: добавлен префикс /bible-school
-        const response = await $api('/bible-school/teacher-messages/unread-count');
+        const response = await $api<UnreadCountResponse>('/bible-school/teacher-messages/unread-count');
         return response.count || 0;
     };
     

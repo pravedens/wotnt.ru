@@ -250,19 +250,10 @@
 <script setup lang="ts">
 import { useAuthStore } from '~/stores/auth'
 import { useRoute } from 'vue-router'
-import { onMounted, watch } from 'vue'
-
-const route = useRoute()
-const authStore = useAuthStore()
-const isAuthenticated = computed(() => authStore.isAuthenticated)
-const token = computed(() => authStore.token)
-const siteKey = useRuntimeConfig().public.yandexCaptchaSiteKey
-
-const userName = computed(() => authStore.user?.name || authStore.user?.email?.split('@')[0] || 'Пользователь')
-const userEmail = computed(() => authStore.user?.email || '')
+import { useApi } from '~/composables/useApi'
 
 // ============================================
-// ПОЛУЧАТЕЛИ
+// INTERFACES
 // ============================================
 
 interface Recipient {
@@ -274,48 +265,42 @@ interface Recipient {
   has_recipients: boolean
 }
 
+interface ContactsResponse {
+  success: boolean
+  recipients: Recipient[]
+  message?: string
+}
+
+interface SendMessageResponse {
+  success: boolean
+  message?: string
+}
+
+// ============================================
+// COMPOSABLES
+// ============================================
+
+const route = useRoute()
+const authStore = useAuthStore()
+const { $api } = useApi()
+
+// ============================================
+// STATE
+// ============================================
+
+const isAuthenticated = computed(() => authStore.isAuthenticated)
+const token = computed(() => authStore.token)
+const siteKey = useRuntimeConfig().public.yandexCaptchaSiteKey
+
+const userName = computed(() => authStore.user?.name || authStore.user?.email?.split('@')[0] || 'Пользователь')
+const userEmail = computed(() => authStore.user?.email || '')
+
 const recipients = ref<Recipient[]>([])
 const loadingRecipients = ref(false)
 const selectedRecipientDescription = ref('')
 
-const getRecipientWord = (count: number) => {
-  if (count === 1) return 'получатель'
-  if (count >= 2 && count <= 4) return 'получателя'
-  return 'получателей'
-}
-
-const loadRecipients = async () => {
-  loadingRecipients.value = true
-  
-  try {
-    const url = isAuthenticated.value ? '/api/contacts/recipients' : '/api/contacts/recipients-public'
-    const headers = isAuthenticated.value ? { 'Authorization': `Bearer ${token.value}` } : {}
-    
-    const response = await $fetch(url, {
-      headers: {
-        ...headers,
-        'Accept': 'application/json'
-      },
-      credentials: 'include'
-    })
-    
-    if (response.success) {
-      recipients.value = response.recipients
-    }
-  } catch (err) {
-    console.error('Error loading recipients:', err)
-  } finally {
-    loadingRecipients.value = false
-  }
-}
-
-const onRecipientChange = () => {
-  const selected = recipients.value.find(r => r.role === form.recipientRole)
-  selectedRecipientDescription.value = selected?.description || ''
-}
-
 // ============================================
-// ФОРМА
+// FORM STATE
 // ============================================
 
 const form = reactive({
@@ -330,12 +315,45 @@ const sending = ref(false)
 const formSuccess = ref(false)
 const formError = ref('')
 
+// ============================================
+// METHODS
+// ============================================
+
+const getRecipientWord = (count: number) => {
+  if (count === 1) return 'получатель'
+  if (count >= 2 && count <= 4) return 'получателя'
+  return 'получателей'
+}
+
+const loadRecipients = async () => {
+  loadingRecipients.value = true
+  
+  try {
+    const url = isAuthenticated.value ? '/contacts/recipients' : '/contacts/recipients-public'
+    // ✅ Типизируем ответ
+    const response = await $api<ContactsResponse>(url)
+    
+    if (response.success) {
+      recipients.value = response.recipients || []
+    }
+  } catch (err) {
+    console.error('Error loading recipients:', err)
+  } finally {
+    loadingRecipients.value = false
+  }
+}
+
+const onRecipientChange = () => {
+  const selected = recipients.value.find(r => r.role === form.recipientRole)
+  selectedRecipientDescription.value = selected?.description || ''
+}
+
 const getCsrfToken = (): string | null => {
   if (typeof document === 'undefined') return null
   const cookies = document.cookie.split(';').map(c => c.trim())
   for (const cookie of cookies) {
     const [name, value] = cookie.split('=')
-    if (name === 'XSRF-TOKEN') {
+    if (name === 'XSRF-TOKEN' && value) {
       return decodeURIComponent(value)
     }
   }
@@ -349,6 +367,7 @@ const sanitizeMessage = () => {
 }
 
 const getCaptchaToken = (): string | null => {
+  if (typeof document === 'undefined') return null
   const container = document.getElementById('contacts-captcha-container')
   if (!container) return null
   const input = container.querySelector('input[name="smart-token"]') as HTMLInputElement
@@ -357,6 +376,7 @@ const getCaptchaToken = (): string | null => {
 
 const initCaptcha = () => {
   if (isAuthenticated.value) return
+  if (typeof document === 'undefined') return
   if (document.querySelector('#yandex-captcha-script')) return
   
   const script = document.createElement('script')
@@ -385,9 +405,7 @@ const sendMessage = async () => {
     return
   }
   
-  const xsrfToken = getCsrfToken()
-  
-  const body: any = {
+  const body: Record<string, any> = {
     message: form.message.trim(),
     recipient_role: form.recipientRole
   }
@@ -412,21 +430,10 @@ const sendMessage = async () => {
   }
   
   try {
-    const headers: Record<string, string> = {
-      'X-XSRF-TOKEN': xsrfToken || '',
-      'Content-Type': 'application/json',
-      'Accept': 'application/json'
-    }
-    
-    if (isAuthenticated.value && token.value) {
-      headers['Authorization'] = `Bearer ${token.value}`
-    }
-    
-    const response = await $fetch('/api/contacts', {
+    // ✅ Типизируем ответ
+    const response = await $api<SendMessageResponse>('/contacts', {
       method: 'POST',
-      body,
-      headers,
-      credentials: 'include'
+      body
     })
     
     if (response.success) {
@@ -455,6 +462,10 @@ const sendMessage = async () => {
     sending.value = false
   }
 }
+
+// ============================================
+// LIFECYCLE
+// ============================================
 
 onMounted(() => {
   loadRecipients()

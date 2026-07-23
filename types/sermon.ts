@@ -1,27 +1,48 @@
+// ~/types/sermon.ts
+
+export interface Category {
+  id: number
+  title: string      
+  slug: string
+  description?: string | null
+  thumbnail?: string | null
+  created_at?: string | null
+  updated_at?: string | null
+  posts_count?: number
+}
+
+export interface Group {
+  id: number
+  title: string     
+  slug: string
+  created_at?: string | null
+  updated_at?: string | null
+  posts_count?: number
+}
+
+export interface Conference {
+  id: number
+  title: string    
+  slug: string
+  created_at?: string | null
+  updated_at?: string | null
+  posts_count?: number
+}
+
 export interface Post {
   id: number
   title: string
   slug: string
   description: string
   content: string
+  
+  // Внешние ключи
+  category_id: number
+  group_id: number
+  conference_id: number
+  user_id: number
+  
   thumbnail: string | null
-  thumbnail_url?: string | null
-  
-  // Аудио файл
-  audio_file: string | null
-  audio_url?: string | null
-  audio_filename: string | null
-  audio_size: number | null
-  audio_size_formatted?: string | null
-  audio_mime: string | null
-  
-  // Текстовый файл
-  text_file: string | null
-  text_url?: string | null
-  text_filename: string | null
-  text_size: number | null
-  text_size_formatted?: string | null
-  text_mime: string | null
   
   // Внешние ссылки
   youtube: string | null
@@ -29,42 +50,43 @@ export interface Post {
   dzen: string | null
   vkVideo: string | null
   
-  // Связи
-  category: Category | null
-  group: Group | null
-  conference: Conference | null
+  // Аудио файл
+  audio_file: string | null
+  audio_filename: string | null
+  audio_size: number | null
+  audio_mime: string | null
+  audio: string | null
+  
+  // Текстовый файл
+  text_file: string | null
+  text_filename: string | null
+  text_size: number | null
+  text_mime: string | null
+  text: string | null
+  
+  // Связи (загружаются через with)
+  category?: Category | null
+  group?: Group | null
+  conference?: Conference | null
   
   // Даты
-  created_at: string
-  updated_at: string
+  created_at: string | null
+  updated_at: string | null
   
   // Статистика
-  likes_count?: number
-  views_count?: number
+  views_count: number
+  likes_count: number
+  
+  // Дополнительные поля (для фронтенда)
+  clean_description?: string
+  clean_content?: string
+  thumbnail_url?: string | null
+  audio_url?: string | null
+  text_url?: string | null
+  audio_size_formatted?: string | null
+  text_size_formatted?: string | null
   is_liked?: boolean
   is_favorite?: boolean
-}
-
-export interface Category {
-  id: number
-  name: string
-  slug: string
-  posts_count?: number
-}
-
-export interface Group {
-  id: number
-  name: string
-  slug: string
-  posts_count?: number
-}
-
-export interface Conference {
-  id: number
-  name: string
-  slug: string
-  year?: number
-  posts_count?: number
 }
 
 export interface PostFilters {
@@ -76,4 +98,10 @@ export interface PostFilters {
   per_page?: number
 }
 
-export type { PaginatedResponse } from './api'
+export interface PaginatedResponse<T> {
+  data: T[]
+  current_page: number
+  last_page: number
+  per_page: number
+  total: number
+}

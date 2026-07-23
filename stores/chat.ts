@@ -1,6 +1,17 @@
 import { defineStore } from 'pinia'
 import type { Conversation, Message } from '~/types/chat'
 
+// ✅ Добавляем интерфейсы для ответов API
+interface ApiResponse<T = any> {
+  success: boolean
+  data?: T
+  message?: string
+}
+
+interface ConversationsResponse extends ApiResponse<Conversation[]> {}
+interface MessagesResponse extends ApiResponse<Message[]> {}
+interface SendMessageResponse extends ApiResponse<Message> {}
+
 export const useChatStore = defineStore('chat', {
     state: () => ({
         conversations: [] as Conversation[],
@@ -30,7 +41,8 @@ export const useChatStore = defineStore('chat', {
             this.loading = true
             try {
                 const { $api } = useApi()
-                const response = await $api('/bible-school/chat/conversations')
+                // ✅ Типизируем ответ
+                const response = await $api<ConversationsResponse>('/bible-school/chat/conversations')
                 if (response.success) {
                     this.conversations = response.data || []
                 }
@@ -45,7 +57,8 @@ export const useChatStore = defineStore('chat', {
         async loadMessages(conversationId: number, limit = 50) {
             try {
                 const { $api } = useApi()
-                const response = await $api(`/bible-school/chat/conversations/${conversationId}/messages?limit=${limit}`)
+                // ✅ Типизируем ответ
+                const response = await $api<MessagesResponse>(`/bible-school/chat/conversations/${conversationId}/messages?limit=${limit}`)
                 if (response.success) {
                     this.messages[conversationId] = response.data || []
                     this.currentConversationId = conversationId
@@ -58,14 +71,13 @@ export const useChatStore = defineStore('chat', {
         async sendMessage(receiverId: number, message: string): Promise<Message | null> {
             try {
                 const { $api } = useApi()
-                const response = await $api('/bible-school/chat/send', {
+                // ✅ Типизируем ответ
+                const response = await $api<SendMessageResponse>('/bible-school/chat/send', {
                     method: 'POST',
                     body: { receiver_id: receiverId, message }
                 })
-                if (response.success) {
-                    const msg = response.data
-                    // ✅ НЕ ДОБАВЛЯЕМ ЗДЕСЬ — ждём WebSocket
-                    return msg
+                if (response.success && response.data) {
+                    return response.data
                 }
                 return null
             } catch (error) {
@@ -77,7 +89,8 @@ export const useChatStore = defineStore('chat', {
         async markConversationAsRead(conversationId: number) {
             try {
                 const { $api } = useApi()
-                await $api(`/bible-school/chat/conversations/${conversationId}/read`, { method: 'PUT' })
+                // ✅ Типизируем ответ (можно использовать ApiResponse)
+                await $api<ApiResponse>(`/bible-school/chat/conversations/${conversationId}/read`, { method: 'PUT' })
                 const conversation = this.conversations.find(c => c.id === conversationId)
                 if (conversation) {
                     conversation.unread_count = 0

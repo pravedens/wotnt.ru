@@ -33,11 +33,23 @@
 </template>
 
 <script setup>
+import { useImageUrl } from '~/composables/useImageUrl';
+import { useApi } from '~/composables/useApi';  // ✅ ДОБАВЛЕН ИМПОРТ
+
+const { getImageUrl } = useImageUrl();
+const { $api } = useApi();  // ✅ ДОБАВЛЕНО
+
 const courses = ref([]);
 
 const fetchCourses = async () => {
-  const response = await $fetch('/api/bible-school/courses');
-  courses.value = response.courses || [];
+  try {
+    // ✅ Используем $api вместо $fetch
+    const response = await $api('/bible-school/courses');
+    courses.value = response.courses || [];
+  } catch (err) {
+    console.error('Fetch courses error:', err);
+    courses.value = [];
+  }
 };
 
 const openCoursePreview = (course) => {

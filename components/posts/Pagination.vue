@@ -23,7 +23,7 @@
       <template v-for="page in displayedPages" :key="page">
         <button
           v-if="page !== '...'"
-          @click="$emit('page-change', page)"
+          @click="$emit('page-change', page as number)" 
           class="w-10 h-10 rounded-lg transition"
           :class="page === currentPage 
             ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white font-bold' 
@@ -55,34 +55,34 @@
   </div>
 </template>
 
-<script setup>
-const props = defineProps({
-  currentPage: {
-    type: Number,
-    required: true
-  },
-  lastPage: {
-    type: Number,
-    required: true
-  },
-  total: {
-    type: Number,
-    default: 0
-  },
-  perPage: {
-    type: Number,
-    default: 8
-  }
+<script setup lang="ts">
+
+// Типизация пропсов
+interface Props {
+  currentPage: number
+  lastPage: number
+  total?: number
+  perPage?: number
+}
+
+// Типизация emits
+interface Emits {
+  (e: 'page-change', page: number): void
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  total: 0,
+  perPage: 8
 })
 
-defineEmits(['page-change'])
+const emit = defineEmits<Emits>()
 
-// Вычисляем отображаемые номера страниц
-const displayedPages = computed(() => {
-  const delta = 0 // Сколько страниц показывать слева и справа от текущей
-  const range = []
-  const rangeWithDots = []
-  let l
+// Типизация вычисляемого значения
+const displayedPages = computed<(number | string)[]>(() => {
+  const delta = 0
+  const range: number[] = []
+  const rangeWithDots: (number | string)[] = []
+  let l: number | undefined
 
   for (let i = 1; i <= props.lastPage; i++) {
     if (i === 1 || i === props.lastPage || (i >= props.currentPage - delta && i <= props.currentPage + delta)) {
@@ -91,7 +91,7 @@ const displayedPages = computed(() => {
   }
 
   range.forEach((i) => {
-    if (l) {
+    if (l !== undefined) {
       if (i - l === 2) {
         rangeWithDots.push(l + 1)
       } else if (i - l !== 1) {

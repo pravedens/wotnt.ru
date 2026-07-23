@@ -384,6 +384,7 @@
 <script setup lang="ts">
 import { useAuthStore } from '~/stores/auth'
 import { useNotificationStore } from '~/stores/notification'
+import { useApi } from '~/composables/useApi'  // ✅ ДОБАВЛЕН ИМПОРТ
 
 definePageMeta({
   middleware: 'auth'
@@ -392,6 +393,7 @@ definePageMeta({
 const authStore = useAuthStore()
 const notificationStore = useNotificationStore()
 const router = useRouter()
+const { $api } = useApi()  // ✅ ДОБАВЛЕНО
 
 const users = ref<any[]>([])
 const loading = ref(true)
@@ -443,13 +445,9 @@ const loadUsers = async () => {
     if (filters.value.has_email) params.append('has_email', filters.value.has_email)
     if (filters.value.has_phone) params.append('has_phone', filters.value.has_phone)
     
-    const url = `/api/pastor/users${params.toString() ? '?' + params.toString() : ''}`
-    const response = await $fetch(url, {
-      headers: {
-        'Authorization': `Bearer ${authStore.token}`,
-        'Accept': 'application/json'
-      }
-    })
+    // ✅ Используем $api вместо $fetch
+    const url = `/pastor/users${params.toString() ? '?' + params.toString() : ''}`
+    const response = await $api(url)
     
     if (response.success) {
       users.value = response.users
@@ -471,14 +469,10 @@ const toggleRole = async (user: any, role: string, event: Event) => {
   const isChecked = target.checked
   
   try {
-    const response = await $fetch(`/api/pastor/users/${user.id}/roles`, {
+    // ✅ Используем $api вместо $fetch
+    const response = await $api(`/pastor/users/${user.id}/roles`, {
       method: 'PUT',
-      body: { [`is_${role}`]: isChecked },
-      headers: {
-        'Authorization': `Bearer ${authStore.token}`,
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      }
+      body: { [`is_${role}`]: isChecked }
     })
     
     if (response.success) {

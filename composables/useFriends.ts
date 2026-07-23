@@ -1,8 +1,11 @@
 // composables/useFriends.ts
 
 import type { Friend, FriendsResponse } from '~/types/friend'
+import { useApi } from '~/composables/useApi'  // ✅ ДОБАВЛЕН ИМПОРТ
 
 export const useFriends = () => {
+    const { $api } = useApi()  // ✅ ДОБАВЛЕНО
+
     const friends = ref<Friend[]>([])
     const loading = ref(false)
     const error = ref<string | null>(null)
@@ -12,7 +15,8 @@ export const useFriends = () => {
         error.value = null
         
         try {
-            const response = await $fetch<FriendsResponse>('/api/friends')
+            // ✅ Используем $api вместо $fetch
+            const response = await $api<FriendsResponse>('/friends')
             friends.value = response.data || []
         } catch (err: any) {
             error.value = err?.data?.message || 'Ошибка загрузки дружественных церквей'

@@ -89,6 +89,7 @@
 <script setup>
 import { useImageUrl } from '~/composables/useImageUrl';
 import { useAuthStore } from '~/stores/auth';
+import { useApi } from '~/composables/useApi';  // ✅ ДОБАВЛЕН ИМПОРТ
 
 const props = defineProps({
   course: {
@@ -102,6 +103,7 @@ const emit = defineEmits(['close', 'apply']);
 const authStore = useAuthStore();
 const { getImageUrl } = useImageUrl();
 const { isAuthenticated } = storeToRefs(authStore);
+const { $api } = useApi();  // ✅ ДОБАВЛЕНО
 
 const themes = ref([]);
 const statuses = ref([]);
@@ -146,7 +148,8 @@ const handleApply = () => {
 
 const fetchCourseDetails = async () => {
   try {
-    const response = await $fetch(`/api/bible-school/courses/${props.course.slug}/preview`);
+    // ✅ Используем $api вместо $fetch
+    const response = await $api(`/bible-school/courses/${props.course.slug}/preview`);
     themes.value = response.themes || [];
     statuses.value = response.statuses || [];
     

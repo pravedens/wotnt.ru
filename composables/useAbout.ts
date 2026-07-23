@@ -1,22 +1,15 @@
 import type { About, Denomination } from '~/types/about'
+import { useApi } from '~/composables/useApi'  // ✅ ДОБАВЛЕН ИМПОРТ
 
 export const useAbout = () => {
+    const { $api } = useApi()  // ✅ ДОБАВЛЕНО
+
     const abouts = ref<About[]>([])
     const denominations = ref<Denomination[]>([])
     const currentAbout = ref<About | null>(null)
     const currentDenomination = ref<Denomination | null>(null)
     const loading = ref(false)
     const error = ref<string | null>(null)
-
-    // Получение заголовков с предотвращением кэширования
-    const getHeaders = () => {
-        return {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-            'Cache-Control': 'no-cache, no-store, must-revalidate',
-            'Pragma': 'no-cache'
-        }
-    }
 
     // Загрузка всех статей
     const loadAbouts = async (params?: { denomination_id?: number, denomination_slug?: string }) => {
@@ -27,12 +20,10 @@ export const useAbout = () => {
             const queryParams = new URLSearchParams()
             if (params?.denomination_id) queryParams.append('denomination_id', String(params.denomination_id))
             if (params?.denomination_slug) queryParams.append('denomination_slug', params.denomination_slug)
-            // ✅ Добавляем timestamp для обхода кэша
             queryParams.append('_t', String(Date.now()))
 
-            const response = await $fetch<{ abouts: About[] }>(`/api/abouts?${queryParams.toString()}`, {
-                headers: getHeaders()
-            })
+            // ✅ Используем $api вместо $fetch
+            const response = await $api<{ abouts: About[] }>(`/abouts?${queryParams.toString()}`)
             abouts.value = response.abouts
         } catch (err: any) {
             error.value = err.message || 'Ошибка загрузки статей'
@@ -48,10 +39,9 @@ export const useAbout = () => {
         error.value = null
 
         try {
-            // ✅ Добавляем timestamp для обхода кэша
-            const about = await $fetch<About>(`/api/abouts/${slug}`, {
-                params: { _t: Date.now() },
-                headers: getHeaders()
+            // ✅ Используем $api вместо $fetch
+            const about = await $api<About>(`/abouts/${slug}`, {
+                query: { _t: Date.now() }
             })
             currentAbout.value = about
             return about
@@ -70,10 +60,9 @@ export const useAbout = () => {
         error.value = null
 
         try {
-            // ✅ Добавляем timestamp для обхода кэша
-            const response = await $fetch<Denomination[]>('/api/denominations', {
-                params: { _t: Date.now() },
-                headers: getHeaders()
+            // ✅ Используем $api вместо $fetch
+            const response = await $api<Denomination[]>('/denominations', {
+                query: { _t: Date.now() }
             })
             denominations.value = response
         } catch (err: any) {
@@ -90,10 +79,9 @@ export const useAbout = () => {
         error.value = null
         
         try {
-            // ✅ Добавляем timestamp для обхода кэша
-            const response = await $fetch(`/api/denominations/${slug}/abouts`, {
-                params: { _t: Date.now() },
-                headers: getHeaders()
+            // ✅ Используем $api вместо $fetch
+            const response = await $api(`/denominations/${slug}/abouts`, {
+                query: { _t: Date.now() }
             })
             abouts.value = response.abouts || response
             return response

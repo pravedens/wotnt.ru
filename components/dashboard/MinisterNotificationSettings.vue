@@ -74,9 +74,25 @@
 <script setup lang="ts">
 import { useNotificationStore } from '~/stores/notification'
 import { useAuthStore } from '~/stores/auth'
+import { useApi } from '~/composables/useApi'  // ✅ ДОБАВЛЕН ИМПОРТ
+
+// Интерфейсы для ответов API
+interface SettingsResponse {
+  success: boolean
+  settings: {
+    email: boolean
+    webpush: boolean
+  }
+}
+
+interface SaveSettingsResponse {
+  success: boolean
+  message?: string
+}
 
 const notificationStore = useNotificationStore()
 const authStore = useAuthStore()
+const { $api } = useApi()  // ✅ ДОБАВЛЕНО
 
 const loading = ref(true)
 const saving = ref(false)
@@ -89,10 +105,8 @@ const settings = ref({
 const loadSettings = async () => {
   loading.value = true
   try {
-    const response = await $fetch('/api/user/minister-notification-settings', {
-      baseURL: 'https://wotgospel.ru',
-      headers: { 'Authorization': `Bearer ${authStore.token}` }
-    })
+    // ✅ Используем $api вместо $fetch с baseURL
+    const response = await $api<SettingsResponse>('/user/minister-notification-settings')
     if (response.success) {
       settings.value = response.settings
     }
@@ -111,13 +125,9 @@ const toggleSetting = (key: 'email' | 'webpush') => {
 const saveSettings = async () => {
   saving.value = true
   try {
-    const response = await $fetch('/api/user/minister-notification-settings', {
+    // ✅ Используем $api вместо $fetch с baseURL
+    const response = await $api<SaveSettingsResponse>('/user/minister-notification-settings', {
       method: 'PUT',
-      baseURL: 'https://wotgospel.ru',
-      headers: { 
-        'Authorization': `Bearer ${authStore.token}`,
-        'Content-Type': 'application/json'
-      },
       body: { settings: settings.value }
     })
     

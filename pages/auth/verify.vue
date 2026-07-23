@@ -73,6 +73,7 @@
 import { useAuthStore } from '~/stores/auth'
 import { useNotificationStore } from '~/stores/notification'
 import { useRoute, useRouter } from 'vue-router'
+import { useApi } from '~/composables/useApi'  // ✅ ДОБАВЛЕН ИМПОРТ
 
 definePageMeta({
   layout: 'auth'
@@ -82,6 +83,7 @@ const authStore = useAuthStore()
 const notificationStore = useNotificationStore()
 const route = useRoute()
 const router = useRouter()
+const { $api } = useApi()  // ✅ ДОБАВЛЕНО
 
 const status = ref('loading')
 const title = ref('Подтверждение email')
@@ -180,13 +182,10 @@ const resendEmail = async () => {
     
     resendLoading.value = true
     try {
-      await $fetch('https://wotgospel.ru/api/email/verification-notification', {
+      // ✅ Используем $api вместо $fetch с жёсткой ссылкой
+      await $api('/email/verification-notification', {
         method: 'POST',
-        body: { email },
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        }
+        body: { email }
       })
       notificationStore.success('Успешно', 'Письмо отправлено повторно. Проверьте вашу почту.')
     } catch (err) {

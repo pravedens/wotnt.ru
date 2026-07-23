@@ -103,45 +103,46 @@
   </div>
 </template>
 
-<script setup>
-const props = defineProps({
-  categories: {
-    type: Array,
-    default: () => []
-  },
-  groups: {
-    type: Array,
-    default: () => []
-  },
-  conferences: {
-    type: Array,
-    default: () => []
-  },
+<script setup lang="ts">  // ✅ lang="ts"
+import { useApi } from '~/composables/useApi'
+import type { Category, Group, Conference } from '~/types/sermon'  // ✅ Импорт типов
+
+// ✅ Типизация пропсов
+interface Props {
+  categories: Category[]
+  groups: Group[]
+  conferences: Conference[]
   modelValue: {
-    type: Object,
-    default: () => ({
-      category_id: null,
-      group_id: null,
-      conference_id: null
-    })
-  },
-  totalPosts: {
-    type: Number,
-    default: 0
+    category_id: number | null
+    group_id: number | null
+    conference_id: number | null
   }
+  totalPosts: number
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  categories: () => [],
+  groups: () => [],
+  conferences: () => [],
+  totalPosts: 0
 })
 
-const emit = defineEmits(['update:modelValue', 'filter-change'])
+const emit = defineEmits<{
+  (e: 'update:modelValue', value: Props['modelValue']): void
+  (e: 'filter-change', key: string, value: any): void
+}>()
+
+const { $api } = useApi()
 
 // Локальные модели для select
-const selectedCategory = ref(props.modelValue.category_id)
-const selectedGroup = ref(props.modelValue.group_id)
-const selectedConference = ref(props.modelValue.conference_id)
+const selectedCategory = ref<number | null>(props.modelValue.category_id)
+const selectedGroup = ref<number | null>(props.modelValue.group_id)
+const selectedConference = ref<number | null>(props.modelValue.conference_id)
 
-// Доступные опции для каждого фильтра
-const availableCategories = ref([])
-const availableGroups = ref([])
-const availableConferences = ref([])
+// ✅ Типизация доступных опций
+const availableCategories = ref<Category[]>([])
+const availableGroups = ref<Group[]>([])
+const availableConferences = ref<Conference[]>([])
 
 // Вычисляемые свойства для проверки наличия опций
 const hasAvailableCategories = computed(() => availableCategories.value.length > 0)
@@ -157,28 +158,24 @@ const hasActiveFilters = computed(() => {
 const loadAvailableOptions = async () => {
   const params = new URLSearchParams()
   
-  // Добавляем все выбранные фильтры, кроме текущего
   if (selectedCategory.value) {
-    params.append('category_id', selectedCategory.value)
+    params.append('category_id', String(selectedCategory.value))
   }
   if (selectedGroup.value) {
-    params.append('group_id', selectedGroup.value)
+    params.append('group_id', String(selectedGroup.value))
   }
   if (selectedConference.value) {
-    params.append('conference_id', selectedConference.value)
+    params.append('conference_id', String(selectedConference.value))
   }
 
   try {
-    // Загружаем доступные категории с учетом фильтров
-    const categoriesRes = await $fetch(`/api/filtered-categories?${params.toString()}`)
+    const categoriesRes = await $api<Category[]>(`/filtered-categories?${params.toString()}`)
     availableCategories.value = categoriesRes || []
     
-    // Загружаем доступные группы с учетом фильтров
-    const groupsRes = await $fetch(`/api/filtered-groups?${params.toString()}`)
+    const groupsRes = await $api<Group[]>(`/filtered-groups?${params.toString()}`)
     availableGroups.value = groupsRes || []
     
-    // Загружаем доступные конференции с учетом фильтров
-    const confsRes = await $fetch(`/api/filtered-conferences?${params.toString()}`)
+    const confsRes = await $api<Conference[]>(`/filtered-conferences?${params.toString()}`)
     availableConferences.value = confsRes || []
     
   } catch (err) {
@@ -187,16 +184,13 @@ const loadAvailableOptions = async () => {
 }
 
 // Обновление фильтра
-const updateFilter = async (key, value) => {
-  // Обновляем локальное значение
+const updateFilter = async (key: string, value: any) => {
   if (key === 'category_id') selectedCategory.value = value
   if (key === 'group_id') selectedGroup.value = value
   if (key === 'conference_id') selectedConference.value = value
   
-  // Загружаем доступные опции
   await loadAvailableOptions()
   
-  // Проверяем, есть ли выбранные значения в доступных опциях
   if (selectedGroup.value && !availableGroups.value.some(g => g.id === selectedGroup.value)) {
     selectedGroup.value = null
     emit('filter-change', 'group_id', null)
@@ -206,7 +200,6 @@ const updateFilter = async (key, value) => {
     emit('filter-change', 'conference_id', null)
   }
   
-  // Отправляем событие изменения
   emit('filter-change', key, value)
 }
 

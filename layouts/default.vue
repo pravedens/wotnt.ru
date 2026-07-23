@@ -28,10 +28,15 @@ import AppFooter from '~/components/layout/AppFooter.vue'
 import AppMobileMenu from '~/components/layout/AppMobileMenu.vue'
 import { useRoute } from 'vue-router'
 
+// ============================================
+// ПОЛУЧАЕМ КОНФИГУРАЦИЮ
+// ============================================
+const config = useRuntimeConfig()
+const { siteUrl, apiBase } = config.public
 
 // Мета-теги и фавиконки
 useHead({
-  title: 'wotnt.ru - Проповеди и события',
+  title: `${siteUrl} - Проповеди и события`,
   meta: [
     { name: 'description', content: 'Проповеди, события церкви, община верующих' },
     { name: 'theme-color', content: '#4f46e5' },
@@ -77,7 +82,7 @@ const mobileMenuOpen = ref(false)
 const isInDashboard = computed(() => {
   return route.path.startsWith('/dashboard') || 
          route.path.startsWith('/account') ||
-         route.path.startsWith('https://wotgospel.ru/admin')
+         route.path.startsWith(`${apiBase}/admin`)
 })
 
 // ✅ Функция восстановления скролла
