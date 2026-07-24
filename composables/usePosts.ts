@@ -11,7 +11,7 @@ export const usePosts = () => {
     const error = ref<string | null>(null)
 
     const getFiltersFromURL = (): PostFilters => {
-        if (process.client) {
+        if (import.meta.client) {
             const urlParams = new URLSearchParams(window.location.search)
             const page = urlParams.get('page')
             const category_id = urlParams.get('category_id')
@@ -83,13 +83,8 @@ export const usePosts = () => {
             if (filters.value.search) {
                 params.search = filters.value.search
             }
-
-            // ✅ Добавляем логирование для отладки
-            console.log('🔍 Fetching posts with params:', params)
             
             const response = await $api<PaginatedResponse<Post>>('/posts', { params })
-            
-            console.log('📦 API Response:', response)
             
             // ✅ Правильная обработка ответа
             if (response?.data && Array.isArray(response.data)) {
@@ -105,7 +100,6 @@ export const usePosts = () => {
                     prev_page_url: response.prev_page_url,
                     links: response.links
                 }
-                console.log('✅ Posts loaded:', posts.value.length)
             } else {
                 // ✅ Если ответ не соответствует ожидаемому формату
                 console.warn('⚠️ Unexpected response format:', response)
@@ -125,7 +119,7 @@ export const usePosts = () => {
     }
 
     const updateURL = () => {
-        if (process.client) {
+        if (import.meta.client) {
             const params = new URLSearchParams()
             
             if (filters.value.category_id) {
@@ -177,7 +171,7 @@ export const usePosts = () => {
     const goToPage = async (page: number) => {
         filters.value.page = page
         await loadPosts()
-        if (process.client) {
+        if (import.meta.client) {
             window.scrollTo({ top: 0, behavior: 'smooth' })
         }
     }

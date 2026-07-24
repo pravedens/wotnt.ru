@@ -34,14 +34,13 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { usePosts } from '~/composables/usePosts'
+import type { LocationQueryValue } from 'vue-router'
+import type { Breadcrumb, Category, Group, Conference } from '~/types/sermon'
 
-interface Breadcrumb {
-  title: string
-  to?: any
-}
-
+// ✅ Прописываем props напрямую, без импортированного интерфейса
 const props = defineProps<{
   postTitle?: string
   postSlug?: string
@@ -50,38 +49,57 @@ const props = defineProps<{
 const route = useRoute()
 const { filters, categories, groups, conferences } = usePosts()
 
+// Вспомогательная функция для безопасного получения значения из query
+const getQueryValue = (value: LocationQueryValue | LocationQueryValue[] | undefined): string | null => {
+  if (!value) return null
+  if (Array.isArray(value)) {
+    return value[0] || null
+  }
+  return value
+}
+
 // Получаем название категории по ID
 const getCategoryName = (id: string | number | null): string => {
   if (!id || !categories.value?.length) return 'Категория'
-  const category = categories.value.find(c => c.id === Number(id))
+  const category = (categories.value as Category[]).find(c => c.id === Number(id))
   return category?.title || 'Категория'
 }
 
 // Получаем название группы по ID
 const getGroupName = (id: string | number | null): string => {
   if (!id || !groups.value?.length) return 'Группа'
-  const group = groups.value.find(g => g.id === Number(id))
+  const group = (groups.value as Group[]).find(g => g.id === Number(id))
   return group?.title || 'Группа'
 }
 
 // Получаем название конференции по ID
 const getConferenceName = (id: string | number | null): string => {
   if (!id || !conferences.value?.length) return 'Конференция'
-  const conference = conferences.value.find(c => c.id === Number(id))
+  const conference = (conferences.value as Conference[]).find(c => c.id === Number(id))
   return conference?.title || 'Конференция'
+}
+
+// Безопасное получение ID из query
+const getQueryId = (key: string): string | null => {
+  const value = route.query[key]
+  return getQueryValue(value)
+}
+
+// Безопасное получение ID из фильтров
+const getFilterId = (key: string): string | null => {
+  const value = filters.value?.[key as keyof typeof filters.value]
+  return value ? String(value) : null
 }
 
 // Формируем ссылку на список с сохранением ВСЕХ фильтров
 const getListLink = () => {
   const query: any = {}
   
-  // Берем фильтры из URL (они уже включают page)
   if (route.query.category_id) query.category_id = String(route.query.category_id)
   if (route.query.group_id) query.group_id = String(route.query.group_id)
   if (route.query.conference_id) query.conference_id = String(route.query.conference_id)
   if (route.query.search) query.search = String(route.query.search)
   if (route.query.page && Number(route.query.page) > 1) query.page = String(route.query.page)
-  
   
   return {
     path: '/sermons',
@@ -91,17 +109,15 @@ const getListLink = () => {
 
 // Формируем ссылку на конференцию с сохранением ВСЕХ фильтров
 const getConferenceLink = () => {
-  const conferenceId = route.query.conference_id || filters.value?.conference_id
+  const conferenceId = getQueryId('conference_id') || getFilterId('conference_id')
   if (!conferenceId) return null
   
   const query: any = { conference_id: String(conferenceId) }
   
-  // Сохраняем ВСЕ остальные фильтры, включая страницу
   if (route.query.category_id) query.category_id = String(route.query.category_id)
   if (route.query.group_id) query.group_id = String(route.query.group_id)
   if (route.query.search) query.search = String(route.query.search)
   if (route.query.page && Number(route.query.page) > 1) query.page = String(route.query.page)
-  
   
   return {
     path: '/sermons',
@@ -111,12 +127,11 @@ const getConferenceLink = () => {
 
 // Формируем ссылку на категорию с сохранением ВСЕХ фильтров
 const getCategoryLink = () => {
-  const categoryId = route.query.category_id || filters.value?.category_id
+  const categoryId = getQueryId('category_id') || getFilterId('category_id')
   if (!categoryId) return null
   
   const query: any = { category_id: String(categoryId) }
   
-  // Сохраняем ВСЕ остальные фильтры
   if (route.query.group_id) query.group_id = String(route.query.group_id)
   if (route.query.conference_id) query.conference_id = String(route.query.conference_id)
   if (route.query.search) query.search = String(route.query.search)
@@ -130,12 +145,11 @@ const getCategoryLink = () => {
 
 // Формируем ссылку на группу с сохранением ВСЕХ фильтров
 const getGroupLink = () => {
-  const groupId = route.query.group_id || filters.value?.group_id
+  const groupId = getQueryId('group_id') || getFilterId('group_id')
   if (!groupId) return null
   
   const query: any = { group_id: String(groupId) }
   
-  // Сохраняем ВСЕ остальные фильтры
   if (route.query.category_id) query.category_id = String(route.query.category_id)
   if (route.query.conference_id) query.conference_id = String(route.query.conference_id)
   if (route.query.search) query.search = String(route.query.search)
@@ -150,25 +164,18 @@ const getGroupLink = () => {
 const breadcrumbs = computed<Breadcrumb[]>(() => {
   const crumbs: Breadcrumb[] = []
   
-  // Определяем текущий путь
   const isListPage = route.path === '/sermons'
   const isDetailPage = route.path.startsWith('/sermons/') && route.path !== '/sermons'
   
-  // Если мы на странице списка
   if (isListPage) {
     crumbs.push({ title: 'Проповеди' })
-  }
-  
-  // Если мы на детальной странице
-  else if (isDetailPage) {
-    // Ссылка на список проповедей (с сохранением всех фильтров)
+  } else if (isDetailPage) {
     crumbs.push({ 
       title: 'Проповеди',
       to: getListLink()
     })
     
-    // Если есть категория - добавляем
-    const categoryId = route.query.category_id || filters.value?.category_id
+    const categoryId = getQueryId('category_id') || getFilterId('category_id')
     if (categoryId) {
       crumbs.push({ 
         title: getCategoryName(categoryId),
@@ -176,8 +183,7 @@ const breadcrumbs = computed<Breadcrumb[]>(() => {
       })
     }
     
-    // Если есть группа - добавляем
-    const groupId = route.query.group_id || filters.value?.group_id
+    const groupId = getQueryId('group_id') || getFilterId('group_id')
     if (groupId) {
       crumbs.push({ 
         title: getGroupName(groupId),
@@ -185,8 +191,7 @@ const breadcrumbs = computed<Breadcrumb[]>(() => {
       })
     }
     
-    // Если есть конференция - добавляем (САМЫЙ ВАЖНЫЙ СЛУЧАЙ)
-    const conferenceId = route.query.conference_id || filters.value?.conference_id
+    const conferenceId = getQueryId('conference_id') || getFilterId('conference_id')
     if (conferenceId) {
       crumbs.push({ 
         title: getConferenceName(conferenceId),
@@ -194,7 +199,6 @@ const breadcrumbs = computed<Breadcrumb[]>(() => {
       })
     }
     
-    // Название текущего поста
     if (props.postTitle) {
       crumbs.push({ title: props.postTitle })
     } else {
@@ -202,18 +206,15 @@ const breadcrumbs = computed<Breadcrumb[]>(() => {
     }
   }
   
-  
   return crumbs
 })
 </script>
 
 <style scoped>
-/* Скрываем скроллбар для WebKit браузеров */
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
 
-/* Скрываем скроллбар для Firefox */
 .scrollbar-hide {
   scrollbar-width: none;
 }

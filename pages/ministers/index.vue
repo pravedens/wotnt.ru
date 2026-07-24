@@ -29,7 +29,7 @@
       </div>
 
       <!-- Если нет ни одной категории со служителями -->
-      <div v-else-if="!loading && categories.length > 0" class="text-center text-white/60 py-8 mb-12">
+      <div v-else-if="!loading && allCategories.length > 0" class="text-center text-white/60 py-8 mb-12">
         ⚠️ Нет служителей ни в одной категории
       </div>
 
@@ -54,7 +54,7 @@ import { useMinister } from '~/composables/useMinister'
 const { getMinisters, getAllCategories } = useMinister()
 
 const allMinisters = ref<any[]>([])
-const allCategories = ref<any[]>([])
+const allCategories = ref<any[]>([])  // ✅ Переименовано из categories в allCategories
 const loading = ref(true)
 const selectedCategory = ref<any>(null)
 

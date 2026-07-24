@@ -41,10 +41,11 @@
 <script setup lang="ts">
 import Avatar from '~/components/auth/Avatar.vue'
 import WriteTeacherModal from './WriteTeacherModal.vue'
+import type { Teacher } from '~/types/bible-school'
 
-const props = defineProps({
-  teacher: { type: Object, required: true }
-})
+const props = defineProps<{
+  teacher: Teacher
+}>()
 
 const modalVisible = ref(false)
 
@@ -66,6 +67,7 @@ const openMessageModal = () => {
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
+  line-clamp: 3;
   overflow: hidden;
 }
 </style>

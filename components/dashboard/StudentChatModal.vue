@@ -20,7 +20,7 @@
             :visible="showNewChatModal"
             @close="showNewChatModal = false"
             @select="startNewConversation"
-        />
+          />
         </div>
 
         <div class="flex-1 flex flex-col min-w-0">
@@ -42,8 +42,20 @@
 
 <script setup lang="ts">
 import { useChatStore } from '~/stores/chat'
+import { useNotificationStore } from '~/stores/notification'
+import { useApi } from '~/composables/useApi'
 import ChatList from '~/components/chat/ChatList.vue'
 import ChatWindow from '~/components/chat/ChatWindow.vue'
+import NewChatModal from '~/components/chat/NewChatModal.vue'
+
+// ✅ Добавляем интерфейсы
+interface FindOrCreateResponse {
+  success: boolean
+  data: {
+    conversation_id: number
+  }
+  message?: string
+}
 
 const props = defineProps<{
   visible: boolean
@@ -53,9 +65,11 @@ const emit = defineEmits<{
   (e: 'close'): void
 }>()
 
+const { $api } = useApi()
 const chatStore = useChatStore()
-const selectedConversationId = ref<number | null>(null)
+const notificationStore = useNotificationStore()
 
+const selectedConversationId = ref<number | null>(null)
 const showNewChatModal = ref(false)
 
 const openNewChat = () => {
@@ -64,10 +78,12 @@ const openNewChat = () => {
 
 const startNewConversation = async (userId: number) => {
   try {
-    const response = await $api('/bible-school/chat/conversations/find-or-create', {
+    // ✅ Типизируем ответ
+    const response = await $api<FindOrCreateResponse>('/bible-school/chat/conversations/find-or-create', {
       method: 'POST',
       body: { user_id: userId }
     })
+    
     if (response.success) {
       const conversationId = response.data.conversation_id
       await chatStore.loadConversations()
@@ -75,6 +91,7 @@ const startNewConversation = async (userId: number) => {
       notificationStore.success('Чат создан', 'Беседа начата')
     }
   } catch (error) {
+    console.error('Start conversation error:', error)
     notificationStore.error('Ошибка', 'Не удалось создать чат')
   }
 }

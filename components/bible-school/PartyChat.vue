@@ -152,7 +152,7 @@
 <script setup>
 import { useAuthStore } from '~/stores/auth';
 import { useNotificationStore } from '~/stores/notification';
-import { useApi } from '~/composables/useApi';  // ✅ ДОБАВЛЕН ИМПОРТ
+import { useApi } from '~/composables/useApi'; 
 
 const props = defineProps({
   partyId: {
@@ -163,7 +163,7 @@ const props = defineProps({
 
 const authStore = useAuthStore();
 const notificationStore = useNotificationStore();
-const { $api } = useApi();  // ✅ ДОБАВЛЕНО
+const { $api } = useApi();  
 
 const party = ref({});
 const students = ref([]);

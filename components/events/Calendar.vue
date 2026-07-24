@@ -142,33 +142,7 @@
 <script setup lang="ts">
 import { useWindowSize } from '@vueuse/core'
 import { computed } from 'vue'
-
-// Типы
-interface CalendarEvent {
-  id: number
-  title: string
-  slug: string
-  color?: string
-  time?: string
-  description?: string
-  startDate?: string
-  startTime?: string
-  is_published?: boolean
-  members_only?: boolean
-  ministers_only?: boolean
-  is_past?: boolean
-  can_edit?: boolean
-}
-
-interface CalendarDay {
-  day: number
-  date: string
-  month: number
-  year: number
-  weekday: number
-  events: CalendarEvent[]
-  isCurrentMonth: boolean
-}
+import type { CalendarEvent, CalendarDay } from '~/types/event'
 
 // Props
 const props = defineProps<{
@@ -216,43 +190,55 @@ const dayCellClass = computed(() => {
   return 'h-32 sm:h-40 md:h-48 lg:h-56'
 })
 
-// Функция для извлечения времени из любого формата
-const extractTime = (timeString?: string): string | null => {
+// ✅ Функция для извлечения времени
+const extractTime = (timeString?: string | null): string | null => {
   if (!timeString) return null
   
-  if (timeString.match(/^\d{2}:\d{2}$/)) {
-    return timeString
+  // Приводим к строке
+  const str = String(timeString)
+  
+  // Проверяем формат HH:MM
+  if (/^\d{2}:\d{2}$/.test(str)) {
+    return str
   }
   
-  if (timeString.includes('T')) {
-    const match = timeString.match(/(\d{2}:\d{2})/)
-    if (match) {
-      return match[1]
-    }
+  // Ищем время в формате HH:MM внутри строки (например, из ISO даты)
+  const match = str.match(/(\d{2}:\d{2})/)
+  if (match && match[1]) {
+    return match[1]
   }
   
-  if (timeString.includes(':')) {
-    const parts = timeString.split(':')
-    if (parts.length >= 2) {
-      return `${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}`
+  // Пробуем разобрать строку с разделителем
+  if (str.includes(':')) {
+    const parts = str.split(':')
+    // ✅ Проверяем, что оба элемента существуют
+    if (parts.length >= 2 && parts[0] !== undefined && parts[1] !== undefined) {
+      const hours = parts[0].padStart(2, '0')
+      const minutes = parts[1].padStart(2, '0').substring(0, 2)
+      return `${hours}:${minutes}`
     }
   }
   
   return null
 }
 
-const getEventOpacity = (event: CalendarEvent) => {
+// ✅ Проверка, является ли событие опубликованным
+const isEventPublished = (event: CalendarEvent): boolean => {
+  return event.is_published !== false
+}
+
+const getEventOpacity = (event: CalendarEvent): number => {
   if (props.canEdit) {
     if (event.is_past) return 0.8
     return 1
   }
   
-  if (!event.is_published) return 0
+  if (!isEventPublished(event)) return 0
   if (event.is_past) return 0.7
   return 1
 }
 
-const getEventTitle = (event: CalendarEvent) => {
+const getEventTitle = (event: CalendarEvent): string => {
   const eventTime = extractTime(event.startTime || event.time)
   let title = eventTime ? `${eventTime} ${event.title}` : event.title
   
@@ -281,28 +267,30 @@ const getEventTitle = (event: CalendarEvent) => {
   return title
 }
 
-// Функция отображения времени
-const getEventDisplayText = (event: CalendarEvent) => {
+// ✅ Функция отображения времени
+const getEventDisplayText = (event: CalendarEvent): string => {
+  // Показываем время, если оно есть
   if (event.time) {
     return event.time
   }
   
+  // Иначе показываем сокращенное название
   const title = event.title || ''
   return title.length > 8 ? title.substring(0, 6) + '…' : title
 }
 
-const getShortWeekday = (weekday: number) => {
+const getShortWeekday = (weekday: number): string => {
   return shortWeekDays[weekday] || ''
 }
 
-const getDayTextClass = (day: CalendarDay) => {
+const getDayTextClass = (day: CalendarDay): string => {
   if (day.weekday === 5 || day.weekday === 6) {
     return 'text-red-300'
   }
   return 'text-white'
 }
 
-const getDayBackgroundClass = (day: CalendarDay) => {
+const getDayBackgroundClass = (day: CalendarDay): string => {
   if (day.weekday === 5 || day.weekday === 6) {
     return 'bg-red-500/5 hover:bg-red-500/10'
   }
@@ -314,7 +302,10 @@ const handleDayClick = (date: string) => {
   emit('select-day', date)
 }
 
+// ✅ Безопасный обработчик клика по событию
 const handleEventClick = (event: CalendarEvent) => {
+  if (!event) return
+  
   if (props.canEdit || event.can_edit) {
     emit('select-event', event)
   } else {
@@ -399,12 +390,10 @@ const isToday = (dateStr: string): boolean => {
     touch-action: manipulation;
   }
   
-  /* Увеличение ячеек на мобильных */
   .h-32 {
     min-height: 6rem;
   }
   
-  /* Увеличение шрифтов на мобильных */
   .text-xs {
     font-size: 1.125rem !important;
   }

@@ -1,7 +1,7 @@
 // server/api/[...].ts
 export default defineEventHandler(async (event) => {
   // Логируем запрос
-  console.log('🚀 Proxy received:', event.path)
+  //console.log('🚀 Proxy received:', event.path)
   
   const config = useRuntimeConfig()
   const backendUrl = config.public.backendUrl || 'http://wotgospel.local'
@@ -24,7 +24,7 @@ export default defineEventHandler(async (event) => {
   }
   
   const targetUrl = `${backendUrl}/api${path}`
-  console.log('➡️ Target:', targetUrl)
+  //console.log('➡️ Target:', targetUrl)
   
   try {
     const response = await $fetch(targetUrl, {

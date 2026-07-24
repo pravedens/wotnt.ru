@@ -124,7 +124,10 @@ const { currentAbout: about, loading, error, loadAbout } = useAbout()
 const { getImageUrl } = useImageUrl()
 const imageError = ref(false)
 
-const imageUrl = computed(() => about.value?.thumbnail ? getImageUrl(about.value.thumbnail, 'abouts') : null)
+const imageUrl = computed(() => {
+  if (!about.value?.thumbnail) return null
+  return getImageUrl(about.value.thumbnail, 'abouts')
+})
 
 const getArticleIcon = (title: string): string => {
   const icons: Record<string, string> = {
@@ -141,18 +144,26 @@ const getCategoryIcon = (title?: string): string => {
     'История': '📜',
     'Миссия': '🎯',
     'Ценности': '💎',
-    'Пасторы': '👨‍💼'
+    'Пасторы': '👨‍💼',
+    'Команда': '🤝',
+    'Служения': '⛪'
   }
   return icons[title || ''] || '📄'
 }
 
 const handleImageError = (e: Event) => {
   imageError.value = true
+  const img = e.target as HTMLImageElement
+  img.style.display = 'none'
 }
 
-const formatDate = (dateStr: string | null) => {
+const formatDate = (dateStr: string | null): string => {
   if (!dateStr) return 'Дата неизвестна'
-  return new Date(dateStr).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })
+  return new Date(dateStr).toLocaleDateString('ru-RU', { 
+    day: 'numeric', 
+    month: 'long', 
+    year: 'numeric' 
+  })
 }
 
 const goToCategory = (slug?: string) => {
@@ -160,13 +171,14 @@ const goToCategory = (slug?: string) => {
   else router.push('/about')
 }
 
-const copyLink = async () => {
-  await navigator.clipboard.writeText(window.location.href)
-  notificationStore.success('Ссылка скопирована', 'Вы можете поделиться статьёй')
-}
-
-onMounted(() => {
-  if (route.params.slug) loadAbout(route.params.slug as string)
+// Загружаем статью при монтировании
+onMounted(async () => {
+  const slug = route.params.slug as string
+  if (slug) {
+    const result = await loadAbout(slug)
+    console.log('Loaded about:', result)
+    console.log('Denomination:', result?.denomination)
+  }
 })
 </script>
 

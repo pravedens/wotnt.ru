@@ -384,7 +384,37 @@
 <script setup lang="ts">
 import { useAuthStore } from '~/stores/auth'
 import { useNotificationStore } from '~/stores/notification'
-import { useApi } from '~/composables/useApi'  // ✅ ДОБАВЛЕН ИМПОРТ
+import { useApi } from '~/composables/useApi'
+
+// ✅ Интерфейсы для API ответов
+interface UsersResponse {
+  success: boolean
+  users: any[]
+  filters: {
+    cities: string[]
+    churches: string[]
+    birth_years: number[]
+  }
+  message?: string
+}
+
+interface FilterOptions {
+  cities: string[]
+  churches: string[]
+  birth_years: number[]
+}
+
+// ✅ Правильная инициализация с типом
+const filterOptions = ref<FilterOptions>({
+  cities: [],
+  churches: [],
+  birth_years: []
+})
+
+interface RoleUpdateResponse {
+  success: boolean
+  message?: string
+}
 
 definePageMeta({
   middleware: 'auth'
@@ -393,7 +423,7 @@ definePageMeta({
 const authStore = useAuthStore()
 const notificationStore = useNotificationStore()
 const router = useRouter()
-const { $api } = useApi()  // ✅ ДОБАВЛЕНО
+const { $api } = useApi()
 
 const users = ref<any[]>([])
 const loading = ref(true)
@@ -404,12 +434,6 @@ const showExtraFilters = ref(false)
 const membersCount = ref(0)
 const ministersCount = ref(0)
 const pastorsCount = ref(0)
-
-const filterOptions = ref({
-  cities: [],
-  churches: [],
-  birth_years: []
-})
 
 const filters = ref({
   search: '',
@@ -433,6 +457,7 @@ if (!authStore.isPastor && !authStore.isAdmin) {
   router.push('/dashboard')
 }
 
+// ✅ Типизированный вызов API
 const loadUsers = async () => {
   loading.value = true
   
@@ -445,17 +470,16 @@ const loadUsers = async () => {
     if (filters.value.has_email) params.append('has_email', filters.value.has_email)
     if (filters.value.has_phone) params.append('has_phone', filters.value.has_phone)
     
-    // ✅ Используем $api вместо $fetch
     const url = `/pastor/users${params.toString() ? '?' + params.toString() : ''}`
-    const response = await $api(url)
+    const response = await $api<UsersResponse>(url)
     
     if (response.success) {
-      users.value = response.users
-      filterOptions.value = response.filters
+      users.value = response.users || []
+      filterOptions.value = response.filters || { cities: [], churches: [], birth_years: [] }
       
       membersCount.value = users.value.filter((u: any) => u.is_member).length
       ministersCount.value = users.value.filter((u: any) => u.is_minister).length
-      pastorsCount.value = users.value.filter((u: any) => u.roles.includes('pastor')).length
+      pastorsCount.value = users.value.filter((u: any) => u.roles?.includes('pastor')).length
     }
   } catch (err: any) {
     notificationStore.error('Ошибка', err.data?.message || 'Не удалось загрузить пользователей')
@@ -464,13 +488,13 @@ const loadUsers = async () => {
   }
 }
 
+// ✅ Типизированный вызов API
 const toggleRole = async (user: any, role: string, event: Event) => {
   const target = event.target as HTMLInputElement
   const isChecked = target.checked
   
   try {
-    // ✅ Используем $api вместо $fetch
-    const response = await $api(`/pastor/users/${user.id}/roles`, {
+    const response = await $api<RoleUpdateResponse>(`/pastor/users/${user.id}/roles`, {
       method: 'PUT',
       body: { [`is_${role}`]: isChecked }
     })
@@ -481,12 +505,12 @@ const toggleRole = async (user: any, role: string, event: Event) => {
       } else if (role === 'minister') {
         user.is_minister = isChecked
       }
-      notificationStore.success('Успешно', response.message)
+      notificationStore.success('Успешно', response.message || 'Роль обновлена')
       
       membersCount.value = users.value.filter((u: any) => u.is_member).length
       ministersCount.value = users.value.filter((u: any) => u.is_minister).length
     } else {
-      notificationStore.error('Ошибка', response.message)
+      notificationStore.error('Ошибка', response.message || 'Не удалось обновить роль')
       target.checked = !isChecked
     }
   } catch (err: any) {

@@ -158,13 +158,13 @@ const getStorageKey = (): string => {
 }
 
 const saveProgress = (time: number) => {
-  if (process.client && time > 0) {
+  if (import.meta.client && time > 0) {
     localStorage.setItem(getStorageKey(), time.toString())
   }
 }
 
 const getSavedProgress = (): number => {
-  if (process.client) {
+  if (import.meta.client) {
     const saved = localStorage.getItem(getStorageKey())
     return saved ? parseInt(saved, 10) : 0
   }
@@ -172,7 +172,7 @@ const getSavedProgress = (): number => {
 }
 
 const clearProgress = () => {
-  if (process.client) {
+  if (import.meta.client) {
     localStorage.removeItem(getStorageKey())
   }
 }
@@ -244,7 +244,7 @@ const handleBeforeUnload = () => {
 // ============================================
 // СЛУШАТЕЛИ СООБЩЕНИЙ ОТ ПЛЕЕРА
 // ============================================
-if (process.client) {
+if (import.meta.client) {
   window.addEventListener('message', (event) => {
     if (event.data && event.data.type === 'player:currentTime') {
       const time = Math.floor(event.data.time)

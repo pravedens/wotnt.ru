@@ -1,3 +1,5 @@
+// ~/types/bible-school.ts
+
 export interface BibleCourse {
   id: number
   title: string
@@ -13,6 +15,7 @@ export interface BibleCourse {
   }
   teachers?: Teacher[]
   themes?: BibleTheme[]
+  lessons?: BibleLesson[]
 }
 
 export interface BibleTheme {
@@ -59,6 +62,7 @@ export interface Teacher {
   id: number
   name: string
   last_name: string
+  middle_name?: string 
   full_name: string
   avatar_url: string
   about?: string
@@ -99,4 +103,76 @@ export interface Essay {
     id: number
     title: string
   }
+}
+
+// ✅ Добавляем интерфейсы для учителя
+export interface TeacherDashboardStats {
+  students_count: number
+  lessons_count: number
+  courses_count: number
+  pending_essays_count: number
+  pending_enrollments_count: number
+}
+
+export interface TeacherDashboardResponse {
+  stats: TeacherDashboardStats
+  pending_essays: Essay[]
+  enrollment_requests: EnrollmentRequest[]
+}
+
+export interface ReviewEssayData {
+  score: number
+  feedback: string
+  status: 'approved' | 'rejected'
+}
+
+export interface ApiResponse<T = any> {
+  success: boolean
+  data?: T
+  message?: string
+}
+
+export interface RegistrationsResponse extends ApiResponse {
+  registrations: any[]
+}
+
+export interface EnrollmentStatusResponse {
+  is_enrolled: boolean
+  has_request?: boolean
+  status?: string
+}
+
+export interface ProgressResponse {
+  success: boolean
+  overall: {
+    percentage: number
+    level?: string
+  }
+  courses: any[]
+}
+
+export interface CertificatesResponse {
+  success: boolean
+  certificates: any[]
+}
+
+export interface PartyResponse {
+  has_party: boolean
+  party: any
+}
+
+export interface AvatarUploadResponse {
+  avatar: string
+  message?: string
+}
+
+export interface ProfileUpdateResponse {
+  user: User
+  email_verification_required?: boolean
+  message?: string
+}
+
+export interface NotificationSettingsResponse {
+  success: boolean
+  settings: any
 }

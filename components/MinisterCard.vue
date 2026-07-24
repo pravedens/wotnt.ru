@@ -124,10 +124,11 @@ import IconVk from '~/components/icons/IconVk.vue'
 import IconOk from '~/components/icons/IconOk.vue'
 import WriteMinisterModal from './WriteMinisterModal.vue'
 import { useAuthStore } from '~/stores/auth'
+import type { Minister, SocialLink } from '~/types/minister'
 
-const props = defineProps({
-  minister: { type: Object, required: true }
-})
+const props = defineProps<{
+  minister: Minister
+}>()
 
 const authStore = useAuthStore()
 const modalVisible = ref(false)
@@ -142,17 +143,18 @@ const fullName = computed(() => {
   return parts.length ? parts.join(' ') : 'Служитель'
 })
 
-const getSocialLink = (platform: string) => {
-  return props.minister.social_links?.find(link => link.platform === platform)?.url
+// ✅ Типизируем параметры
+const getSocialLink = (platform: string): string | undefined => {
+  return props.minister.social_links?.find((link: SocialLink) => link.platform === platform)?.url
 }
 
-const otherSocialLinks = computed(() => {
-  return props.minister.social_links?.filter(link => 
+const otherSocialLinks = computed((): SocialLink[] => {
+  return props.minister.social_links?.filter((link: SocialLink) => 
     !['max', 'vk', 'ok'].includes(link.platform)
   ) || []
 })
 
-const getPlatformName = (platform: string) => {
+const getPlatformName = (platform: string): string => {
   const names: Record<string, string> = {
     telegram: 'Telegram',
     whatsapp: 'WhatsApp',
@@ -162,7 +164,7 @@ const getPlatformName = (platform: string) => {
   return names[platform] || platform
 }
 
-const getPlatformIcon = (platform: string) => {
+const getPlatformIcon = (platform: string): string => {
   const icons: Record<string, string> = {
     telegram: '📱',
     whatsapp: '💬',

@@ -96,24 +96,9 @@
 <script setup lang="ts">
 import { useAuthStore } from "~/stores/auth";
 import { useNotificationStore } from "~/stores/notification";
-import { useApi } from "~/composables/useApi";  // ✅ ДОБАВЛЕН ИМПОРТ
-
-interface Teacher {
-  id: number;
-  full_name: string;
-  name?: string;
-  last_name?: string;
-  avatar_url?: string;
-  about?: string;
-  email?: string;
-}
-
-interface FormData {
-  name: string;
-  email: string;
-  message: string;
-  captcha_token: string;
-}
+import { useApi } from "~/composables/useApi";  
+import type { FormData } from '~/types/form';
+import type { Teacher } from '~/types/bible-school';
 
 const props = defineProps<{
   visible: boolean;
@@ -128,7 +113,7 @@ const emit = defineEmits<{
 const config = useRuntimeConfig();
 const authStore = useAuthStore();
 const notificationStore = useNotificationStore();
-const { $api } = useApi();  // ✅ ДОБАВЛЕНО
+const { $api } = useApi();  
 
 const isAuthenticated = computed(() => authStore.isAuthenticated);
 const captchaSiteKey = config.public.yandexCaptchaSiteKey as string;

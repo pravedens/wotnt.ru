@@ -58,7 +58,7 @@ const dismissBanner = () => {
 
 // Логика определения: iOS + Safari + не установлено + прошло >30 дней
 const checkAndShowBanner = () => {
-  if (process.client) {
+  if (import.meta.client) {
     // 1. Проверка: это iOS или iPadOS?
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
                   (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);

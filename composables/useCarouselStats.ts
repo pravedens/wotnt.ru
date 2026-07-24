@@ -1,4 +1,5 @@
 import { useApi } from '~/composables/useApi'
+import type { CarouselStatsResponse } from '~/types/event'
 
 export const useCarouselStats = () => {
     const { $api } = useApi()
@@ -20,7 +21,8 @@ export const useCarouselStats = () => {
         error.value = null
         
         try {
-            const response = await $api('/events/carousel-stats')
+            // ✅ Типизируем ответ
+            const response = await $api<CarouselStatsResponse>('/events/carousel-stats')
             
             const inCarousel = response.in_carousel ?? 0
             const limit = response.limit ?? defaultLimit

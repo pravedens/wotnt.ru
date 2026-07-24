@@ -1,16 +1,6 @@
+import type { MessagesResponse, UnreadCountResponse} from '~/types/chat'
 export const useTeacher = () => {
-    const { $api, baseUrl } = useApi();
-    
-    // ✅ Добавляем интерфейсы для типизации ответов
-    interface MessagesResponse {
-        data: any[];
-        pagination?: any;
-        [key: string]: any;
-    }
-    
-    interface UnreadCountResponse {
-        count: number;
-    }
+    const { $api } = useApi();
     
     const sendMessageToTeacher = async (teacherId: number, data: {
         sender_name?: string;

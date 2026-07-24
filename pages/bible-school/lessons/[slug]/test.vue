@@ -516,14 +516,14 @@ const submitTest = async () => {
     if (response.has_pending_essays) {
     alert('Тест сохранён! Ожидайте проверки эссе от учителя.');
     // ✅ Сохраняем позицию перед переходом
-    if (process.client) {
+    if (import.meta.client) {
       sessionStorage.setItem('lessonScrollPosition', window.scrollY.toString());
     }
     await navigateTo(`/bible-school/lessons/${route.params.slug}`);
   } else if (response.is_passed) {
     alert(`Поздравляем! Вы прошли тест! Набрано ${response.percentage}%`);
     // ✅ Сохраняем позицию перед переходом
-    if (process.client) {
+    if (import.meta.client) {
       sessionStorage.setItem('lessonScrollPosition', window.scrollY.toString());
     }
     await navigateTo(`/bible-school/lessons/${route.params.slug}`);
@@ -540,7 +540,7 @@ const submitTest = async () => {
 };
 
 const goBackToLesson = () => {
-  if (process.client) {
+  if (import.meta.client) {
     sessionStorage.setItem('lessonScrollPosition', window.scrollY.toString());
   }
   navigateTo(`/bible-school/lessons/${route.params.slug}`);

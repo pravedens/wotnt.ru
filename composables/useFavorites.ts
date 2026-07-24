@@ -1,10 +1,5 @@
-import type { Post } from '~/types/sermon'
+import type { Post, FavoritesResponse } from '~/types/sermon'
 import { useApi } from '~/composables/useApi'
-
-interface FavoritesResponse {
-    data?: Post[]
-    [key: string]: any
-}
 
 export const useFavorites = () => {
     const { $api } = useApi()

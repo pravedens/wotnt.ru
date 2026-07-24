@@ -1,10 +1,10 @@
 // composables/useFriends.ts
 
 import type { Friend, FriendsResponse } from '~/types/friend'
-import { useApi } from '~/composables/useApi'  // ✅ ДОБАВЛЕН ИМПОРТ
+import { useApi } from '~/composables/useApi' 
 
 export const useFriends = () => {
-    const { $api } = useApi()  // ✅ ДОБАВЛЕНО
+    const { $api } = useApi() 
 
     const friends = ref<Friend[]>([])
     const loading = ref(false)

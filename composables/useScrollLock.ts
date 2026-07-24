@@ -3,7 +3,7 @@ export const useScrollLock = () => {
     const isLocked = ref(false)
 
     const lockScroll = () => {
-        if (!process.client) return
+        if (!import.meta.client) return
         if (isLocked.value) return
         
         scrollPosition.value = window.scrollY
@@ -15,7 +15,7 @@ export const useScrollLock = () => {
     }
 
     const unlockScroll = () => {
-        if (!process.client) return
+        if (!import.meta.client) return
         if (!isLocked.value) return
         
         document.body.style.overflow = ''

@@ -1,12 +1,10 @@
 <template>
   <div class="min-h-screen bg-gradient-to-br from-blue-900 to-purple-900 py-12">
     <div class="container mx-auto px-4">
-      <!-- H1 - главный заголовок страницы -->
       <h1 class="text-4xl md:text-5xl font-bold text-white text-center mb-8">
         О нас
       </h1>
 
-      <!-- Кнопки категорий -->
       <div class="categories-grid mb-12">
         <button
           v-for="category in categories"
@@ -23,14 +21,12 @@
         </button>
       </div>
 
-      <!-- Контент с анимацией перехода -->
       <Transition :name="transitionName" mode="out-in">
         <div
           v-if="currentArticle"
           :key="activeCategory"
           class="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 max-w-4xl mx-auto"
         >
-          <!-- Изображение статьи если есть -->
           <div
             v-if="currentArticle.thumbnail"
             class="mb-8 rounded-xl overflow-hidden"
@@ -47,12 +43,10 @@
           </div>
 
           <div class="prose prose-invert max-w-none">
-            <!-- H2 - заголовок статьи -->
             <h2 class="text-3xl font-bold text-white mb-4">
               {{ currentArticle.title }}
             </h2>
 
-            <!-- Мета-информация -->
             <div
               class="flex items-center gap-4 text-white/50 text-sm mb-6 pb-4 border-b border-white/10"
             >
@@ -64,7 +58,6 @@
               </span>
             </div>
 
-            <!-- Полный контент статьи -->
             <div
               class="text-white/80 text-lg leading-relaxed"
               v-html="currentArticle.content"
@@ -72,7 +65,6 @@
           </div>
         </div>
 
-        <!-- Состояние загрузки -->
         <div
           v-else-if="loading"
           key="loading"
@@ -84,7 +76,6 @@
           <p class="text-white/80 mt-4">Загрузка статьи...</p>
         </div>
 
-        <!-- Сообщение об ошибке -->
         <div
           v-else-if="error"
           key="error"
@@ -106,22 +97,15 @@
 <script setup lang="ts">
 import { useImageUrl } from "~/composables/useImageUrl";
 import { useAbout } from "~/composables/useAbout";
-import { useServerSeoMeta } from "~/.nuxt/imports";
+import type { Category, About } from '~/types/about'
 
 const { getImageUrl } = useImageUrl();
 const { loadAboutsByDenomination } = useAbout();
 
-// ============================================
-// ПОЛУЧАЕМ КОНФИГУРАЦИЮ
-// ============================================
 const config = useRuntimeConfig();
 const { siteUrl } = config.public;
 
-// ============================================
-// SEO МЕТА-ТЕГИ
-// ============================================
-
-useServerSeoMeta({
+useSeoMeta({
   title: "О нас | Церковь Слово Истины",
   description:
     "История, миссия, ценности и пасторы церкви Слово Истины. Узнайте больше о нашей общине верующих и служениях.",
@@ -150,48 +134,18 @@ useHead({
   link: [{ rel: "canonical", href: `${siteUrl}/about` }],
 });
 
-// ============================================
-// ТИПЫ И ДАННЫЕ
-// ============================================
-
-interface Category {
-  id: string;
-  slug: string;
-  name: string;
-  about_count?: number;
-}
-
-interface Article {
-  id: string;
-  title: string;
-  slug: string;
-  content: string;
-  thumbnail: string | null;
-  description: string;
-  created_at: string | null;
-  updated_at: string | null;
-  views: number;
-  denomination?: {
-    id: string;
-    title: string;
-    slug: string;
-  };
-}
-
-// Данные категорий (получаем из API или статические)
 const categories = ref<Category[]>([]);
-const articlesMap = ref<Map<string, Article>>(new Map());
+// ✅ Используем About вместо Article
+const articlesMap = ref<Map<string, About>>(new Map());
 const activeCategory = ref<string>("");
 const loading = ref(false);
 const error = ref<string | null>(null);
 const transitionName = ref<string>("fade-slide");
 
-// Текущая статья
 const currentArticle = computed(() => {
   return articlesMap.value.get(activeCategory.value);
 });
 
-// Форматирование даты
 const formatDate = (dateStr: string | null) => {
   if (!dateStr) return "Дата неизвестна";
   const date = new Date(dateStr);
@@ -202,21 +156,14 @@ const formatDate = (dateStr: string | null) => {
   });
 };
 
-// Обработчик ошибки изображения
 const handleImageError = (e: Event) => {
   const img = e.target as HTMLImageElement;
   img.style.display = "none";
   console.warn("Image failed to load:", img.src);
 };
 
-// Загрузка категорий
 const loadCategories = async () => {
   try {
-    // Здесь ваш API запрос для получения категорий
-    // const response = await $fetch('/api/denominations')
-    // categories.value = response
-
-    // Временные данные для примера
     categories.value = [
       { id: "1", slug: "history", name: "История", about_count: 1 },
       { id: "2", slug: "mission", name: "Миссия", about_count: 1 },
@@ -225,11 +172,9 @@ const loadCategories = async () => {
       { id: "5", slug: "contacts", name: "Контакты", about_count: 1 },
     ];
 
-    // Загружаем статью для первой категории
     if (categories.value.length > 0) {
       const firstCategory = categories.value[0];
       if (firstCategory) {
-        // Добавляем проверку
         activeCategory.value = firstCategory.id;
         await loadArticleForCategory(firstCategory.slug);
       }
@@ -240,50 +185,45 @@ const loadCategories = async () => {
   }
 };
 
-// Загрузка статьи для категории
 const loadArticleForCategory = async (slug: string) => {
   loading.value = true;
   error.value = null;
 
   try {
-    // Загружаем статью по slug категории
     const response = await loadAboutsByDenomination(slug);
 
-    let articles: Article[] = [];
+    let articles: About[] = [];
 
-    // Проверяем структуру ответа
     if (response && Array.isArray(response)) {
       articles = response;
     } else if (response && response.abouts) {
       articles = response.abouts;
     }
 
-    // Берем первую статью (так как у категории только одна)
     if (articles.length > 0) {
       const article = articles[0];
       if (article) {
-        // Добавляем проверку
         const category = categories.value.find((c) => c.slug === slug);
-
         if (category) {
           articlesMap.value.set(category.id, article);
         }
       }
     } else {
-      // Если нет статьи, создаем заглушку
       const category = categories.value.find((c) => c.slug === slug);
       if (category) {
+        // ✅ Теперь thumbnail: null допустим
         articlesMap.value.set(category.id, {
-          id: "placeholder",
+          id: 0,
           title: category.name,
           slug: category.slug,
           content: "<p>Контент для этой категории пока не добавлен.</p>",
           thumbnail: null,
           description: "",
+          denomination_id: 0,
           created_at: null,
           updated_at: null,
           views: 0,
-        });
+        } as About);
       }
     }
   } catch (err) {
@@ -293,8 +233,6 @@ const loadArticleForCategory = async (slug: string) => {
     loading.value = false;
   }
 };
-
-// Загрузка текущей статьи
 const loadCurrentArticle = () => {
   const category = categories.value.find((c) => c.id === activeCategory.value);
   if (category) {
@@ -302,11 +240,9 @@ const loadCurrentArticle = () => {
   }
 };
 
-// Выбор категории
 const selectCategory = async (categoryId: string) => {
   if (categoryId === activeCategory.value) return;
 
-  // Определяем направление анимации
   const oldIndex = categories.value.findIndex(
     (c) => c.id === activeCategory.value,
   );
@@ -314,10 +250,8 @@ const selectCategory = async (categoryId: string) => {
 
   transitionName.value = newIndex > oldIndex ? "slide-left" : "slide-right";
 
-  // Меняем категорию
   activeCategory.value = categoryId;
 
-  // Проверяем, загружена ли уже статья для этой категории
   if (!articlesMap.value.has(categoryId)) {
     const category = categories.value.find((c) => c.id === categoryId);
     if (category) {
@@ -325,17 +259,14 @@ const selectCategory = async (categoryId: string) => {
     }
   }
 
-  // Сохраняем выбранную категорию в localStorage
   localStorage.setItem("about_active_category", categoryId);
 };
 
-// Инициализация
 onMounted(async () => {
   const savedCategory = localStorage.getItem("about_active_category");
 
   await loadCategories();
 
-  // Если есть сохраненная категория, выбираем её
   if (savedCategory && categories.value.some((c) => c.id === savedCategory)) {
     await selectCategory(savedCategory);
   }
@@ -343,7 +274,6 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-/* Grid для кнопок категорий */
 .categories-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(auto, max-content));
@@ -353,18 +283,15 @@ onMounted(async () => {
   margin: 0 auto;
 }
 
-/* Базовые стили для кнопок */
 .category-button {
   transition: all 0.3s ease;
   min-width: fit-content;
 }
 
-/* Для очень маленьких экранов */
 @media (max-width: 480px) {
   .categories-grid {
     gap: 0.5rem;
   }
-
   .category-button {
     padding-left: 1rem;
     padding-right: 1rem;
@@ -372,7 +299,6 @@ onMounted(async () => {
   }
 }
 
-/* Стили для переходов */
 .fade-slide-enter-active,
 .fade-slide-leave-active {
   transition: all 0.3s ease;
@@ -418,7 +344,6 @@ onMounted(async () => {
   transform: translateX(50px);
 }
 
-/* Стили для текста */
 .prose {
   color: rgba(255, 255, 255, 0.8);
 }
@@ -446,17 +371,14 @@ onMounted(async () => {
   color: rgba(255, 255, 255, 0.7);
 }
 
-/* Адаптивность */
 @media (max-width: 640px) {
   .container {
     padding-left: 1rem;
     padding-right: 1rem;
   }
-
   h1 {
     font-size: 2.5rem;
   }
-
   .prose {
     font-size: 1rem;
   }

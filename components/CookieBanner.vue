@@ -27,6 +27,20 @@
 </template>
 
 <script setup lang="ts">
+// ✅ Расширяем интерфейс Window
+declare global {
+  interface Window {
+    resetCookieConsent?: () => void
+    ym?: (counterId: number, action: 'init', params: {
+      clickmap?: boolean
+      trackLinks?: boolean
+      accurateTrackBounce?: boolean
+      webvisor?: boolean
+      trackHash?: boolean
+    }) => void
+  }
+}
+
 const COOKIE_CONSENT_KEY = 'cookie_consent'
 const YM_COUNTER_ID = 95320948
 
@@ -42,7 +56,7 @@ const cookieSettings = ref({
 
 // Проверяем, было ли уже дано согласие
 const checkConsent = () => {
-  if (process.client) {
+  if (import.meta.client) {
     const saved = localStorage.getItem(COOKIE_CONSENT_KEY)
     if (saved) {
       try {
@@ -77,6 +91,7 @@ const loadYandexMetrika = () => {
   
   script.onload = () => {
     if (typeof window !== 'undefined' && window.ym) {
+      // ✅ Правильный синтаксис: counterId, 'init', { ...options }
       window.ym(YM_COUNTER_ID, 'init', {
         clickmap: true,
         trackLinks: true,
@@ -90,7 +105,7 @@ const loadYandexMetrika = () => {
 
 // Применить согласие (сохранить и загрузить трекеры если нужно)
 const applyConsent = () => {
-  if (process.client) {
+  if (import.meta.client) {
     // Сохраняем настройки
     localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(cookieSettings.value))
     
@@ -125,7 +140,7 @@ const acceptNecessary = () => {
 
 // Сброс согласия (для использования в настройках профиля)
 const resetConsent = () => {
-  if (process.client) {
+  if (import.meta.client) {
     localStorage.removeItem(COOKIE_CONSENT_KEY)
     cookieSettings.value = {
       necessary: true,
@@ -136,8 +151,8 @@ const resetConsent = () => {
   }
 }
 
-// Экспортируем функцию сброса в глобальный объект (для доступа из других компонентов)
-if (process.client) {
+// ✅ Теперь TypeScript знает о window.resetCookieConsent
+if (import.meta.client) {
   window.resetCookieConsent = resetConsent
 }
 

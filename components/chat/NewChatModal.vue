@@ -74,6 +74,7 @@
 import { useAuthStore } from '~/stores/auth'
 import { useNotificationStore } from '~/stores/notification'
 import { useApi } from '~/composables/useApi'
+import type { SearchUsersResponse } from '~/types/chat'
 
 const props = defineProps<{
   visible: boolean
@@ -120,10 +121,12 @@ const searchUsers = async () => {
   searchTimeout = setTimeout(async () => {
     loading.value = true
     try {
-      const response = await $api(`/users/search?q=${encodeURIComponent(query)}`)
+      // ✅ Типизируем ответ
+      const response = await $api<SearchUsersResponse>(`/users/search?q=${encodeURIComponent(query)}`)
       users.value = response.users || []
     } catch (error) {
       console.error('Search users error:', error)
+      users.value = []
     } finally {
       loading.value = false
     }

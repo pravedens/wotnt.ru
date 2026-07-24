@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { useApi } from '~/composables/useApi';  // ✅ ДОБАВЛЕН ИМПОРТ
 
-interface User {
+export interface User {
   id: number;
   name: string;
   last_name?: string;
@@ -15,6 +15,11 @@ interface User {
   birth_date?: string;
   avatar?: string;
   created_at?: string;
+  marital_status?: string
+  gender?: string
+  ministry?: string
+  bible_courses_experience?: string
+  learning_expectations?: string
 }
 
 interface RegisterData {

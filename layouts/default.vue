@@ -87,7 +87,7 @@ const isInDashboard = computed(() => {
 
 // ✅ Функция восстановления скролла
 const restoreScroll = () => {
-  if (process.client) {
+  if (import.meta.client) {
     document.body.style.overflow = ''
     document.body.style.position = ''
     document.body.style.top = ''

@@ -98,12 +98,18 @@
 import { useNotificationStore } from '~/stores/notification'
 import { useAuthStore } from '~/stores/auth'
 import { useApi } from '~/composables/useApi'
+import type { Message, MessagesResponse, UnreadCountResponse } from '~/types/chat'
 
 const notificationStore = useNotificationStore()
 const authStore = useAuthStore()
 const { $api } = useApi()
 
-const messages = ref<any[]>([])
+// ✅ Типизируем сообщения
+interface MessageItem extends Message {
+  sender_email?: string
+}
+
+const messages = ref<MessageItem[]>([])
 const unreadCount = ref(0)
 const loading = ref(true)
 const expandedMessages = ref<Record<number, boolean>>({})
@@ -117,12 +123,19 @@ const formatDate = (date: string) => {
   })
 }
 
+// ✅ Типизируем ответ
 const loadMessages = async (page = 1) => {
   loading.value = true
   try {
-    const response = await $api(`/my-messages?page=${page}`)
-    messages.value = response.messages?.data || []
-    pagination.value = response.messages
+    const response = await $api<MessagesResponse>(`/my-messages?page=${page}`)
+    // Обрабатываем оба варианта ответа
+    const messageData = response.messages?.data || response.data || []
+    messages.value = messageData
+    pagination.value = response.messages || {
+      current_page: page,
+      last_page: 1,
+      total: messageData.length
+    }
     await loadUnreadCount()
     emit('unread-count-update', unreadCount.value)
   } catch (error) {
@@ -132,9 +145,10 @@ const loadMessages = async (page = 1) => {
   }
 }
 
+// ✅ Типизируем ответ
 const loadUnreadCount = async () => {
   try {
-    const response = await $api('/my-messages/unread-count')
+    const response = await $api<UnreadCountResponse>('/my-messages/unread-count')
     unreadCount.value = response.count || 0
     emit('unread-count-update', unreadCount.value)
   } catch (error) {
@@ -206,3 +220,12 @@ onUnmounted(() => {
   }
 })
 </script>
+
+<style scoped>
+.line-clamp-2 {
+  display: -webkit-box;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+</style>

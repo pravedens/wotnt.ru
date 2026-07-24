@@ -90,30 +90,19 @@
 <script setup lang="ts">
 import { useAuthStore } from '~/stores/auth'
 import { useNotificationStore } from '~/stores/notification'
-import { useApi } from '~/composables/useApi'  // ✅ ДОБАВЛЕН ИМПОРТ
+import { useApi } from '~/composables/useApi'
+import type { Event, RegistrationResponse, SubmitRegistrationResponse } from '~/types/event'
 
+// ✅ Обновляем тип пропсов, чтобы соответствовать Event из ~/types/event.ts
 const props = defineProps<{
-  event: {
-    id: number
-    title: string
-    is_conference?: boolean
-    conference_services?: Array<{
-      id: number
-      service_date: string
-      title: string
-      description: string | null
-      start_time?: string | null
-      capacity: number
-      available_count: number
-    }>
-  }
+  event: Event
 }>()
 
 const emit = defineEmits(['registered'])
 
 const authStore = useAuthStore()
 const notificationStore = useNotificationStore()
-const { $api } = useApi()  // ✅ ДОБАВЛЕНО
+const { $api } = useApi()
 
 const loading = ref(false)
 const submitting = ref(false)
@@ -148,16 +137,19 @@ const getStatusText = (status: string) => {
 const checkRegistration = async () => {
   if (!authStore.isAuthenticated) return
   
+  loading.value = true
   try {
-    // ✅ Используем $api вместо $fetch
-    const data = await $api(`/events/${props.event.id}/my-registration`)
+    // ✅ Типизируем ответ
+    const data = await $api<RegistrationResponse>(`/events/${props.event.id}/my-registration`)
     
     if (data.registered) {
       isRegistered.value = true
-      registrationStatus.value = data.registration.status
+      registrationStatus.value = data.registration?.status || 'pending'
     }
   } catch (err) {
     console.error('Check registration error:', err)
+  } finally {
+    loading.value = false
   }
 }
 
@@ -180,8 +172,8 @@ const submitRegistration = async () => {
   submitting.value = true
   
   try {
-    // ✅ Используем $api вместо $fetch
-    const data = await $api(`/events/${props.event.id}/register`, {
+    // ✅ Типизируем ответ
+    const data = await $api<SubmitRegistrationResponse>(`/events/${props.event.id}/register`, {
       method: 'POST',
       body: { selected_service_ids: selectedServiceIds.value }
     })
@@ -191,7 +183,7 @@ const submitRegistration = async () => {
       isRegistered.value = true
       registrationStatus.value = 'pending'
       emit('registered')
-      notificationStore.success('Заявка отправлена', data.message)
+      notificationStore.success('Заявка отправлена', data.message || 'Заявка отправлена')
     }
   } catch (err: any) {
     notificationStore.error('Ошибка', err.data?.message || 'Не удалось отправить заявку')

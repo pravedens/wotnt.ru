@@ -365,7 +365,7 @@
       </div>
     </div>
 
-    <!-- Модальные окна -->
+    <!-- ✅ Модальные окна -->
     <EssayReviewModal 
       v-if="selectedEssay"
       :essay="selectedEssay"
@@ -375,23 +375,17 @@
 
     <TeacherMessageModal 
       v-if="selectedStudent"
-      :student="selectedStudent"
+      :visible="!!selectedStudent"
+      :teacher="selectedStudent"
       @close="selectedStudent = null"
       @sent="onMessageSent"
     />
 
     <StudentChatModal
-      v-if="chatStudent"
-      :student="chatStudent"
-      @close="chatStudent = null"
+      v-if="chatModalVisible"
+      :visible="chatModalVisible"
+      @close="chatModalVisible = false"
     />
-    
-    <TeacherChatModal 
-    v-if="chatModalVisible"
-    :visible="chatModalVisible"
-    :student="chatStudent"
-    @close="chatModalVisible = false"
-  />
   </div>
 </template>
 
@@ -399,19 +393,15 @@
 import { useAuthStore } from '~/stores/auth';
 import { useNotificationStore } from '~/stores/notification';
 import { useApi } from '~/composables/useApi';
+import { useChatStore } from '~/stores/chat';
 import EssayReviewModal from '~/components/dashboard/EssayReviewModal.vue';
-import TeacherChatModal from '~/components/dashboard/TeacherChatModal.vue';
-
-const props = defineProps({
-  visible: {
-    type: Boolean,
-    default: false
-  }
-})
+import TeacherMessageModal from '~/components/bible-school/TeacherMessageModal.vue'
+import StudentChatModal from '~/components/dashboard/StudentChatModal.vue';
 
 const authStore = useAuthStore();
 const notificationStore = useNotificationStore();
 const { $api } = useApi();
+const chatStore = useChatStore();
 
 // State
 const activeTeacherTab = ref('students');
@@ -436,7 +426,6 @@ const pendingEnrollmentsCount = ref(0);
 // Модальные окна
 const selectedEssay = ref(null);
 const selectedStudent = ref(null);
-const chatStudent = ref(null);
 const chatModalVisible = ref(false);
 
 // Вычисляемые свойства
@@ -462,17 +451,10 @@ const filteredStudents = computed(() => {
   return result;
 });
 
-const getMaritalStatusLabel = (status) => {
-  const map = {
-    single: 'Холост/Не замужем',
-    married: 'В браке',
-    divorced: 'Разведён(а)',
-    widowed: 'Вдова/Вдовец'
-  };
-  return map[status] || '—';
-};
+// ============================================
+// ЗАГРУЗКА ДАННЫХ
+// ============================================
 
-// Загрузка данных
 const loadDashboard = async () => {
   try {
     const response = await $api('/bible-school/teacher/dashboard');
@@ -553,7 +535,10 @@ const loadRejectedEnrollments = async () => {
   }
 };
 
-// Действия со студентами
+// ============================================
+// ДЕЙСТВИЯ СО СТУДЕНТАМИ
+// ============================================
+
 const updateStudentRole = async (userId, role) => {
   if (!authStore.isAuthenticated || !authStore.isTeacher) {
     notificationStore.error('Ошибка', 'Недостаточно прав');
@@ -601,7 +586,10 @@ const viewStudentProgress = (student) => {
         `Назначенный курс: ${student.assigned_course || 'Все курсы'}`);
 };
 
-// Действия с заявками
+// ============================================
+// ДЕЙСТВИЯ С ЗАЯВКАМИ
+// ============================================
+
 const approveRequest = async (requestId) => {
   if (!authStore.isAuthenticated || !authStore.isTeacher) {
     notificationStore.error('Ошибка', 'Недостаточно прав');
@@ -645,7 +633,6 @@ const rejectRequest = async (requestId) => {
   }
 };
 
-// Разблокировка пользователя
 const unblockUser = async (userId) => {
   if (!authStore.isAuthenticated || !authStore.isTeacher) {
     notificationStore.error('Ошибка', 'Недостаточно прав');
@@ -666,7 +653,10 @@ const unblockUser = async (userId) => {
   }
 };
 
-// Эссе
+// ============================================
+// ЭССЕ
+// ============================================
+
 const openEssayModal = (essay) => {
   if (!authStore.isAuthenticated || !authStore.isTeacher) return;
   selectedEssay.value = essay;
@@ -678,7 +668,10 @@ const onEssayReviewed = () => {
   loadDashboard();
 };
 
-// Сообщения и чаты
+// ============================================
+// СООБЩЕНИЯ И ЧАТЫ
+// ============================================
+
 const openTeacherMessageModal = (student) => {
   if (!authStore.isAuthenticated || !authStore.isTeacher) return;
   selectedStudent.value = student;
@@ -689,47 +682,35 @@ const onMessageSent = () => {
   notificationStore.success('Сообщение отправлено', 'Ученик получит уведомление');
 };
 
-const openStudentChat = (student) => {
-  chatStudent.value = student;
-  chatModalVisible.value = true;
+const openStudentChat = async (student) => {
+  if (!student) return;
+  
+  try {
+    const response = await $api('/bible-school/chat/conversations/find-or-create', {
+      method: 'POST',
+      body: { user_id: student.id }
+    });
+    
+    if (response.success) {
+      const conversationId = response.data.conversation_id;
+      
+      // Загружаем сообщения в стор
+      await chatStore.loadMessages(conversationId);
+      chatStore.currentConversationId = conversationId;
+      
+      // Открываем модальное окно чата
+      chatModalVisible.value = true;
+    }
+  } catch (error) {
+    console.error('Open chat error:', error);
+    notificationStore.error('Ошибка', 'Не удалось открыть чат');
+  }
 };
 
 // ============================================
-// ФУНКЦИЯ ДЛЯ ВЫБОРА УЧЕНИКА
+// МОНТИРОВАНИЕ
 // ============================================
-const selectStudent = (student) => {
-  if (!student) return
-  
-  // Проверяем, есть ли уже беседа с этим учеником
-  const { $api } = useApi()
-  
-  // Найти или создать беседу
-  $api('/bible-school/chat/conversations/find-or-create', {
-    method: 'POST',
-    body: { user_id: student.id }
-  }).then(response => {
-    if (response.success) {
-      const conversationId = response.data.conversation_id
-      chatStudent.value = student
-      chatModalVisible.value = true
-      
-      // Загрузить сообщения
-      const chatStore = useChatStore()
-      chatStore.loadMessages(conversationId)
-    }
-  }).catch(err => {
-    console.error('Ошибка создания беседы:', err)
-    notificationStore.error('Ошибка', 'Не удалось открыть чат')
-  })
-}
 
-watch(() => props.student, (newStudent) => {
-  if (newStudent) {
-    selectStudent(newStudent)
-  }
-}, { immediate: true })
-
-// Монтирование
 onMounted(async () => {
   if (!authStore.isAuthenticated || !authStore.isTeacher) {
     return;
@@ -749,7 +730,7 @@ onMounted(async () => {
 <style scoped>
 .line-clamp-2 {
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }

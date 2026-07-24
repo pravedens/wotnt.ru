@@ -22,7 +22,7 @@
         >
           <img 
             v-if="course.image_url" 
-            :src="getImageUrl(course.image_url)" 
+            :src="getImageUrl(course.image_url) ?? undefined"
             :alt="course.title"
             class="w-full h-48 object-cover"
             loading="lazy"
@@ -55,28 +55,28 @@
 <script setup lang="ts">
 import { useAuthStore } from '~/stores/auth';
 import { useImageUrl } from '~/composables/useImageUrl';
-import { useApi } from '~/composables/useApi';  // ✅ ДОБАВЛЕН ИМПОРТ
+import { useApi } from '~/composables/useApi';
+import type { BibleCourse, ApiResponse } from '~/types/bible-school';
 
 definePageMeta({ layout: 'default' });
 
 const authStore = useAuthStore();
 const { getImageUrl } = useImageUrl();
-const { $api } = useApi();  // ✅ ДОБАВЛЕНО
+const { $api } = useApi();
 
-const courses = ref<any[]>([]);
+const courses = ref<BibleCourse[]>([]);
 const loading = ref(true);
 
 const stripTags = (html: string | null | undefined): string => {
   if (!html) return '';
-  // Удаляем HTML теги простым regex (для краткого описания этого достаточно)
   return html.replace(/<[^>]*>/g, '');
 };
 
 const fetchCourses = async () => {
+  loading.value = true;
   try {
-    // ✅ Используем $api вместо $fetch
-    const response = await $api('/bible-school/courses');
-    courses.value = response.courses || [];
+    const response = await $api<ApiResponse<BibleCourse[]>>('/bible-school/courses');
+    courses.value = response.data || [];
   } catch (err) {
     console.error('Fetch courses error:', err);
   } finally {
@@ -88,3 +88,12 @@ onMounted(() => {
   fetchCourses();
 });
 </script>
+
+<style scoped>
+.line-clamp-2 {
+  display: -webkit-box;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+</style>

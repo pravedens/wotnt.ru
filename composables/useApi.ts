@@ -38,7 +38,7 @@ export const useApi = () => {
         authStore.logout()
         
         // ✅ Только на клиенте
-        if (process.client) {
+        if (import.meta.client) {
           navigateTo('/auth/login')
         }
       }

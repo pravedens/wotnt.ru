@@ -1,37 +1,33 @@
 // composables/useWebPush.ts
 
-import { useApi } from '~/composables/useApi'  // ✅ ДОБАВЛЕН ИМПОРТ
+import { useApi } from '~/composables/useApi'
 
 export const useWebPush = () => {
     const authStore = useAuthStore()
     const config = useRuntimeConfig()
-    const { $api } = useApi()  // ✅ ДОБАВЛЕНО
+    const { $api } = useApi()
     
-    // ⭐ ВСЕГДА true
     const isSupported = ref(true)
     const isSubscribed = ref(false)
     const isLoading = ref(false)
     const error = ref<string | null>(null)
     const unsupportedReason = ref<string | null>(null)
     
-    const VAPID_PUBLIC_KEY = config.public.vapidPublicKey || 'BHI-yFDLo4lx0oNdXlMD2PmGi7cZWGYpK5NilsPdOHSUk3ELnqze--Sh1Hj4j690-M1TRivckGbJlVmFvLaN_qM'
+    // ✅ Исправлено: явное приведение к string
+    const VAPID_PUBLIC_KEY = (config.public.vapidPublicKey as string) || 'BHI-yFDLo4lx0oNdXlMD2PmGi7cZWGYpK5NilsPdOHSUk3ELnqze--Sh1Hj4j690-M1TRivckGbJlVmFvLaN_qM'
     
     const init = async (): Promise<void> => {
-        if (!process.client) {
-            console.log('WebPush: not client side')
+        if (!import.meta.client) {
+
             return
         }
         
-        console.log('WebPush: initializing...')
-        
-        // ⭐ ВСЕГДА true
         isSupported.value = true
         
         try {
             let registration = await navigator.serviceWorker.getRegistration()
             
             if (!registration) {
-                console.log('WebPush: registering Service Worker...')
                 registration = await navigator.serviceWorker.register('/sw.js')
                 await new Promise(resolve => setTimeout(resolve, 1000))
             }
@@ -39,27 +35,34 @@ export const useWebPush = () => {
             if (registration) {
                 const subscription = await registration.pushManager.getSubscription()
                 isSubscribed.value = !!subscription
-                console.log('WebPush: subscription status:', isSubscribed.value)
             } else {
-                console.log('WebPush: No registration found')
             }
         } catch (err) {
             console.error('WebPush: init error', err)
-            // ⭐ ОСТАВЛЯЕМ true
             isSupported.value = true
             error.value = err instanceof Error ? err.message : 'Ошибка инициализации'
         }
     }
     
+    const urlBase64ToUint8Array = (base64String: string): Uint8Array => {
+        const padding = '='.repeat((4 - base64String.length % 4) % 4)
+        const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
+        const rawData = window.atob(base64)
+        const outputArray = new Uint8Array(rawData.length)
+        
+        for (let i = 0; i < rawData.length; ++i) {
+            outputArray[i] = rawData.charCodeAt(i)
+        }
+        return outputArray
+    }
+    
     const subscribe = async (): Promise<boolean> => {
-        console.log('WebPush: subscribe called')
         
         isLoading.value = true
         error.value = null
         
         try {
             const permission = await Notification.requestPermission()
-            console.log('WebPush: permission result:', permission)
             
             if (permission !== 'granted') {
                 error.value = 'Разрешение на уведомления не получено'
@@ -68,31 +71,38 @@ export const useWebPush = () => {
             
             let registration = await navigator.serviceWorker.getRegistration()
             if (!registration) {
-                console.log('WebPush: registering Service Worker...')
                 registration = await navigator.serviceWorker.register('/sw.js')
                 await navigator.serviceWorker.ready
             }
             
+            // ✅ Проверяем, что ключ существует
+            if (!VAPID_PUBLIC_KEY) {
+                error.value = 'VAPID ключ не настроен'
+                return false
+            }
+            
+            const applicationServerKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+            
             const subscription = await registration.pushManager.subscribe({
                 userVisibleOnly: true,
-                applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+                applicationServerKey: applicationServerKey.buffer as ArrayBuffer
             })
             
-            console.log('WebPush: subscription created')
-            console.log('WebPush: endpoint:', subscription.endpoint.substring(0, 100) + '...')
+            const subscriptionData = {
+                endpoint: subscription.endpoint,
+                keys: {
+                    p256dh: subscription.toJSON().keys?.p256dh || '',
+                    auth: subscription.toJSON().keys?.auth || ''
+                }
+            }
             
-            // ✅ Используем $api вместо $fetch
             const response = await $api<{ success: boolean }>('/push-subscription', {
                 method: 'POST',
-                body: {
-                    endpoint: subscription.endpoint,
-                    keys: subscription.toJSON().keys
-                }
+                body: subscriptionData
             })
             
             if (response.success) {
                 isSubscribed.value = true
-                console.log('WebPush: subscription saved on server')
                 return true
             }
             
@@ -109,7 +119,6 @@ export const useWebPush = () => {
     }
     
     const unsubscribe = async (): Promise<boolean> => {
-        console.log('WebPush: unsubscribe called')
         
         isLoading.value = true
         error.value = null
@@ -119,7 +128,6 @@ export const useWebPush = () => {
             const subscription = await registration.pushManager.getSubscription()
             
             if (subscription) {
-                // ✅ Используем $api вместо $fetch
                 await $api('/push-subscription', {
                     method: 'DELETE',
                     body: { endpoint: subscription.endpoint }
@@ -127,7 +135,6 @@ export const useWebPush = () => {
                 
                 await subscription.unsubscribe()
                 isSubscribed.value = false
-                console.log('WebPush: unsubscribed successfully')
             }
             
             return true
@@ -138,18 +145,6 @@ export const useWebPush = () => {
         } finally {
             isLoading.value = false
         }
-    }
-    
-    const urlBase64ToUint8Array = (base64String: string): Uint8Array => {
-        const padding = '='.repeat((4 - base64String.length % 4) % 4)
-        const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
-        const rawData = window.atob(base64)
-        const outputArray = new Uint8Array(rawData.length)
-        
-        for (let i = 0; i < rawData.length; ++i) {
-            outputArray[i] = rawData.charCodeAt(i)
-        }
-        return outputArray
     }
     
     return {

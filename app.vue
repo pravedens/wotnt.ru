@@ -11,12 +11,6 @@
       <NotificationContainer />
     </ClientOnly>
 
-    <noscript>
-      <div>
-        <img src="https://mc.yandex.ru/watch/95320948" style="position:absolute; left:-9999px;" alt="" />
-      </div>
-    </noscript>
-
     <div v-if="needRefresh" class="fixed bottom-4 right-4 z-50 bg-blue-600 text-white p-4 rounded-lg shadow-lg max-w-sm">
       <p class="mb-2">Доступна новая версия сайта!</p>
       <button
@@ -68,7 +62,7 @@ const handleBeforeInstallPrompt = (e) => {
 // PROTOCOL HANDLER
 // ============================================
 const registerProtocolHandler = () => {
-  if (process.client && 'registerProtocolHandler' in navigator) {
+  if (import.meta.client && 'registerProtocolHandler' in navigator) {
     try {
       navigator.registerProtocolHandler('web+wotnt', `${siteUrl}/?from=%s`)
     } catch (e) {
@@ -78,7 +72,7 @@ const registerProtocolHandler = () => {
 }
 
 const handleProtocolHandler = () => {
-  if (process.client) {
+  if (import.meta.client) {
     const urlParams = new URLSearchParams(window.location.search)
     const fromProtocol = urlParams.get('from')
 
@@ -104,7 +98,7 @@ const handleProtocolHandler = () => {
 // ============================================
 // SERVICE WORKER
 // ============================================
-if (process.client && 'serviceWorker' in navigator) {
+if (import.meta.client && 'serviceWorker' in navigator) {
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     window.location.reload()
   })
@@ -123,7 +117,7 @@ const isValidVersion = (version) => {
 }
 
 const cleanupInvalidVersion = () => {
-  if (process.client) {
+  if (import.meta.client) {
     const savedVersion = localStorage.getItem('app_version')
     if (!isValidVersion(savedVersion)) {
       localStorage.removeItem('app_version')
@@ -132,13 +126,13 @@ const cleanupInvalidVersion = () => {
 }
 
 const forceVersionCheck = async () => {
-  if (process.client) {
+  if (import.meta.client) {
     await checkVersion()
   }
 }
 
 const restoreScroll = () => {
-  if (process.client) {
+  if (import.meta.client) {
     document.body.style.overflow = ''
     document.body.style.position = ''
     document.body.style.top = ''
@@ -150,7 +144,7 @@ const restoreScroll = () => {
 // ============================================
 // ИНИЦИАЛИЗАЦИЯ
 // ============================================
-if (process.client) {
+if (import.meta.client) {
   cleanupInvalidVersion()
 
   onMounted(async () => {

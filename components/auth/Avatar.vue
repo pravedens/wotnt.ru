@@ -1,28 +1,31 @@
 <template>
   <div class="relative" :class="containerClass">
-    <img 
-      v-if="avatarUrl"
-      :src="avatarUrl" 
-      :alt="alt"
-      :class="[
-        'object-cover',
-        roundedClass,
-        sizeClass,
-        borderClass
-      ]"
-      @load="onLoad"
-      @error="onError"
-    >
-    <div 
-      v-else
-      :class="[
-        'flex items-center justify-center text-white font-bold',
-        roundedClass,
-        sizeClass,
-        bgClass
-      ]"
-    >
-      {{ initials }}
+    <!-- ✅ ОБА ВАРИАНТА ОБЁРНУТЫ В ОДИН ЭЛЕМЕНТ -->
+    <div class="avatar-content w-full h-full">
+      <img 
+        v-if="hasAvatar"
+        :src="avatarUrl" 
+        :alt="alt"
+        :class="[
+          'object-cover',
+          roundedClass,
+          sizeClass,
+          borderClass
+        ]"
+        @load="onLoad"
+        @error="onError"
+      >
+      <div 
+        v-else
+        :class="[
+          'flex items-center justify-center text-white font-bold',
+          roundedClass,
+          sizeClass,
+          bgClass
+        ]"
+      >
+        {{ initials }}
+      </div>
     </div>
   </div>
 </template>
@@ -101,6 +104,11 @@ const bgClass = computed(() => {
   return 'bg-gradient-to-br from-blue-500 to-purple-500'
 })
 
+// ✅ Проверяем, есть ли аватар
+const hasAvatar = computed(() => {
+  return !!props.src
+})
+
 // ✅ Обработка URL аватара (поддержка S3 и локального хранилища)
 const avatarUrl = computed(() => {
   if (!props.src) return null
@@ -116,7 +124,7 @@ const avatarUrl = computed(() => {
   }
   
   // Если путь начинается с storage/
- if (props.src.startsWith('storage/')) {
+  if (props.src.startsWith('storage/')) {
     return `${apiBase}/${props.src}`  
   }
   
@@ -135,10 +143,11 @@ const initials = computed(() => {
 })
 
 const onLoad = () => {
+  // Можно добавить логику при загрузке
 }
 
 const onError = (e) => {
-  console.error('❌ Avatar error:', avatarUrl.value, e)
+  console.warn('❌ Avatar error:', avatarUrl.value)
   // При ошибке показываем инициалы (компонент переключится на v-else)
 }
 </script>

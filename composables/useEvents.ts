@@ -33,7 +33,7 @@ export const useEvents = () => {
             await ensureAuthReady()
             
             let token = authStore.token
-            if (process.client && !token) {
+            if (import.meta.client && !token) {
                 token = localStorage.getItem('auth_token')
                 if (token) {
                     authStore.token = token

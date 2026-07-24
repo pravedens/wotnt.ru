@@ -100,28 +100,8 @@ import { useRoute, useRouter } from 'vue-router'
 import EventsBreadcrumbs from '~/components/events/Breadcrumbs.vue'
 import ConferenceRegistration from '~/components/events/ConferenceRegistration.vue'
 import EventAttendButton from '~/components/events/EventAttendButton.vue'
-import { useApi } from '~/composables/useApi'  // ✅ ДОБАВЛЕН ИМПОРТ
-
-// Типы
-interface Event {
-  id: number
-  title: string
-  slug: string
-  thumbnail?: string
-  description?: string
-  info?: string
-  content?: string
-  event_date?: string
-  startDate?: string
-  startTime?: string
-  display_date_time?: string
-  members_only?: boolean
-  is_published?: boolean
-  is_cancelled?: boolean
-  is_past?: boolean
-  user_attending?: boolean
-  attendees_count?: number
-}
+import { useApi } from '~/composables/useApi'  
+import type { Event } from "~/types/event"
 
 // Composables
 const route = useRoute()
@@ -170,7 +150,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-    if (process.client) {
+    if (import.meta.client) {
         document.body.style.overflow = ''
         document.body.style.position = ''
         document.body.style.top = ''
@@ -180,7 +160,7 @@ onUnmounted(() => {
 
 // Навигация назад
 const goBack = () => {
-    if (process.client) {
+    if (import.meta.client) {
         document.body.style.overflow = ''
         document.body.style.position = ''
         document.body.style.top = ''
@@ -284,13 +264,13 @@ const handleAttendUpdate = (attending: boolean, count: number) => {
 watch(event, (newEvent) => {
   if (!newEvent) return
   
-  useServerSeoMeta({
+  useSeoMeta({
     title: shareTitle.value,
     description: cleanDescription.value || 'Событие церкви Слово Истины',
     ogTitle: shareTitle.value,
     ogDescription: cleanDescription.value,
     ogUrl: currentUrl.value,
-    ogType: 'event',
+    ogType: 'article',
     ogImage: socialImage.value,
     ogImageSecureUrl: socialImage.value,
     ogImageWidth: 1200,

@@ -84,9 +84,10 @@
 import { useChatStore } from '~/stores/chat'
 import { useNotificationStore } from '~/stores/notification'
 import { useAuthStore } from '~/stores/auth'
-import { useApi } from '~/composables/useApi'  // ✅ ДОБАВЛЕН ИМПОРТ
+import { useApi } from '~/composables/useApi'
 import ChatList from '~/components/chat/ChatList.vue'
 import ChatWindow from '~/components/chat/ChatWindow.vue'
+import type { ConversationResponse, SendMessageResponse } from '~/types/chat'
 
 const props = defineProps<{
   visible: boolean
@@ -100,7 +101,7 @@ const emit = defineEmits<{
 const chatStore = useChatStore()
 const notificationStore = useNotificationStore()
 const authStore = useAuthStore()
-const { $api } = useApi()  // ✅ ДОБАВЛЕНО
+const { $api } = useApi()
 
 const selectedConversationId = ref<number | null>(null)
 const selectedStudent = ref<any | null>(null)
@@ -114,7 +115,7 @@ const openNewChat = () => {
 
 const startNewConversation = async (userId: number) => {
   try {
-    const response = await $api('/bible-school/chat/conversations/find-or-create', {
+    const response = await $api<ConversationResponse>('/bible-school/chat/conversations/find-or-create', {
       method: 'POST',
       body: { user_id: userId }
     })
@@ -125,6 +126,7 @@ const startNewConversation = async (userId: number) => {
       notificationStore.success('Чат создан', 'Беседа начата')
     }
   } catch (error) {
+    console.error('Start conversation error:', error)
     notificationStore.error('Ошибка', 'Не удалось создать чат')
   }
 }
@@ -134,15 +136,11 @@ const selectConversation = (id: number) => {
   selectedStudent.value = null
 }
 
-// ============================================
-// ВЫБОР УЧЕНИКА И СОЗДАНИЕ БЕСЕДЫ
-// ============================================
 const selectStudent = async (student: any) => {
   if (!student) return
 
   selectedStudent.value = student
   
-  // Проверяем, есть ли уже беседа с этим учеником
   const existingConversation = chatStore.conversations.find(
     c => c.other_user?.id === student.id
   )
@@ -154,16 +152,12 @@ const selectStudent = async (student: any) => {
   }
 }
 
-// ============================================
-// ОТПРАВКА ПЕРВОГО СООБЩЕНИЯ
-// ============================================
 const sendFirstMessage = async () => {
   if (!newMessage.value.trim() || sending.value || !selectedStudent.value) return
 
   sending.value = true
   try {
-    // ✅ Используем $api вместо $fetch
-    const response = await $api('/bible-school/chat/send', {
+    const response = await $api<SendMessageResponse>('/bible-school/chat/send', {
       method: 'POST',
       body: {
         receiver_id: selectedStudent.value.id,
@@ -175,10 +169,8 @@ const sendFirstMessage = async () => {
       notificationStore.success('Сообщение отправлено', 'Беседа создана')
       newMessage.value = ''
       
-      // Обновить список бесед
       await chatStore.loadConversations()
       
-      // Найти созданную беседу
       const conversation = chatStore.conversations.find(
         c => c.other_user?.id === selectedStudent.value.id
       )
@@ -206,9 +198,6 @@ const closeModal = () => {
   emit('close')
 }
 
-// ============================================
-// СЛУШАЕМ ВЫБОР УЧЕНИКА ИЗ TeacherPanel
-// ============================================
 watch(() => props.student, (newStudent) => {
   if (newStudent) {
     selectStudent(newStudent)
@@ -222,9 +211,6 @@ watch(() => props.visible, (val) => {
   }
 })
 
-// ============================================
-// ЗАГРУЗКА БЕСЕД ПРИ ОТКРЫТИИ
-// ============================================
 watch(() => props.visible, async (val) => {
   if (val) {
     await chatStore.loadConversations()

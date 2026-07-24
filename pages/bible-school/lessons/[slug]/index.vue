@@ -391,7 +391,7 @@ const fetchLesson = async () => {
     await fetchNextLesson();
     
     // ✅ Восстанавливаем позицию скролла
-    if (process.client) {
+    if (import.meta.client) {
       const savedPosition = sessionStorage.getItem('lessonScrollPosition');
       if (savedPosition) {
         setTimeout(() => {
@@ -586,7 +586,7 @@ const completeStep = async (stepName) => {
 
 const goToTest = () => {
 // ✅ Сохраняем позицию перед переходом
-  if (process.client) {
+  if (import.meta.client) {
     sessionStorage.setItem('lessonScrollPosition', window.scrollY.toString());
   }
   navigateTo(`/bible-school/lessons/${lesson.value.slug}/test`);

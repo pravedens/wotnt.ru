@@ -1,6 +1,6 @@
 <template>
   <div class="chat-list">
-  <!-- Кнопка нового чата -->
+    <!-- Кнопка нового чата -->
     <button
       @click="$emit('new-chat')"
       class="w-full mb-3 p-2 bg-blue-500/20 border border-blue-500/50 text-blue-200 rounded-lg hover:bg-blue-500/30 transition flex items-center justify-center gap-2"
@@ -8,6 +8,7 @@
       <span class="text-lg">➕</span>
       Новый чат
     </button>
+    
     <div v-if="loading" class="text-center py-8">
       <div class="animate-spin rounded-full h-8 w-8 border-2 border-white border-t-transparent mx-auto"></div>
     </div>
@@ -67,8 +68,10 @@ const selectedId = ref<number | null>(null)
 const conversations = computed(() => chatStore.conversations)
 const loading = computed(() => chatStore.loading)
 
+// ✅ Исправлено: убираем аргумент, так как событие не требует данных
 const emit = defineEmits<{
   (e: 'select', conversationId: number): void
+  (e: 'new-chat'): void  // ✅ Без аргументов
 }>()
 
 const formatTime = (date: string) => {

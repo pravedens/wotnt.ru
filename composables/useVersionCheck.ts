@@ -22,7 +22,7 @@ export const useVersionCheck = () => {
     }
 
     const checkVersion = async () => {
-        if (!process.client || isChecking) return
+        if (!import.meta.client || isChecking) return
         
         isChecking = true
         try {
@@ -57,7 +57,7 @@ export const useVersionCheck = () => {
     }
 
     const refreshApp = async () => {
-        if (process.client) {
+        if (import.meta.client) {
             try {
                 const newVersion = await getCurrentVersion()
                 if (newVersion) {

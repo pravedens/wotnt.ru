@@ -54,7 +54,7 @@
           
           <!-- Контент -->
           <Transition name="fade-up" mode="out-in">
-            <div v-if="!loadingAbouts && selectedDenomination && categoryAbouts.length > 0" :key="selectedDenomination.id" class="p-6 md:p-8">
+            <div v-if="!loadingAbouts && selectedDenomination && categoryAbouts.length > 0" :key="'content-with-articles'" class="p-6 md:p-8">
               <div class="text-center mb-6">
                 <h2 class="text-2xl md:text-3xl font-bold text-white mb-2">
                   {{ selectedDenomination.title }}
@@ -73,17 +73,17 @@
                   <div class="border border-white/10 rounded-xl p-4 hover:bg-white/5 transition-all duration-300 hover:border-blue-500/30">
                     <div class="flex items-start gap-3">
                       <div class="w-16 h-16 rounded-lg overflow-hidden bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex-shrink-0">
-    <img 
-      v-if="about.thumbnail"
-      :src="getImageUrl(about.thumbnail, 'abouts')"
-      :alt="about.title"
-      class="w-full h-full object-cover"
-      @error="handleImageError"
-    >
-    <div v-else class="w-full h-full flex items-center justify-center text-2xl">
-      📄
-    </div>
-  </div>
+                        <img 
+                          v-if="about.thumbnail"
+                          :src="getImageUrl(about.thumbnail, 'abouts') ?? undefined"
+                          :alt="about.title"
+                          class="w-full h-full object-cover"
+                          @error="handleImageError"
+                        >
+                        <div v-else class="w-full h-full flex items-center justify-center text-2xl">
+                          📄
+                        </div>
+                      </div>
                       
                       <div class="flex-1 min-w-0">
                         <h3 class="text-lg font-semibold text-white mb-1 group-hover:text-blue-300 transition">
@@ -97,7 +97,7 @@
                             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
-                            {{ formatDate(about.created_at || about.updated_at) }}
+                            {{ formatDate(about.created_at ?? about.updated_at) }}
                           </span>
                           <span class="text-blue-400 group-hover:text-blue-300 transition flex items-center gap-1 text-xs">
                             Читать
@@ -113,12 +113,12 @@
               </div>
             </div>
             
-            <div v-else-if="!loadingAbouts && selectedDenomination && categoryAbouts.length === 0" :key="selectedDenomination.id" class="p-12 text-center">
+            <div v-else-if="!loadingAbouts && selectedDenomination && categoryAbouts.length === 0" :key="'content-empty'" class="p-12 text-center">
               <div class="text-4xl mb-3">📭</div>
               <p class="text-white/60">В этой категории пока нет статей</p>
             </div>
             
-            <div v-else-if="!loadingAbouts && !selectedDenomination" class="p-12 text-center">
+            <div v-else-if="!loadingAbouts && !selectedDenomination" :key="'content-no-category'" class="p-12 text-center">
               <div class="text-4xl mb-3">📖</div>
               <p class="text-white/60">Выберите категорию</p>
             </div>
@@ -134,10 +134,13 @@ import { useAbout } from '~/composables/useAbout'
 import AboutBreadcrumbs from '~/components/about/Breadcrumbs.vue'
 import type { Denomination, About } from '~/types/about'
 import { useImageUrl } from '~/composables/useImageUrl'
+
 const { getImageUrl } = useImageUrl()
 
 const handleImageError = (e: Event) => {
-  (e.target as HTMLImageElement).style.display = 'none'
+  const img = e.target as HTMLImageElement
+  img.style.display = 'none'
+  console.warn('Image failed to load:', img.src)
 }
 
 const router = useRouter()
@@ -170,18 +173,6 @@ const getCategoryIcon = (title: string): string => {
   return icons[title] || '📄'
 }
 
-const getArticleIcon = (title: string): string => {
-  const icons: Record<string, string> = {
-    'История церкви': '📜',
-    'Наша миссия': '🎯',
-    'Наши ценности': '💎',
-    'Пастор': '👨‍💼',
-    'Команда': '🤝',
-    'Служения': '⛪'
-  }
-  return icons[title] || '📖'
-}
-
 const loadData = async () => {
   loadingDenominations.value = true
   error.value = null
@@ -196,10 +187,12 @@ const loadData = async () => {
     
     let defaultDenom: Denomination | null = null
     
-    const categorySlug = route.query.category as string
+    const categorySlug = route.query.category as string | undefined
     if (categorySlug) {
-      defaultDenom = denominations.value.find(d => d.slug === categorySlug) || null
-      if (!defaultDenom) {
+      const found = denominations.value.find(d => d.slug === categorySlug)
+      if (found) {
+        defaultDenom = found
+      } else {
         router.replace({ query: {} })
       }
     }
@@ -207,13 +200,20 @@ const loadData = async () => {
     if (!defaultDenom) {
       const savedId = localStorage.getItem('about_selected_category')
       if (savedId) {
-        defaultDenom = denominations.value.find(d => d.id === Number(savedId)) || null
-        if (!defaultDenom) localStorage.removeItem('about_selected_category')
+        const found = denominations.value.find(d => d.id === Number(savedId))
+        if (found) {
+          defaultDenom = found
+        } else {
+          localStorage.removeItem('about_selected_category')
+        }
       }
     }
     
     if (!defaultDenom && denominations.value.length > 0) {
-      defaultDenom = denominations.value[0]
+      const firstDenom = denominations.value[0]
+      if (firstDenom) {
+        defaultDenom = firstDenom
+      }
     }
     
     if (defaultDenom) {
@@ -269,7 +269,7 @@ const goToAbout = (about: About) => {
   router.push(`/about/${about.slug}`)
 }
 
-const formatDate = (dateStr: string | null) => {
+const formatDate = (dateStr: string | null | undefined): string => {
   if (!dateStr) return 'Дата неизвестна'
   return new Date(dateStr).toLocaleDateString('ru-RU', { 
     day: 'numeric', 

@@ -1,8 +1,72 @@
+export interface ConferenceService {
+  id?: number
+  title: string
+  service_date: string
+  start_time?: string
+  speaker?: string
+  description?: string
+  capacity?: number
+  available_count?: number 
+}
+
+// ✅ Интерфейс для формы события
+export interface EventFormData {
+  title: string
+  startDate: string
+  startTime: string
+  color: string
+  description: string
+  content: string
+  info: string
+  show_in_carousel: boolean
+  is_published: boolean
+  is_past: boolean
+  members_only: boolean
+  ministers_only: boolean
+  thumbnail: File | null
+  is_conference: boolean
+  conferenceServices: ConferenceService[]
+}
+
+// ✅ Интерфейс для данных события из API
+export interface EventData {
+  id: number
+  title: string
+  startDate?: string
+  startTime?: string
+  color?: string
+  description?: string
+  content?: string
+  info?: string
+  thumbnail?: string
+  show_in_carousel?: boolean
+  is_published?: boolean
+  is_past?: boolean
+  members_only?: boolean
+  ministers_only?: boolean
+  is_conference?: boolean
+  conference_services?: ConferenceService[]
+}
+
+// ✅ Добавляем интерфейсы для ответов API
+export interface RegistrationResponse {
+  registered: boolean
+  registration?: {
+    status: string
+  }
+}
+
+export interface SubmitRegistrationResponse {
+  success: boolean
+  message?: string
+}
+
 export interface Event {
   id: number
   title: string
   slug: string
   description?: string
+  time?: string | null
   content?: string
   thumbnail?: string
   startDate: string
@@ -20,6 +84,8 @@ export interface Event {
   can_edit?: boolean
   members_only?: boolean
   ministers_only?: boolean
+  is_conference?: boolean 
+  conference_services?: ConferenceService[]
   
   // Аксессоры из модели
   full_date?: string
@@ -44,7 +110,7 @@ export interface CalendarEvent {
   title: string
   slug: string
   color?: string
-  time?: string
+  time?: string | null
   description?: string
   startDate?: string
   startTime?: string
@@ -56,7 +122,7 @@ export interface CalendarEvent {
   can_edit?: boolean
 }
 
-interface CalendarDay {
+export interface CalendarDay {
   day: number
   date: string
   month: number
@@ -72,4 +138,16 @@ export interface MonthData {
   events: DayEvents
   list: Event[]
   is_admin?: boolean
+}
+
+export interface TransformedMonthData {
+  list?: Event[]
+  events?: Record<number, Event[]>
+}
+
+export interface CarouselStatsResponse {
+  total: number
+  in_carousel: number
+  limit?: number
+  available?: number
 }

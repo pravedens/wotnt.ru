@@ -37,13 +37,14 @@
 <script setup lang="ts">
 import { useAuthStore } from '~/stores/auth'
 import { useApi } from '~/composables/useApi'
+import type { Message, MessagesResponse, UnreadCountResponse } from '~/types/chat'
 
 const authStore = useAuthStore()
 const { $api } = useApi()
 
 const isMinister = computed(() => authStore.isMinister)
 const unreadCount = ref(0)
-const recentMessages = ref<any[]>([])
+const recentMessages = ref<Message[]>([])
 const showDropdown = ref(false)
 let intervalId: NodeJS.Timeout | null = null
 
@@ -60,7 +61,7 @@ const loadUnreadCount = async () => {
   if (!authStore.isAuthenticated) return
   
   try {
-    const response = await $api('/my-messages/unread-count')
+    const response = await $api<UnreadCountResponse>('/my-messages/unread-count')
     unreadCount.value = response.count || 0
   } catch (error) {
     // Ошибка не критична
@@ -71,10 +72,16 @@ const loadRecentMessages = async () => {
   if (!authStore.isAuthenticated) return
   
   try {
-    const response = await $api('/my-messages?page=1')
-    recentMessages.value = response.messages?.data?.slice(0, 5) || []
+    const response = await $api<MessagesResponse>('/my-messages?page=1')
+    if (response.messages?.data) {
+      recentMessages.value = response.messages.data.slice(0, 5)
+    } else if (response.data) {
+      recentMessages.value = response.data.slice(0, 5)
+    } else {
+      recentMessages.value = []
+    }
   } catch (error) {
-    // Ошибка не критична
+    recentMessages.value = []
   }
 }
 

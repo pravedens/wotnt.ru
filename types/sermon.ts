@@ -43,6 +43,7 @@ export interface Post {
   user_id: number
   
   thumbnail: string | null
+  og_image?: string 
   
   // Внешние ссылки
   youtube: string | null
@@ -63,6 +64,7 @@ export interface Post {
   text_size: number | null
   text_mime: string | null
   text: string | null
+  display_text_filename?: string | null
   
   // Связи (загружаются через with)
   category?: Category | null
@@ -104,4 +106,15 @@ export interface PaginatedResponse<T> {
   last_page: number
   per_page: number
   total: number
+}
+
+// ✅ Добавляем интерфейс для хлебных крошек
+export interface Breadcrumb {
+  title: string
+  to?: any
+}
+
+export interface FavoritesResponse {
+    data?: Post[]
+    [key: string]: any
 }

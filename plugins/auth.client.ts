@@ -1,7 +1,7 @@
 export default defineNuxtPlugin(async () => {
     const authStore = useAuthStore()
     
-    if (process.client) {
+    if (import.meta.client) {
         await authStore.init()
         
         // ✅ Проверяем, нужно ли обновить сессию

@@ -31,15 +31,8 @@
 </template>
 
 <script setup lang="ts">
-import { useApi } from '~/composables/useApi'  // ✅ ДОБАВЛЕН ИМПОРТ
-
-interface BibleVerse {
-  id: number
-  title: string
-  description: string
-  slug: string
-  date: string | null
-}
+import { useApi } from '~/composables/useApi'  
+import type { BibleVerse } from '~/types/bible'
 
 // ✅ ПОЛУЧАЕМ $api
 const { $api } = useApi()

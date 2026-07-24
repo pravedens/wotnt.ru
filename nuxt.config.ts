@@ -84,7 +84,7 @@ export default defineNuxtConfig({
         { rel: "preconnect", href: "https://storage.yandexcloud.net" },
         { rel: "dns-prefetch", href: "https://storage.yandexcloud.net" },
       ],
-      script: process.client
+      script: import.meta.client
         ? [
             {
               innerHTML: `console.log('App version: ${new Date().toISOString()}')`,

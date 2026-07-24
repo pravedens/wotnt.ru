@@ -1,8 +1,8 @@
 import type { About, Denomination } from '~/types/about'
-import { useApi } from '~/composables/useApi'  // ✅ ДОБАВЛЕН ИМПОРТ
+import { useApi } from '~/composables/useApi'
 
 export const useAbout = () => {
-    const { $api } = useApi()  // ✅ ДОБАВЛЕНО
+    const { $api } = useApi()
 
     const abouts = ref<About[]>([])
     const denominations = ref<Denomination[]>([])
@@ -22,9 +22,8 @@ export const useAbout = () => {
             if (params?.denomination_slug) queryParams.append('denomination_slug', params.denomination_slug)
             queryParams.append('_t', String(Date.now()))
 
-            // ✅ Используем $api вместо $fetch
             const response = await $api<{ abouts: About[] }>(`/abouts?${queryParams.toString()}`)
-            abouts.value = response.abouts
+            abouts.value = response.abouts || []
         } catch (err: any) {
             error.value = err.message || 'Ошибка загрузки статей'
             console.error('Error loading abouts:', err)
@@ -39,7 +38,6 @@ export const useAbout = () => {
         error.value = null
 
         try {
-            // ✅ Используем $api вместо $fetch
             const about = await $api<About>(`/abouts/${slug}`, {
                 query: { _t: Date.now() }
             })
@@ -60,11 +58,10 @@ export const useAbout = () => {
         error.value = null
 
         try {
-            // ✅ Используем $api вместо $fetch
             const response = await $api<Denomination[]>('/denominations', {
                 query: { _t: Date.now() }
             })
-            denominations.value = response
+            denominations.value = response || []
         } catch (err: any) {
             error.value = err.message || 'Ошибка загрузки категорий'
             console.error('Error loading denominations:', err)
@@ -73,18 +70,37 @@ export const useAbout = () => {
         }
     }
 
+    // ✅ Интерфейс для ответа от /denominations/:slug/abouts
+    interface DenominationAboutsResponse {
+        abouts: About[]
+        denomination: Denomination
+        success?: boolean
+    }
+
     // Загрузка статей по категории
-    const loadAboutsByDenomination = async (slug: string): Promise<any> => {
+    const loadAboutsByDenomination = async (slug: string): Promise<DenominationAboutsResponse | null> => {
         loading.value = true
         error.value = null
         
         try {
-            // ✅ Используем $api вместо $fetch
-            const response = await $api(`/denominations/${slug}/abouts`, {
+            // ✅ Типизируем ответ
+            const response = await $api<DenominationAboutsResponse>(`/denominations/${slug}/abouts`, {
                 query: { _t: Date.now() }
             })
-            abouts.value = response.abouts || response
-            return response
+            
+            // ✅ Обрабатываем оба варианта ответа
+            if (response && Array.isArray(response)) {
+                abouts.value = response as unknown as About[]
+                return { abouts: abouts.value, denomination: {} as Denomination }
+            }
+            
+            if (response?.abouts) {
+                abouts.value = response.abouts || []
+                return response
+            }
+            
+            abouts.value = []
+            return null
         } catch (err: any) {
             error.value = err.message || 'Ошибка загрузки статей категории'
             console.error('Error loading abouts by denomination:', err)

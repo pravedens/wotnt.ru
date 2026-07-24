@@ -196,54 +196,8 @@
 <script setup lang="ts">
 import { useAuthStore } from '~/stores/auth'
 import { useCarouselStats } from '~/composables/useCarouselStats'
-import { useApi } from '~/composables/useApi'  // ✅ ДОБАВЛЕН ИМПОРТ
-
-// Интерфейсы
-interface ConferenceService {
-  service_date: string
-  title: string
-  description: string
-  start_time: string
-  speaker: string
-  capacity: number
-}
-
-interface EventForm {
-  title: string
-  startDate: string
-  startTime: string
-  color: string
-  description: string
-  content: string
-  info: string
-  show_in_carousel: boolean
-  is_published: boolean
-  is_past: boolean
-  members_only: boolean
-  ministers_only: boolean
-  thumbnail: File | null
-  is_conference: boolean
-  conferenceServices: ConferenceService[]
-}
-
-interface EventData {
-  id: number
-  title: string
-  startDate?: string
-  startTime?: string
-  color?: string
-  description?: string
-  content?: string
-  info?: string
-  thumbnail?: string
-  show_in_carousel?: boolean
-  is_published?: boolean
-  is_past?: boolean
-  members_only?: boolean
-  ministers_only?: boolean
-  is_conference?: boolean
-  conference_services?: ConferenceService[]
-}
+import { useApi } from '~/composables/useApi'  
+import type { EventData, EventFormData } from '~/types/event' 
 
 const props = defineProps<{
   visible: boolean
@@ -263,7 +217,7 @@ const emit = defineEmits<{
 // ============================================
 const config = useRuntimeConfig()
 const { apiBase, storageUrl } = config.public
-const { $api } = useApi()  // ✅ ДОБАВЛЕНО
+const { $api } = useApi()  
 
 const authStore = useAuthStore()
 
@@ -276,7 +230,7 @@ const colors = [
   { value: '#ec4899', name: 'Розовый' },
 ]
 
-const localForm = ref<EventForm>({
+const localForm = ref<EventFormData>({
   title: '',
   startDate: '',
   startTime: '',
@@ -368,7 +322,7 @@ watch(() => props.visible, (visible) => {
         thumbnail: null,
         is_conference: false,
         conferenceServices: []
-      } as EventForm
+      } as EventFormData
     } 
     else if (props.mode === 'edit' && props.event) {
       localForm.value = {
@@ -387,7 +341,7 @@ watch(() => props.visible, (visible) => {
         thumbnail: null,
         is_conference: props.event.is_conference || false,
         conferenceServices: props.event.conference_services || []
-      } as EventForm
+      } as EventFormData
 
       if (props.event.thumbnail) {
         imagePreview.value = getImageUrl(props.event.thumbnail) || null
@@ -410,7 +364,7 @@ watch(() => props.visible, (visible) => {
       thumbnail: null,
       is_conference: false,
       conferenceServices: []
-    } as EventForm
+    } as EventFormData
     
     imagePreview.value = null
     error.value = ''

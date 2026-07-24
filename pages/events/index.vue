@@ -1,20 +1,17 @@
 <template>
   <div class="min-h-screen bg-gradient-to-br from-blue-900 to-purple-900 py-12">
     <div class="container mx-auto px-4">
-      <!-- Хлебные крошки -->
       <EventsBreadcrumbs />
       
       <h1 class="text-4xl font-bold text-white text-center mb-8">
         Календарь событий
       </h1>
       
-      <!-- Состояние загрузки -->
       <div v-if="loading" class="text-center py-12">
         <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-white border-t-transparent"></div>
         <p class="text-white/80 mt-4">Загрузка календаря...</p>
       </div>
       
-      <!-- Ошибка -->
       <div v-else-if="error" class="bg-red-500/20 border border-red-500/50 rounded-2xl p-8 text-center max-w-2xl mx-auto">
         <p class="text-red-200 text-lg mb-4">{{ error }}</p>
         <button 
@@ -25,29 +22,26 @@
         </button>
       </div>
       
-      <!-- Календарь -->
       <div v-else-if="monthData" class="max-w-6xl mx-auto">
         <EventsCalendar
-          :month-data="transformedMonthData"
+          :month-data="transformedMonthData as any"
           :current-month="currentMonth"
           :current-year="currentYear"
           :loading="loading"
-          :month-name="monthName"
+          :month-name="monthName || ''"
           :can-edit="userCanEdit"
           @prev-month="prevMonth"
           @next-month="nextMonth"
           @today="today"
           @select-day="openCreateModal"
-          @select-event="openEditModal"
-          @view-event="openViewModal"
+          @select-event="(event: any) => openEditModal(event)"
+          @view-event="(event: any) => openViewModal(event)"
         />
         
-        <!-- Список событий месяца -->
         <div v-if="monthData.list?.length" class="mt-8">
           <h2 class="text-2xl font-bold text-white mb-4">
             Все события {{ monthNameGenitive }} {{ currentYear }}
           </h2>
-          
           <div class="space-y-4">
             <EventsCard
               v-for="event in monthData.list"
@@ -60,7 +54,6 @@
           </div>
         </div>
         
-        <!-- Нет событий -->
         <div v-else class="text-center py-12 bg-white/10 rounded-2xl mt-8">
           <p class="text-white/80 text-lg mb-4">В этом месяце нет запланированных событий</p>
           <button
@@ -73,7 +66,6 @@
         </div>
       </div>
       
-      <!-- Модальные окна -->
       <EventsViewModal
         v-if="viewEvent"
         :event="viewEvent"
@@ -116,31 +108,8 @@ import EventsCalendar from '~/components/events/Calendar.vue'
 import EventsCard from '~/components/events/EventCard.vue'
 import EventsViewModal from '~/components/events/ViewModal.vue'
 import EventsFormModal from '~/components/events/FormModal.vue'
+import type { Event, TransformedMonthData } from "~/types/event"
 
-// Типы
-interface Event {
-  id: number
-  title: string
-  slug: string
-  color?: string
-  startDate?: string
-  startTime?: string
-  time?: string
-  description?: string
-  show_in_carousel?: boolean
-  is_published?: boolean
-  members_only?: boolean
-  ministers_only?: boolean  // ✅ Добавлено
-  is_past?: boolean
-  can_edit?: boolean
-}
-
-interface TransformedMonthData {
-  list?: Event[]
-  events?: Record<number, Event[]>
-}
-
-// Composables
 const router = useRouter()
 const authStore = useAuthStore()
 
@@ -163,21 +132,21 @@ const {
 // ТРАНСФОРМАЦИЯ ДАННЫХ ДЛЯ КАЛЕНДАРЯ
 // ============================================
 
-// Функция для форматирования времени
 const formatEventTime = (event: Event): string | null => {
   if (event.time) {
-    if (event.time.match(/^\d{2}:\d{2}$/)) {
-      return event.time
+    const timeStr = String(event.time)
+    if (timeStr.match(/^\d{2}:\d{2}$/)) {
+      return timeStr
     }
-    const match = event.time.match(/(\d{2}:\d{2})/)
-    if (match) {
+    const match = timeStr.match(/(\d{2}:\d{2})/)
+    if (match && match[1]) {
       return match[1]
     }
   }
   
   if (event.startTime) {
     const match = event.startTime.match(/(\d{2}:\d{2})/)
-    if (match) {
+    if (match && match[1]) {
       return match[1]
     }
   }
@@ -185,7 +154,6 @@ const formatEventTime = (event: Event): string | null => {
   return null
 }
 
-// Преобразуем данные из API в формат, понятный календарю
 const transformedMonthData = computed((): TransformedMonthData | null => {
   if (!monthData.value) return null
   
@@ -193,8 +161,9 @@ const transformedMonthData = computed((): TransformedMonthData | null => {
   
   if (monthData.value.list && Array.isArray(monthData.value.list)) {
     monthData.value.list.forEach((event: Event) => {
-      if (event.startDate) {
-        const date = new Date(event.startDate)
+      const dateStr = event.startDate || event.event_date || event.created_at
+      if (dateStr) {
+        const date = new Date(dateStr)
         const day = date.getDate()
         
         if (!eventsByDay[day]) {
@@ -208,30 +177,33 @@ const transformedMonthData = computed((): TransformedMonthData | null => {
           title: event.title,
           slug: event.slug,
           color: event.color,
-          time: formattedTime,
+          time: formattedTime ?? undefined,
           description: event.description,
           startDate: event.startDate,
           startTime: event.startTime,
           show_in_carousel: event.show_in_carousel,
           is_published: event.is_published,
           members_only: event.members_only,
-          ministers_only: event.ministers_only,  // ✅ Добавлено
+          ministers_only: event.ministers_only,
           is_past: event.is_past,
           can_edit: event.can_edit
-        })
+        } as Event)
       }
     })
   }
   
   Object.keys(eventsByDay).forEach(day => {
-    eventsByDay[Number(day)].sort((a, b) => {
-      if (a.time && b.time) {
-        return a.time.localeCompare(b.time)
-      }
-      if (a.time && !b.time) return -1
-      if (!a.time && b.time) return 1
-      return 0
-    })
+    const dayEvents = eventsByDay[Number(day)]
+    if (dayEvents && dayEvents.length > 0) {
+      dayEvents.sort((a, b) => {
+        if (a.time && b.time) {
+          return a.time.localeCompare(b.time)
+        }
+        if (a.time && !b.time) return -1
+        if (!a.time && b.time) return 1
+        return 0
+      })
+    }
   })
   
   return {
@@ -244,7 +216,7 @@ const transformedMonthData = computed((): TransformedMonthData | null => {
 // SEO МЕТА-ТЕГИ
 // ============================================
 
-useServerSeoMeta({
+useSeoMeta({
   title: 'События | Церковь Слово Истины',
   description: 'Календарь событий церкви Слово Истины. Воскресные служения, молитвенные встречи, конференции и молодежные собрания. Актуальные анонсы мероприятий.',
   ogTitle: 'События | Церковь Слово Истины',
@@ -285,7 +257,8 @@ const editEvent = ref<Event | null>(null)
 const createDate = ref<string | null>(null)
 
 const getTodayDate = (): string => {
-  return new Date().toISOString().split('T')[0]
+  const date = new Date().toISOString().split('T')[0]
+  return date || ''
 }
 
 onMounted(() => {
@@ -304,7 +277,6 @@ const openViewModal = (event: Event) => {
 }
 
 const openEditModal = async (event: Event) => {
-  
   if (!userCanEdit.value) {
     return
   }
@@ -323,7 +295,6 @@ const openEditModal = async (event: Event) => {
 }
 
 const openCreateModal = (dateStr: string) => {
-  
   if (!userCanEdit.value) {
     return
   }

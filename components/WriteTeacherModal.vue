@@ -47,10 +47,12 @@
 import { useAuthStore } from '~/stores/auth'
 import { useNotificationStore } from '~/stores/notification'
 import { useTeacher } from '~/composables/useTeacher'
+import type { Teacher } from '~/types/bible-school'
 
+// ✅ Используем Teacher из types/bible-school.ts
 const props = defineProps<{
   visible: boolean
-  teacher: any
+  teacher: Teacher
 }>()
 
 const emit = defineEmits<{
@@ -68,8 +70,17 @@ const captchaSiteKey = config.public.yandexCaptchaSiteKey as string
 
 const sending = ref(false)
 
+// ✅ Вычисляем полное имя пользователя из отдельных полей
+const userFullName = computed(() => {
+  const user = authStore.user
+  if (!user) return ''
+  return [user.last_name, user.name, user.middle_name]
+    .filter(Boolean)
+    .join(' ')
+})
+
 const form = ref({
-  name: authStore.user?.full_name || '',
+  name: userFullName.value || '',
   email: authStore.user?.email || '',
   message: '',
   captcha_token: ''
@@ -134,7 +145,7 @@ const sendMessage = async () => {
 watch(() => props.visible, (val) => {
   if (val) {
     form.value = {
-      name: authStore.user?.full_name || '',
+      name: userFullName.value || '',
       email: authStore.user?.email || '',
       message: '',
       captcha_token: ''

@@ -1,6 +1,6 @@
 // plugins/pwa.client.ts
 export default defineNuxtPlugin(() => {
-  if (process.client && 'serviceWorker' in navigator) {
+  if (import.meta.client && 'serviceWorker' in navigator) {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('/sw.js')
         .then(registration => {

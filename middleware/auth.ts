@@ -1,5 +1,5 @@
 export default defineNuxtRouteMiddleware(async (to, from) => {
-    if (process.client) {
+    if (import.meta.client) {
         const authStore = useAuthStore()
         
         if (!authStore.initialized) {

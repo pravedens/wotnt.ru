@@ -74,7 +74,7 @@
 import { useChatStore } from '~/stores/chat'
 import { useNotificationStore } from '~/stores/notification'
 import { useAuthStore } from '~/stores/auth'
-import { useApi } from '~/composables/useApi'  // ✅ ДОБАВЛЕН ИМПОРТ
+import { useApi } from '~/composables/useApi'
 
 const props = defineProps<{
   conversationId: number
@@ -83,7 +83,7 @@ const props = defineProps<{
 const chatStore = useChatStore()
 const notificationStore = useNotificationStore()
 const authStore = useAuthStore()
-const { $api } = useApi()  // ✅ ДОБАВЛЕНО
+const { $api } = useApi()
 
 const messagesContainer = ref<HTMLElement | null>(null)
 const newMessage = ref('')
@@ -142,6 +142,7 @@ const sendMessage = async () => {
     typingStartedSent = false
     scrollToBottom()
   } catch (error) {
+    console.error('Send message error:', error)
     notificationStore.error('Ошибка', 'Не удалось отправить сообщение')
   } finally {
     sending.value = false
@@ -155,7 +156,6 @@ const sendTypingStarted = async () => {
   if (!props.conversationId || !authStore.isAuthenticated) return
 
   try {
-    // ✅ Используем $api вместо $fetch
     await $api(`/bible-school/chat/conversations/${props.conversationId}/typing/start`, {
       method: 'POST'
     })
@@ -175,7 +175,6 @@ const sendTypingStopped = async () => {
   }
 
   try {
-    // ✅ Используем $api вместо $fetch
     await $api(`/bible-school/chat/conversations/${props.conversationId}/typing/stop`, {
       method: 'POST'
     })
@@ -261,21 +260,22 @@ const handleTypingStopped = (event: any) => {
 // ECHO ПОДПИСКА
 // ============================================
 const setupEcho = () => {
-  const { $echo } = useNuxtApp()
-  if (!$echo || !props.conversationId) return
+  // ✅ Исправлено: используем any для обхода проблемы с дженериком
+  const echo = useNuxtApp().$echo as any
+  if (!echo || !props.conversationId) return
 
   const channel = `conversation.${props.conversationId}`
 
   if (echoSubscription) {
-    $echo.leave(channel)
+    echo.leave(channel)
     echoSubscription = null
   }
   if (presenceSubscription) {
-    $echo.leave(channel)
+    echo.leave(channel)
     presenceSubscription = null
   }
 
-  echoSubscription = $echo.private(channel)
+  echoSubscription = echo.private(channel)
     .subscribed(() => {
       // Подписка успешна
     })
@@ -301,10 +301,10 @@ const setupEcho = () => {
       handleTypingStopped(event)
     })
     .error((err: any) => {
-      // Ошибка подписки
+      console.error('Echo subscription error:', err)
     })
 
-  presenceSubscription = $echo.join(channel)
+  presenceSubscription = echo.join(channel)
     .here((users: any[]) => {
       isOnline.value = users.some((user: any) => {
         return Number(user.id) !== Number(authStore.user?.id)
@@ -321,7 +321,7 @@ const setupEcho = () => {
       }
     })
     .error((err: any) => {
-      // Ошибка presence подписки
+      console.error('Echo presence error:', err)
     })
 }
 
@@ -343,10 +343,10 @@ onMounted(async () => {
 watch(() => props.conversationId, async (newId, oldId) => {
   if (!newId) return
 
-  const { $echo } = useNuxtApp()
+  const echo = useNuxtApp().$echo as any
 
-  if ($echo && oldId) {
-    $echo.leave(`conversation.${oldId}`)
+  if (echo && oldId) {
+    echo.leave(`conversation.${oldId}`)
     echoSubscription = null
     presenceSubscription = null
   }
@@ -372,10 +372,10 @@ watch(() => props.conversationId, async (newId, oldId) => {
 })
 
 onUnmounted(() => {
-  const { $echo } = useNuxtApp()
+  const echo = useNuxtApp().$echo as any
 
-  if ($echo && props.conversationId) {
-    $echo.leave(`conversation.${props.conversationId}`)
+  if (echo && props.conversationId) {
+    echo.leave(`conversation.${props.conversationId}`)
   }
 
   if (typingStopTimer) {
@@ -386,3 +386,23 @@ onUnmounted(() => {
   }
 })
 </script>
+
+<style scoped>
+.overflow-y-auto::-webkit-scrollbar {
+  width: 6px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+</style>
