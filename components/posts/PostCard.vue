@@ -143,16 +143,24 @@ const imageUrl = computed(() => {
 
 // ✅ Ссылка на пост с фильтрами
 const postLink = computed(() => {
+  const route = useRoute()
   const query: Record<string, string> = {}
   
-  if (filters.value.category_id) {
-    query.category_id = String(filters.value.category_id)
+  // Сохраняем все параметры из текущего URL
+  if (route.query.category_id) {
+    query.category_id = String(route.query.category_id)
   }
-  if (filters.value.group_id) {
-    query.group_id = String(filters.value.group_id)
+  if (route.query.group_id) {
+    query.group_id = String(route.query.group_id)
   }
-  if (filters.value.conference_id) {
-    query.conference_id = String(filters.value.conference_id)
+  if (route.query.conference_id) {
+    query.conference_id = String(route.query.conference_id)
+  }
+  if (route.query.search) {
+    query.search = String(route.query.search)
+  }
+  if (route.query.page) {
+    query.page = String(route.query.page)
   }
   
   return {

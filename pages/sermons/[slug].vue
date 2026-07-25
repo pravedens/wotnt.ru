@@ -642,15 +642,7 @@ watch(
   { immediate: true },
 );
 
-// ============================================
-// КЛЮЧЕВОЕ: очищаем параметры URL при загрузке
-// ============================================
 onMounted(() => {
-  // Если в URL есть query параметры (например, ?search=...), удаляем их
-  if (Object.keys(route.query).length > 0) {
-    router.replace(`/sermons/${route.params.slug}`);
-  }
-
   window.addEventListener("scroll", trackScroll);
   window.addEventListener("beforeunload", trackTimeOnPage);
 });

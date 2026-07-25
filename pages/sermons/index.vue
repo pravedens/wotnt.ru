@@ -84,24 +84,26 @@
       
       <!-- Пагинация -->
       <Pagination
-        v-if="pagination?.last_page > 1"
-        :current-page="pagination.current_page"
+        v-if="pagination?.last_page && pagination.last_page > 1"
+        :current-page="pagination.current_page || 1"
         :last-page="pagination.last_page"
-        :total="pagination.total"
-        :per-page="pagination.per_page"
+        :total="pagination.total || 0"
+        :per-page="pagination.per_page || 8"
         @page-change="goToPage"
       />
     </div>
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { useRoute, useRouter } from 'vue-router'
 import { usePosts } from '~/composables/usePosts'
 import PostFilters from '~/components/posts/PostFilters.vue'
 import Pagination from '~/components/posts/Pagination.vue'
 import SearchBar from '~/components/posts/SearchBar.vue'
 import PostsBreadcrumbs from '~/components/posts/Breadcrumbs.vue'
+// ✅ Переименовываем импорт типа, чтобы избежать конфликта
+import type { PostFilters as PostFiltersType } from '~/types/sermon'
 
 const PostCard = defineAsyncComponent(() => 
   import('~/components/posts/PostCard.vue')
@@ -168,12 +170,9 @@ useHead({
 // ============================================
 
 // Обработка поиска
-const handleSearch = (query, resetPage = true) => {
-  
-  // Устанавливаем поисковый запрос
+const handleSearch = (query: string, resetPage = true) => {
   setFilter('search', query || null)
   
-  // Сбрасываем страницу на первую при поиске
   if (resetPage && filters.value.page !== 1) {
     setFilter('page', 1)
   }
@@ -189,13 +188,14 @@ const clearSearch = () => {
 }
 
 // Обработка изменения фильтров
-const handleFilterChange = (key, value) => {
+const handleFilterChange = (key: string, value: any) => {
   if (key === 'reset') {
     resetFilters()
     searchQuery.value = ''
   } else {
-    setFilter(key, value)
-    // При смене фильтра сбрасываем страницу
+    // ✅ Используем переименованный тип
+    const filterKey = key as keyof PostFiltersType
+    setFilter(filterKey, value)
     if (key !== 'page') {
       setFilter('page', 1)
     }
@@ -207,6 +207,34 @@ onMounted(async () => {
   loadingFilters.value = true
   await loadFilterData()
   loadingFilters.value = false
+  
+  // ✅ Восстанавливаем параметры из URL
+  const categoryId = route.query.category_id
+  if (categoryId) {
+    setFilter('category_id', Number(categoryId))
+  }
+  
+  const groupId = route.query.group_id
+  if (groupId) {
+    setFilter('group_id', Number(groupId))
+  }
+  
+  const conferenceId = route.query.conference_id
+  if (conferenceId) {
+    setFilter('conference_id', Number(conferenceId))
+  }
+  
+  const search = route.query.search
+  if (search) {
+    searchQuery.value = String(search)
+    setFilter('search', String(search))
+  }
+  
+  const page = route.query.page
+  if (page) {
+    setFilter('page', Number(page))
+  }
+  
   await loadPosts()
 })
 </script>

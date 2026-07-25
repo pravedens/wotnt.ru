@@ -103,19 +103,21 @@
   </div>
 </template>
 
-<script setup lang="ts">  // ✅ lang="ts"
+<script setup lang="ts">
 import { useApi } from '~/composables/useApi'
-import type { Category, Group, Conference } from '~/types/sermon'  // ✅ Импорт типов
+import type { Category, Group, Conference } from '~/types/sermon'
 
-// ✅ Типизация пропсов
+// ✅ Типизация пропсов - исправлено: все поля могут быть null или undefined
 interface Props {
   categories: Category[]
   groups: Group[]
   conferences: Conference[]
   modelValue: {
-    category_id: number | null
-    group_id: number | null
-    conference_id: number | null
+    category_id?: number | null
+    group_id?: number | null
+    conference_id?: number | null
+    search?: string | null
+    page?: number
   }
   totalPosts: number
 }
@@ -124,7 +126,14 @@ const props = withDefaults(defineProps<Props>(), {
   categories: () => [],
   groups: () => [],
   conferences: () => [],
-  totalPosts: 0
+  totalPosts: 0,
+  modelValue: () => ({
+    category_id: null,
+    group_id: null,
+    conference_id: null,
+    search: null,
+    page: 1
+  })
 })
 
 const emit = defineEmits<{
@@ -135,11 +144,11 @@ const emit = defineEmits<{
 const { $api } = useApi()
 
 // Локальные модели для select
-const selectedCategory = ref<number | null>(props.modelValue.category_id)
-const selectedGroup = ref<number | null>(props.modelValue.group_id)
-const selectedConference = ref<number | null>(props.modelValue.conference_id)
+const selectedCategory = ref<number | null>(props.modelValue.category_id ?? null)
+const selectedGroup = ref<number | null>(props.modelValue.group_id ?? null)
+const selectedConference = ref<number | null>(props.modelValue.conference_id ?? null)
 
-// ✅ Типизация доступных опций
+// Типизация доступных опций
 const availableCategories = ref<Category[]>([])
 const availableGroups = ref<Group[]>([])
 const availableConferences = ref<Conference[]>([])
@@ -220,9 +229,9 @@ onMounted(async () => {
 
 // Следим за изменениями props
 watch(() => props.modelValue, async (newVal) => {
-  selectedCategory.value = newVal.category_id
-  selectedGroup.value = newVal.group_id
-  selectedConference.value = newVal.conference_id
+  selectedCategory.value = newVal.category_id ?? null
+  selectedGroup.value = newVal.group_id ?? null
+  selectedConference.value = newVal.conference_id ?? null
   await loadAvailableOptions()
 }, { deep: true })
 </script>
