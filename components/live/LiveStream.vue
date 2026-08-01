@@ -49,45 +49,34 @@
         </div>
         
         <!-- Видео плеер -->
-        <div v-if="streamData && streamUrl" class="relative video-player-wrapper">
-          <iframe
-            ref="playerIframe"
-            :src="streamUrl"
-            class="w-full aspect-video"
-            frameborder="0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-            allowfullscreen
-            :title="streamTitle"
-            referrerpolicy="strict-origin-when-cross-origin"
-            sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-presentation"
-            loading="lazy"
-            @load="onPlayerLoad"
-          ></iframe>
-          
-          <!-- Кнопка обновления трансляции -->
-          <button
-            @click="refreshStream"
-            class="absolute bottom-4 right-4 bg-black/50 backdrop-blur-sm p-2 rounded-full hover:bg-black/70 transition z-10"
-            title="Обновить трансляцию"
-          >
-            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-            </svg>
-          </button>
-        </div>
-        
-        <!-- Нет активной трансляции -->
-        <div v-else class="aspect-video bg-gradient-to-br from-blue-800 to-purple-800 flex items-center justify-center">
-          <div class="text-center p-8">
-            <svg class="w-16 h-16 text-white/30 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-            </svg>
-            <p class="text-white/80 text-lg mb-2">Сейчас нет активной трансляции</p>
-            <p class="text-white/60 text-sm">
-              Ближайшая трансляция: воскресенье в 11:00
-            </p>
+        <ClientOnly>
+          <div class="relative video-player-wrapper">
+            <iframe
+              v-if="streamUrl"
+              ref="playerIframe"
+              :src="streamUrl"
+              class="w-full aspect-video"
+              frameborder="0"
+              allow="clipboard-write; autoplay; fullscreen; encrypted-media; picture-in-picture"
+              allowfullscreen
+              :title="streamTitle"
+              referrerpolicy="strict-origin-when-cross-origin"
+              loading="lazy"
+            ></iframe>
+            
+            <!-- Кнопка обновления трансляции -->
+            <button
+              v-if="streamUrl"
+              @click="refreshStream"
+              class="absolute bottom-4 right-4 bg-black/50 backdrop-blur-sm p-2 rounded-full hover:bg-black/70 transition z-10"
+              title="Обновить трансляцию"
+            >
+              <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+              </svg>
+            </button>
           </div>
-        </div>
+        </ClientOnly>
       </div>
     </div>
   </div>
@@ -110,104 +99,49 @@ const hasActiveStream = computed(() => !!props.streamData)
 const streamData = computed(() => props.streamData)
 const isLiveActive = computed(() => props.streamData?.isActive ?? false)
 const streamTitle = computed(() => props.streamData?.title || 'Прямая трансляция')
+
+// ============================================
+// СОСТОЯНИЕ
+// ============================================
 const streamUrl = ref<string | null>(null)
 const playerIframe = ref<HTMLIFrameElement | null>(null)
 
-let saveProgressInterval: NodeJS.Timeout | null = null
-
 // ============================================
-// РАБОТА С ПРОГРЕССОМ ПРОСМОТРА
+// ФОРМИРОВАНИЕ URL ПЛЕЕРА (ДЛЯ RUTUBE)
 // ============================================
-const getStorageKey = (): string => {
-  return 'live_stream_progress'
-}
-
-const saveProgress = (time: number) => {
-  if (import.meta.client && time > 0) {
-    localStorage.setItem(getStorageKey(), time.toString())
+const buildStreamUrl = (baseUrl: string): string => {
+  if (!import.meta.client) {
+    return baseUrl
   }
-}
 
-const getSavedProgress = (): number => {
-  if (import.meta.client) {
-    const saved = localStorage.getItem(getStorageKey())
-    return saved ? parseInt(saved, 10) : 0
-  }
-  return 0
-}
+  try {
+    const url = new URL(baseUrl, window.location.origin)
 
-const clearProgress = () => {
-  if (import.meta.client) {
-    localStorage.removeItem(getStorageKey())
+    // Только autoplay для Rutube
+    url.searchParams.set('autoplay', '1')
+
+    // Удаляем параметры прогресса (для live они не нужны)
+    url.searchParams.delete('start')
+    url.searchParams.delete('startTime')
+    url.searchParams.delete('t')
+
+    return url.href
+  } catch {
+    return baseUrl
   }
 }
 
 // ============================================
-// ФОРМИРОВАНИЕ URL ПЛЕЕРА
+// ОБНОВЛЕНИЕ ТРАНСЛЯЦИИ
 // ============================================
-const buildStreamUrl = (baseUrl: string, savedTime: number = 0): string => {
-  let url = baseUrl
-  
-  const params = new URLSearchParams()
-  params.set('autoplay', '1')
-  
-  if (savedTime > 0) {
-    params.set('start', savedTime.toString())
-    params.set('startTime', savedTime.toString())
+const refreshStream = async () => {
+  if (!streamData.value?.embedUrl) {
+    return
   }
-  
-  const paramString = params.toString()
-  if (paramString) {
-    url += (url.includes('?') ? '&' : '?') + paramString
-  }
-  
-  return url
-}
 
-// ============================================
-// ОБРАБОТЧИКИ ПЛЕЕРА
-// ============================================
-const onPlayerLoad = () => {
-  if (saveProgressInterval) {
-    clearInterval(saveProgressInterval)
-  }
-  
-  saveProgressInterval = setInterval(() => {
-    const iframe = playerIframe.value
-    if (iframe && iframe.contentWindow) {
-      iframe.contentWindow.postMessage({ type: 'player:getCurrentTime' }, '*')
-    }
-  }, 5000)
-}
-
-const refreshStream = () => {
-  if (streamUrl.value && streamData.value?.embedUrl) {
-    const savedTime = getSavedProgress()
-    streamUrl.value = buildStreamUrl(streamData.value.embedUrl, savedTime)
-  }
-}
-
-// ============================================
-// СОХРАНЕНИЕ ПРОГРЕССА ПРИ ЗАКРЫТИИ
-// ============================================
-const handleBeforeUnload = () => {
-  if (playerIframe.value && playerIframe.value.contentWindow) {
-    playerIframe.value.contentWindow.postMessage({ type: 'player:getCurrentTime' }, '*')
-  }
-}
-
-// ============================================
-// СЛУШАТЕЛИ СООБЩЕНИЙ ОТ ПЛЕЕРА
-// ============================================
-if (import.meta.client) {
-  window.addEventListener('message', (event) => {
-    if (event.data && event.data.type === 'player:currentTime') {
-      const time = Math.floor(event.data.time)
-      if (time > 0) {
-        saveProgress(time)
-      }
-    }
-  })
+  streamUrl.value = null
+  await nextTick()
+  streamUrl.value = buildStreamUrl(streamData.value.embedUrl)
 }
 
 // ============================================
@@ -215,17 +149,15 @@ if (import.meta.client) {
 // ============================================
 onMounted(() => {
   if (streamData.value?.embedUrl) {
-    const savedTime = getSavedProgress()
-    streamUrl.value = buildStreamUrl(streamData.value.embedUrl, savedTime)
+    streamUrl.value = buildStreamUrl(streamData.value.embedUrl)
   }
-  window.addEventListener('beforeunload', handleBeforeUnload)
 })
 
+// ============================================
+// ОЧИСТКА ПРИ РАЗМОНТИРОВАНИИ
+// ============================================
 onUnmounted(() => {
-  if (saveProgressInterval) {
-    clearInterval(saveProgressInterval)
-  }
-  window.removeEventListener('beforeunload', handleBeforeUnload)
+  streamUrl.value = null
 })
 </script>
 
