@@ -76,7 +76,7 @@
           </button>
         </div>
         
-        <!-- Нет активной трансляции (заглушка, но компонент не показывается, если нет трансляции) -->
+        <!-- Нет активной трансляции -->
         <div v-else class="aspect-video bg-gradient-to-br from-blue-800 to-purple-800 flex items-center justify-center">
           <div class="text-center p-8">
             <svg class="w-16 h-16 text-white/30 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -94,61 +94,26 @@
 </template>
 
 <script setup lang="ts">
-import type { LiveStream, LiveStreamResponse } from '~/types/live'
-import { useApi } from '~/composables/useApi'  // ✅ ДОБАВЛЕН ИМПОРТ
+import type { LiveStream } from '~/types/live'
 
 // ============================================
-// ПОЛУЧАЕМ $api
+// ПРОПСЫ
 // ============================================
-const { $api } = useApi()  // ✅ ДОБАВЛЕНО
+const props = defineProps<{
+  streamData: LiveStream | null
+}>()
 
 // ============================================
-// РЕАКТИВНЫЕ ПЕРЕМЕННЫЕ
+// ВЫЧИСЛЯЕМЫЕ СВОЙСТВА
 // ============================================
-const streamData = ref<LiveStream | null>(null)
-const hasActiveStream = ref(false)
+const hasActiveStream = computed(() => !!props.streamData)
+const streamData = computed(() => props.streamData)
+const isLiveActive = computed(() => props.streamData?.isActive ?? false)
+const streamTitle = computed(() => props.streamData?.title || 'Прямая трансляция')
 const streamUrl = ref<string | null>(null)
-const streamTitle = ref('')
-const isLiveActive = ref(false)
 const playerIframe = ref<HTMLIFrameElement | null>(null)
-const loading = ref(true)
 
-let refreshInterval: NodeJS.Timeout | null = null
 let saveProgressInterval: NodeJS.Timeout | null = null
-
-// ============================================
-// ЗАГРУЗКА СТАТУСА ТРАНСЛЯЦИИ (ТОЛЬКО НА КЛИЕНТЕ)
-// ============================================
-const loadStreamStatus = async () => {
-  try {
-    // ✅ Используем $api вместо $fetch
-    const response = await $api<LiveStreamResponse>('/live/current')
-    
-    if (response.success && response.data) {
-      streamData.value = response.data
-      hasActiveStream.value = true
-      isLiveActive.value = response.data.isActive
-      streamTitle.value = response.data.title || ''
-      
-      if (response.data.isActive && response.data.embedUrl) {
-        const savedTime = getSavedProgress()
-        streamUrl.value = buildStreamUrl(response.data.embedUrl, savedTime)
-      } else {
-        streamUrl.value = null
-      }
-    } else {
-      streamData.value = null
-      hasActiveStream.value = false
-      isLiveActive.value = false
-      streamUrl.value = null
-    }
-  } catch (err) {
-    console.error('Error loading live stream status:', err)
-    hasActiveStream.value = false
-  } finally {
-    loading.value = false
-  }
-}
 
 // ============================================
 // РАБОТА С ПРОГРЕССОМ ПРОСМОТРА
@@ -223,16 +188,6 @@ const refreshStream = () => {
 }
 
 // ============================================
-// ОБНОВЛЕНИЕ СТАТУСА
-// ============================================
-const startStatusRefresh = () => {
-  if (refreshInterval) clearInterval(refreshInterval)
-  refreshInterval = setInterval(() => {
-    loadStreamStatus()
-  }, 30000)
-}
-
-// ============================================
 // СОХРАНЕНИЕ ПРОГРЕССА ПРИ ЗАКРЫТИИ
 // ============================================
 const handleBeforeUnload = () => {
@@ -258,16 +213,15 @@ if (import.meta.client) {
 // ============================================
 // ЖИЗНЕННЫЙ ЦИКЛ
 // ============================================
-onMounted(async () => {
-  await loadStreamStatus()
-  startStatusRefresh()
+onMounted(() => {
+  if (streamData.value?.embedUrl) {
+    const savedTime = getSavedProgress()
+    streamUrl.value = buildStreamUrl(streamData.value.embedUrl, savedTime)
+  }
   window.addEventListener('beforeunload', handleBeforeUnload)
 })
 
 onUnmounted(() => {
-  if (refreshInterval) {
-    clearInterval(refreshInterval)
-  }
   if (saveProgressInterval) {
     clearInterval(saveProgressInterval)
   }

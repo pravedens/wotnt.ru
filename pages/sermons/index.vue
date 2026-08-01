@@ -67,7 +67,10 @@
           style="text-decoration: none; color: inherit;"
         >
           <h2 class="sr-only">{{ post.title }}</h2>
-          <PostCard :post="post" />
+          <PostCard 
+            :post="post" 
+            :stats="getPostStats(post.id)"
+          />
         </div>
       </div>
       
@@ -127,6 +130,14 @@ const {
   resetFilters,
   goToPage
 } = usePosts()
+
+// ✅ Подключаем store статистики
+const statsStore = useStatsStore()
+
+// ✅ Геттер для получения статистики поста
+const getPostStats = (postId: number) => {
+  return statsStore.getPostStats(postId)
+}
 
 const loadingFilters = ref(true)
 const searchQuery = ref(filters.value?.search || '')
@@ -236,6 +247,12 @@ onMounted(async () => {
   }
   
   await loadPosts()
+
+  // ✅ Загружаем статистику ОДНИМ запросом
+  if (posts.value.length) {
+    const postIds = posts.value.map(p => p.id)
+    await statsStore.fetchMultipleStats(postIds)
+  }
 })
 </script>
 

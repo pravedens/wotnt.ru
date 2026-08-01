@@ -15,22 +15,12 @@
         </svg>
       </NuxtLink>
     </div>
-    
-    <!-- Состояние загрузки -->
-    <div v-if="loading" class="flex justify-center py-12">
-      <div class="inline-block animate-spin rounded-full h-10 w-10 border-4 border-white border-t-transparent"></div>
-    </div>
-    
-    <!-- Ошибка -->
-    <div v-else-if="error" class="bg-red-500/20 border border-red-500/50 rounded-2xl p-8 text-center">
-      <p class="text-red-200">{{ error }}</p>
-    </div>
-    
+
     <!-- Нет проповедей -->
-    <div v-else-if="sermons.length === 0" class="bg-white/10 backdrop-blur-lg rounded-2xl p-12 text-center">
+    <div v-if="sermons.length === 0" class="bg-white/10 backdrop-blur-lg rounded-2xl p-12 text-center">
       <p class="text-white/80 text-lg">Нет рекомендуемых проповедей</p>
     </div>
-    
+
     <!-- Сетка проповедей -->
     <div v-else class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
       <div
@@ -39,7 +29,10 @@
         class="h-full"
       >
         <h3 class="sr-only">{{ sermon.title }}</h3>
-        <PostCard :post="sermon" />
+        <PostCard 
+          :post="sermon" 
+          :stats="getPostStats(sermon.id)"
+        />
       </div>
     </div>
   </div>
@@ -48,54 +41,38 @@
 <script setup lang="ts">
 import { useStatsStore } from '~/stores/stats'
 import PostCard from '~/components/posts/PostCard.vue'
-import { useApi } from '~/composables/useApi'
 import type { Post } from '~/types/sermon'
 
+// ============================================
+// ПРОПСЫ
+// ============================================
 const props = defineProps<{
-  limit?: number
+  posts: Post[]
 }>()
 
+// ============================================
+// COMPOSABLES
+// ============================================
 const statsStore = useStatsStore()
-const { $api } = useApi()
 
-const sermons = ref<Post[]>([]) 
-const loading = ref(true)
-const error = ref<string | null>(null)
+// ============================================
+// ВЫЧИСЛЯЕМЫЕ СВОЙСТВА
+// ============================================
+const sermons = computed(() => props.posts || [])
 
-// Загрузка рекомендуемых проповедей
-const loadRecommendedSermons = async () => {
-  loading.value = true
-  error.value = null
-  
-  try {
-    // ✅ Указываем тип ответа
-    const response = await $api<Post[]>('/posts/random', {
-      query: {
-        limit: props.limit || 4
-      }
-    })
-    
-    // ✅ Проверяем, что response - это массив
-    sermons.value = Array.isArray(response) ? response : []
-    
-    // Загружаем статистику для каждой проповеди
-    await Promise.all(
-      sermons.value.map(async (sermon) => {
-        await statsStore.fetchPostStats(sermon.id)
-      })
-    )
-    
-  } catch (err: any) {
-    console.error('❌ Error loading recommended sermons:', err)
-    error.value = 'Не удалось загрузить проповеди'
-    sermons.value = [] // ✅ Сбрасываем на пустой массив при ошибке
-  } finally {
-    loading.value = false
-  }
+const getPostStats = (postId: number) => {
+  return statsStore.getPostStats(postId)
 }
 
+// ============================================
+// ЖИЗНЕННЫЙ ЦИКЛ
+// ============================================
 onMounted(() => {
-  loadRecommendedSermons()
+  // Загружаем статистику для всех постов одним запросом
+  if (sermons.value.length) {
+    const postIds = sermons.value.map(p => p.id)
+    statsStore.fetchMultipleStats(postIds)
+  }
 })
 </script>
 

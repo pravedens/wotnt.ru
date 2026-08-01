@@ -29,21 +29,39 @@
 
 <script setup>
 import { useStatsStore } from '~/stores/stats'
-import { storeToRefs } from 'pinia'
 
 const props = defineProps({
   postId: {
     type: Number,
     required: true
+  },
+  initialLiked: {
+    type: Boolean,
+    required: false,
+    default: false
+  },
+  initialLikesCount: {
+    type: Number,
+    required: false,
+    default: 0
   }
 })
 
 const statsStore = useStatsStore()
 
-// Используем геттеры для получения данных конкретного поста
+// ✅ Используем store только для обновления после лайка
+const isLiked = computed(() => {
+  // Если в store есть данные - используем их, иначе начальные
+  const storeLiked = statsStore.isLiked(props.postId)
+  return storeLiked !== undefined ? storeLiked : props.initialLiked
+})
+
+const likesCount = computed(() => {
+  const storeCount = statsStore.getLikesCount(props.postId)
+  return storeCount !== undefined && storeCount !== 0 ? storeCount : props.initialLikesCount
+})
+
 const isLoading = computed(() => statsStore.isLoading(props.postId))
-const isLiked = computed(() => statsStore.isLiked(props.postId))
-const likesCount = computed(() => statsStore.getLikesCount(props.postId))
 
 const tooltip = computed(() => {
   return isLiked.value ? 'Убрать лайк' : 'Поставить лайк'
@@ -53,8 +71,5 @@ const handleLike = async () => {
   await statsStore.toggleLike(props.postId)
 }
 
-// Загружаем статистику при монтировании
-onMounted(async () => {
-  await statsStore.fetchPostStats(props.postId)
-})
+// ✅ НЕ запрашиваем статистику при монтировании - она уже загружена на странице
 </script>

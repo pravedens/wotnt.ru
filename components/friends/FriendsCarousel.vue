@@ -1,7 +1,7 @@
 <!-- components/friends/FriendsCarousel.vue (упрощённая версия без Swiper) -->
 
 <template>
-  <div v-if="!loading && friends.length > 0" class="friends-section">
+  <div v-if="friends.length > 0" class="friends-section">
     <div class="container mx-auto px-4">
       <h2 class="text-2xl md:text-3xl font-bold text-white text-center mb-8">
         Наши друзья
@@ -45,18 +45,22 @@
 </template>
 
 <script setup lang="ts">
-import { useFriends } from '~/composables/useFriends'
+import type { Friend } from '~/types/friend'
 
-const { friends, loading, loadFriends } = useFriends()
+// ============================================
+// ПРОПСЫ
+// ============================================
+const props = defineProps<{
+  friends: Friend[]
+}>()
 
+// ============================================
+// ОБРАБОТЧИКИ
+// ============================================
 const handleImageError = (event: Event) => {
   const img = event.target as HTMLImageElement
   img.src = '/images/church-placeholder.png'
 }
-
-onMounted(() => {
-  loadFriends()
-})
 </script>
 
 <style scoped>

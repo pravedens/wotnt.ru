@@ -248,35 +248,41 @@
         </section>
 
         <!-- Аудио плеер -->
-        <section v-if="post.audio_url" class="mb-8">
-          <h2 class="text-2xl font-semibold text-white mb-3">
-            Аудио запись проповеди
-          </h2>
-          <AudioPlayer
-            :audio-url="post.audio_url ?? undefined"
-            :audio-filename="post.audio_filename ?? undefined"
-            :audio-size="post.audio_size_formatted ?? undefined"
-            @play="trackAudioPlay"
-          />
-        </section>
+        <ClientOnly>
+          <section v-if="post.audio_url" class="mb-8">
+            <h2 class="text-2xl font-semibold text-white mb-3">
+              Аудио запись проповеди
+            </h2>
+            <AudioPlayer
+              :audio-url="post.audio_url ?? undefined"
+              :audio-filename="post.audio_filename ?? undefined"
+              :audio-size="post.audio_size_formatted ?? undefined"
+              @play="trackAudioPlay"
+            />
+          </section>
+        </ClientOnly>
 
         <!-- Текстовый файл -->
-        <section v-if="post.text_url" class="mb-8">
-          <h2 class="text-2xl font-semibold text-white mb-3">
-            Скачать текст проповеди
-          </h2>
-          <TextFile
-            :file-url="post.text_url ?? undefined"
-            :filename="post.text_filename ?? undefined"
-            :display-filename="post.display_text_filename ?? undefined"
-            :file-size="post.text_size_formatted ?? undefined"
-            :mime="post.text_mime ?? undefined"
-            @download="trackFileDownload('text')"
-          />
-        </section>
+        <ClientOnly>
+          <section v-if="post.text_url" class="mb-8">
+            <h2 class="text-2xl font-semibold text-white mb-3">
+              Скачать текст проповеди
+            </h2>
+            <TextFile
+              :file-url="post.text_url ?? undefined"
+              :filename="post.text_filename ?? undefined"
+              :display-filename="post.display_text_filename ?? undefined"
+              :file-size="post.text_size_formatted ?? undefined"
+              :mime="post.text_mime ?? undefined"
+              @download="trackFileDownload('text')"
+            />
+          </section>
+        </ClientOnly>
 
         <!-- Комментарии -->
-        <CommentSection :post-id="post.id" />
+        <ClientOnly>
+          <CommentSection :post-id="post.id" />
+        </ClientOnly>
       </article>
     </div>
   </div>
@@ -292,7 +298,7 @@ import AudioPlayer from "~/components/posts/AudioPlayer.vue";
 import TextFile from "~/components/posts/TextFile.vue";
 import CommentSection from "~/components/comments/CommentSection.vue";
 import { useApi } from "~/composables/useApi";
-import type {} from '~/types/yandex-metrika' 
+import type {} from "~/types/yandex-metrika";
 
 // ✅ Импортируем типы из ~/types/sermon.ts
 import type { Post, Category, Group, Conference } from "~/types/sermon";
@@ -335,9 +341,6 @@ const { apiBase, storageUrl, siteUrl } = config.public;
 // YANDEX METRIKA ТРЕКИНГ
 // ============================================
 
-// ✅ Используем глобальный тип из types/yandex-metrika.d.ts
-// (не нужно объявлять здесь)
-
 // Отправка события в Яндекс.Метрику
 const trackEvent = (
   eventName: string,
@@ -345,7 +348,6 @@ const trackEvent = (
 ) => {
   if (import.meta.client) {
     if (typeof window !== "undefined" && window.ym) {
-      // ✅ Правильный вызов: 4 аргумента (counterId, 'reachGoal', eventName, params)
       (window.ym as any)(95320948, "reachGoal", eventName, eventParams);
     }
   }
@@ -353,29 +355,28 @@ const trackEvent = (
 
 // Копирование ссылки в буфер обмена
 const copyLinkToClipboard = async () => {
-  const url = currentUrl.value
-  
+  const url = currentUrl.value;
+
   try {
-    await navigator.clipboard.writeText(url)
-    
-    // ✅ Безопасная проверка
-    if (typeof window.showNotification === 'function') {
-      window.showNotification('Ссылка скопирована!', 'success')
+    await navigator.clipboard.writeText(url);
+
+    if (typeof window.showNotification === "function") {
+      window.showNotification("Ссылка скопирована!", "success");
     } else {
-      alert('Ссылка скопирована в буфер обмена')
+      alert("Ссылка скопирована в буфер обмена");
     }
-    
-    trackEvent('copy_link', {
-      event_category: 'share',
-      event_label: 'Copy Link',
+
+    trackEvent("copy_link", {
+      event_category: "share",
+      event_label: "Copy Link",
       sermon_id: post.value?.id,
-      sermon_title: post.value?.title
-    })
+      sermon_title: post.value?.title,
+    });
   } catch (err) {
-    console.error('Failed to copy link:', err)
-    alert('Не удалось скопировать ссылку')
+    console.error("Failed to copy link:", err);
+    alert("Не удалось скопировать ссылку");
   }
-}
+};
 
 // Отслеживание прослушивания аудио
 const trackAudioPlay = () => {
@@ -581,7 +582,6 @@ useServerSeoMeta({
   twitterImage: () => socialImage.value,
 });
 
-// ✅ Исправлено: добавляем правильную типизацию для useHead
 useHead({
   meta: [
     {
@@ -636,7 +636,10 @@ watch(
   async (id) => {
     if (!id || !import.meta.client) return;
 
+    // ✅ Отслеживаем просмотр (увеличивает счетчик)
     await statsStore.trackView(id);
+
+    // ✅ После просмотра - загружаем свежую статистику (1 запрос)
     await statsStore.fetchPostStats(id);
   },
   { immediate: true },

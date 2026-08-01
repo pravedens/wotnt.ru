@@ -1,6 +1,6 @@
 import Echo from 'laravel-echo'
 import Pusher from 'pusher-js'
-import { useApi } from '~/composables/useApi'  // ✅ ДОБАВЛЕН ИМПОРТ
+import { useApi } from '~/composables/useApi'
 
 declare global {
     interface Window {
@@ -11,11 +11,20 @@ declare global {
 export default defineNuxtPlugin(() => {
     const config = useRuntimeConfig()
     const authStore = useAuthStore()
-    const { $api } = useApi()  // ✅ ДОБАВЛЕНО
+    const { $api } = useApi()
+
+    const reverbKey = String(config.public.reverbAppKey || '').trim()
+
+    if (!reverbKey) {
+        console.log('⏭️ Reverb не настроен (нет ключа), пропускаем подключение')
+        return {
+            provide: {
+                echo: null as any, // ✅ Используем any
+            },
+        }
+    }
 
     window.Pusher = Pusher
-
-    const reverbKey = String(config.public.reverbAppKey || '')
 
     const reverbHost = String(config.public.reverbHost || '')
         .trim()
@@ -28,25 +37,18 @@ export default defineNuxtPlugin(() => {
 
     const echo = new Echo({
         broadcaster: 'reverb',
-
         key: reverbKey,
-
-        wsHost: reverbHost,
+        wsHost: reverbHost || 'localhost',
         wsPort: reverbPort,
         wssPort: reverbPort,
-
         forceTLS: true,
         encrypted: true,
-
         enabledTransports: ['ws'],
-
         enableStats: false,
-
         authorizer: (channel: any) => {
             return {
                 authorize: async (socketId: string, callback: Function) => {
                     try {
-                        // ✅ Исправлено: используем $api вместо $fetch с жёсткой ссылкой
                         const response: any = await $api('/broadcasting/auth', {
                             method: 'POST',
                             body: {
@@ -77,7 +79,7 @@ export default defineNuxtPlugin(() => {
 
     return {
         provide: {
-            echo,
+            echo: echo as any, // ✅ Используем any
         },
     }
 })

@@ -1,5 +1,4 @@
-// https://nuxt.com/docs/api/configuration/nuxt-config
-import { resolve } from "path";
+import { defineNuxtConfig } from "nuxt/config";
 
 export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
@@ -17,18 +16,7 @@ export default defineNuxtConfig({
     asyncEntry: true,
   },
 
-  modules: [
-    "@pinia/nuxt",
-    "@nuxtjs/tailwindcss",
-    "@nuxt/image",
-    "@vite-pwa/nuxt",
-  ],
-
-  pinia: {
-    storesDirs: ["./stores/**"],
-  },
-
-  css: [resolve(__dirname, "assets/css/animations.css")],
+  modules: ["@pinia/nuxt", "@nuxtjs/tailwindcss", "@nuxt/image", "nuxt-swiper"],
 
   tailwindcss: {
     config: {
@@ -41,6 +29,12 @@ export default defineNuxtConfig({
       },
     },
   },
+
+  pinia: {
+    storesDirs: ["./stores/**"],
+  },
+
+  //css: ['~/assets/css/main.css'],
 
   app: {
     baseURL: "/",
@@ -84,7 +78,7 @@ export default defineNuxtConfig({
         { rel: "preconnect", href: "https://storage.yandexcloud.net" },
         { rel: "dns-prefetch", href: "https://storage.yandexcloud.net" },
       ],
-      script: import.meta.client
+      script: process.client
         ? [
             {
               innerHTML: `console.log('App version: ${new Date().toISOString()}')`,
@@ -113,7 +107,8 @@ export default defineNuxtConfig({
       },
     },
     "/": {
-      isr: process.env.NODE_ENV === "production",
+      swr: true,
+      //isr: process.env.NODE_ENV === "production",
       headers: {
         "Cache-Control": "no-cache, no-store, must-revalidate",
       },
@@ -264,17 +259,26 @@ export default defineNuxtConfig({
           "camera=(), microphone=(), geolocation=(), payment=()",
       },
     },
-    "/_nuxt/**": {
-      headers: {
-        "Cache-Control": "public, max-age=31536000, immutable",
-        "Strict-Transport-Security":
-          "max-age=31536000; includeSubDomains; preload",
-        "X-Content-Type-Options": "nosniff",
-        "X-Frame-Options": "DENY",
-        "X-XSS-Protection": "1; mode=block",
-        "Referrer-Policy": "strict-origin-when-cross-origin",
-      },
-    },
+    "/_nuxt/**":
+      process.env.NODE_ENV === "production"
+        ? {
+            headers: {
+              "Cache-Control": "public, max-age=31536000, immutable",
+              "Strict-Transport-Security":
+                "max-age=31536000; includeSubDomains; preload",
+              "X-Content-Type-Options": "nosniff",
+              "X-Frame-Options": "DENY",
+              "X-XSS-Protection": "1; mode=block",
+              "Referrer-Policy": "strict-origin-when-cross-origin",
+            },
+          }
+        : {
+            headers: {
+              "Cache-Control": "no-store, no-cache, must-revalidate",
+              Pragma: "no-cache",
+              Expires: "0",
+            },
+          },
     "/pastor/**": {
       swr: 0,
       headers: {
@@ -374,6 +378,11 @@ export default defineNuxtConfig({
         // Другие опции esbuild
       },
     },
+    typescript: {
+      tsConfig: {
+        include: ["**/*"],
+      },
+    },
   },
 
   sourcemap: {
@@ -381,90 +390,41 @@ export default defineNuxtConfig({
     client: false,
   },
 
-  build: {
-    transpile: ["@nuxtjs/tailwindcss"],
-  },
+  build: {},
 
   vite: {
-    resolve: {
-      tsconfigPaths: true,
-    },
-    optimizeDeps: {
-      include: ["laravel-echo", "pusher-js", "@vueuse/core", "vue", "pinia"],
+    server: {
+      // ✅ Включаем CORS для локальной разработки
+      cors: true,
+      // ✅ Включаем "горячую" перезагрузку через WebSocket
+      hmr: {
+        overlay: false, // Отключаем оверлей ошибок, если он мешает
+      },
+      // ✅ Правильная настройка WebSocket для Nuxt
+      ws: {
+        // protocol: "ws", // Необязательно, будет определен автоматически
+        host: "localhost", // Явно указываем хост
+        port: 3000, // Порт должен совпадать с портом сервера
+      },
+      // ✅ Включаем опрос файлов для Windows (решает проблемы с отслеживанием изменений)
+      watch: {
+        usePolling: true,
+      },
     },
     build: {
       rollupOptions: {
         output: {
-          // ✅ Исправленный синтаксис для Nuxt 4/Vite 7
-          manualChunks: (id: string) => {
-            // Разделяем вендорские библиотеки
-            if (id.includes("node_modules")) {
-              // Vue и его экосистема
-              if (
-                id.includes("vue") ||
-                id.includes("pinia") ||
-                id.includes("@vueuse")
-              ) {
-                return "vendor";
-              }
-              // Другие библиотеки
-              if (id.includes("laravel-echo") || id.includes("pusher-js")) {
-                return "vendor";
-              }
+          manualChunks: function (id) {
+            if (
+              id.includes("vue") ||
+              id.includes("pinia") ||
+              id.includes("@vueuse")
+            ) {
+              return "vendor";
             }
-            // Остальное — в общий chunk
-            return "vendor";
           },
         },
       },
-    },
-  },
-  pwa: {
-    registerType: "autoUpdate",
-    manifest: false,
-    workbox: {
-      navigateFallback: "/offline",
-      globPatterns: ["**/*.{js,css,html,ico,png,svg,webp}"],
-      globIgnores: ["**/sw.js", "**/manifest.webmanifest"],
-      runtimeCaching: [
-        {
-          urlPattern: /^https:\/\/wotgospel\.ru\/api\/.*/i,
-          handler: "NetworkFirst",
-          options: {
-            cacheName: "api-cache",
-            expiration: {
-              maxEntries: 100,
-              maxAgeSeconds: 60 * 60,
-            },
-          },
-        },
-        {
-          urlPattern: /^https:\/\/storage\.yandexcloud\.net\/.*/i,
-          handler: "CacheFirst",
-          options: {
-            cacheName: "image-cache",
-            expiration: {
-              maxEntries: 200,
-              maxAgeSeconds: 60 * 60 * 24 * 7,
-            },
-          },
-        },
-        {
-          urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com\/.*/i,
-          handler: "CacheFirst",
-          options: {
-            cacheName: "google-fonts",
-            expiration: {
-              maxEntries: 30,
-              maxAgeSeconds: 60 * 60 * 24 * 30,
-            },
-          },
-        },
-      ],
-    },
-    devOptions: {
-      enabled: false,
-      type: "module",
     },
   },
 });

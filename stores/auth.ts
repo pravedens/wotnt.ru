@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { useApi } from '~/composables/useApi';  // ✅ ДОБАВЛЕН ИМПОРТ
+import { useApi } from "~/composables/useApi";
 
 export interface User {
   id: number;
@@ -15,11 +15,11 @@ export interface User {
   birth_date?: string;
   avatar?: string;
   created_at?: string;
-  marital_status?: string
-  gender?: string
-  ministry?: string
-  bible_courses_experience?: string
-  learning_expectations?: string
+  marital_status?: string;
+  gender?: string;
+  ministry?: string;
+  bible_courses_experience?: string;
+  learning_expectations?: string;
 }
 
 interface RegisterData {
@@ -42,17 +42,17 @@ interface ConsentHistoryItem {
   ip: string;
 }
 
-// ✅ Функция для получения $api внутри действий
 function getApi() {
   const { $api } = useApi();
   return $api;
 }
 
-// ✅ Функция для получения конфигурации (только для storageUrl)
 function getConfig() {
   const config = useRuntimeConfig();
   return {
-    storageUrl: config.public.storageUrl || 'https://storage.yandexcloud.net/wotgospel-media'
+    storageUrl:
+      config.public.storageUrl ||
+      "https://storage.yandexcloud.net/wotgospel-media",
   };
 }
 
@@ -137,8 +137,6 @@ export const useAuthStore = defineStore("auth", {
         if (state.user.avatar.startsWith("avatars/")) {
           return `${storageUrl}/${state.user.avatar}`;
         }
-        // ✅ Исправлено: используем $api для получения baseUrl, но для avatarUrl лучше использовать прямой URL
-        // Так как это геттер, мы не можем использовать $api
         const config = useRuntimeConfig();
         return `${config.public.apiBase}/storage/${state.user.avatar}`;
       }
@@ -163,13 +161,31 @@ export const useAuthStore = defineStore("auth", {
       this.consentHistory = [];
     },
 
+    // ✅ НОВЫЙ МЕТОД: восстановление из localStorage без запросов
+    restoreFromStorage(): boolean {
+      if (import.meta.client) {
+        const token = localStorage.getItem("auth_token");
+        const userStr = localStorage.getItem("auth_user");
+        const rolesStr = localStorage.getItem("auth_roles");
+
+        if (token && userStr) {
+          this.token = token;
+          this.user = JSON.parse(userStr);
+          this.roles = rolesStr ? JSON.parse(rolesStr) : [];
+          this.initialized = true;
+          console.log("🔑 Восстановлено из localStorage");
+          return true;
+        }
+      }
+      return false;
+    },
+
     async validateToken(): Promise<boolean> {
       if (!this.token) return false;
 
       try {
         const $api = getApi();
-        // ✅ Исправлено: используем $api вместо $fetch
-        const response: any = await $api('/user/check-token', {
+        const response: any = await $api("/user/check-token", {
           headers: {
             Authorization: `Bearer ${this.token}`,
           },
@@ -206,8 +222,7 @@ export const useAuthStore = defineStore("auth", {
 
       try {
         const $api = getApi();
-        // ✅ Исправлено: используем $api вместо $fetch
-        const response: any = await $api('/login', {
+        const response: any = await $api("/login", {
           method: "POST",
           body: { email, password, remember },
         });
@@ -256,42 +271,36 @@ export const useAuthStore = defineStore("auth", {
       }
     },
 
-    async init() {
-      if (this.initialized) return;
+    async init(force: boolean = false) {
+      if (this.initialized && !force) return;
 
-      if (import.meta.client) {
-        const token = localStorage.getItem("auth_token");
-        const userStr = localStorage.getItem("auth_user");
-        const rolesStr = localStorage.getItem("auth_roles");
-        const consentHistoryStr = localStorage.getItem("consent_history");
+      // ✅ Сначала пробуем восстановить из localStorage
+      if (this.restoreFromStorage()) {
+        console.log("🔐 Токен восстановлен, проверяем валидность...");
 
-        if (token && userStr) {
-          this.token = token;
-          this.user = JSON.parse(userStr);
-          this.roles = rolesStr ? JSON.parse(rolesStr) : [];
-
-          if (consentHistoryStr) {
-            this.consentHistory = JSON.parse(consentHistoryStr);
-            if (this.consentHistory.length > 0) {
-              const latest = this.consentHistory[0];
-              if (latest) {
-                this.consentVersion = latest.version;
-                this.consentDate = latest.date;
-                this.consentIp = latest.ip;
-              }
-            }
+        // ✅ ТОЛЬКО ЕСЛИ ЕСТЬ ТОКЕН - делаем запросы
+        const isValid = await this.validateToken();
+        if (!isValid) {
+          this.$reset();
+          if (import.meta.client) {
+            localStorage.removeItem("auth_token");
+            localStorage.removeItem("auth_user");
+            localStorage.removeItem("auth_roles");
           }
-
-          const isValid = await this.validateToken();
-          if (!isValid) {
-            this.initialized = true;
-            return;
-          }
-
-          await this.fetchConsentHistory();
+          this.initialized = true;
+          return;
         }
+
+        // ❌ НЕ ЗАГРУЖАЕМ consent-history здесь (только при необходимости)
+        // await this.fetchConsentHistory();
+
+        this.initialized = true;
+        console.log("✅ Авторизация подтверждена");
+        return;
       }
 
+      // ❌ Нет токена - просто выходим
+      console.log("⏭️ Нет токена, пропускаем проверку авторизации");
       this.initialized = true;
     },
 
@@ -300,8 +309,7 @@ export const useAuthStore = defineStore("auth", {
 
       try {
         const $api = getApi();
-        // ✅ Исправлено: используем $api вместо $fetch
-        const response: any = await $api('/register', {
+        const response: any = await $api("/register", {
           method: "POST",
           body: data,
         });
@@ -309,7 +317,9 @@ export const useAuthStore = defineStore("auth", {
         return {
           success: true,
           requiresVerification: true,
-          message: response?.message || "Письмо с подтверждением отправлено на ваш email",
+          message:
+            response?.message ||
+            "Письмо с подтверждением отправлено на ваш email",
         };
       } catch (err: any) {
         console.error("Register error:", err);
@@ -338,8 +348,7 @@ export const useAuthStore = defineStore("auth", {
 
       try {
         const $api = getApi();
-        // ✅ Исправлено: используем $api вместо $fetch
-        const response: any = await $api('/user', {
+        const response: any = await $api("/user", {
           method: "GET",
           headers: {
             Authorization: `Bearer ${this.token}`,
@@ -365,8 +374,7 @@ export const useAuthStore = defineStore("auth", {
 
       try {
         const $api = getApi();
-        // ✅ Исправлено: используем $api вместо $fetch
-        const response: any = await $api('/user', {
+        const response: any = await $api("/user", {
           headers: {
             Authorization: `Bearer ${this.token}`,
           },
@@ -396,8 +404,7 @@ export const useAuthStore = defineStore("auth", {
 
       try {
         const $api = getApi();
-        // ✅ Исправлено: используем $api вместо $fetch
-        await $api('/email/verification-notification', {
+        await $api("/email/verification-notification", {
           method: "POST",
           headers: {
             Authorization: `Bearer ${this.token}`,
@@ -424,8 +431,7 @@ export const useAuthStore = defineStore("auth", {
 
       try {
         const $api = getApi();
-        // ✅ Исправлено: используем $api вместо $fetch
-        const response: any = await $api('/user/consent', {
+        const response: any = await $api("/user/consent", {
           method: "POST",
           body: { policy_version: version },
           headers: {
@@ -471,7 +477,8 @@ export const useAuthStore = defineStore("auth", {
         console.error("Update consent error:", err);
         return {
           success: false,
-          error: err?.data?.message || err?.message || "Ошибка обновления согласия",
+          error:
+            err?.data?.message || err?.message || "Ошибка обновления согласия",
         };
       }
     },
@@ -481,8 +488,7 @@ export const useAuthStore = defineStore("auth", {
 
       try {
         const $api = getApi();
-        // ✅ Исправлено: используем $api вместо $fetch
-        const response: any = await $api('/user/consent/history', {
+        const response: any = await $api("/user/consent/history", {
           method: "GET",
           headers: {
             Authorization: `Bearer ${this.token}`,
@@ -533,8 +539,7 @@ export const useAuthStore = defineStore("auth", {
       if (this.token && import.meta.client) {
         try {
           const $api = getApi();
-          // ✅ Исправлено: используем $api вместо $fetch
-          await $api('/logout', {
+          await $api("/logout", {
             method: "POST",
             headers: {
               Authorization: `Bearer ${this.token}`,
@@ -563,22 +568,24 @@ export const useAuthStore = defineStore("auth", {
     async forgotPassword(email: string) {
       try {
         const $api = getApi();
-        // ✅ Исправлено: используем $api вместо $fetch
-        const response: any = await $api('/forgot-password', {
+        const response: any = await $api("/forgot-password", {
           method: "POST",
           body: { email },
         });
 
         return {
           success: true,
-          message: response?.message || "Ссылка для сброса пароля отправлена на ваш email",
+          message:
+            response?.message ||
+            "Ссылка для сброса пароля отправлена на ваш email",
         };
       } catch (err: any) {
         let errorMessage = "Ошибка отправки запроса";
         if (err?.data?.errors) {
           const errors = err.data.errors;
           const errorValues = Object.values(errors);
-          const firstError = errorValues.length > 0 ? (errorValues[0] as any)?.[0] : undefined;
+          const firstError =
+            errorValues.length > 0 ? (errorValues[0] as any)?.[0] : undefined;
           if (firstError) {
             errorMessage = firstError;
           }
@@ -603,8 +610,7 @@ export const useAuthStore = defineStore("auth", {
 
       try {
         const $api = getApi();
-        // ✅ Исправлено: используем $api вместо $fetch
-        const response: any = await $api('/reset-password', {
+        const response: any = await $api("/reset-password", {
           method: "POST",
           body: data,
         });

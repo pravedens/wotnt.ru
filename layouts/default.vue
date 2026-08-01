@@ -27,6 +27,7 @@ import AppHeader from '~/components/layout/AppHeader.vue'
 import AppFooter from '~/components/layout/AppFooter.vue'
 import AppMobileMenu from '~/components/layout/AppMobileMenu.vue'
 import { useRoute } from 'vue-router'
+import { storeToRefs } from 'pinia'
 
 // ============================================
 // ПОЛУЧАЕМ КОНФИГУРАЦИЮ
@@ -69,11 +70,33 @@ const authStore = useAuthStore()
 const router = useRouter()
 const route = useRoute()
 
-const { user } = storeToRefs(authStore)
-
-if (!authStore) {
-  console.error('❌ authStore не инициализирован')
+// ============================================
+// ✅ ВОССТАНОВЛЕНИЕ ТОКЕНА ИЗ LOCALSTORAGE
+// ============================================
+if (import.meta.client) {
+  const token = localStorage.getItem('auth_token')
+  const userStr = localStorage.getItem('auth_user')
+  const rolesStr = localStorage.getItem('auth_roles')
+  
+  if (token && userStr && !authStore.token) {
+    authStore.token = token
+    authStore.user = JSON.parse(userStr)
+    authStore.roles = rolesStr ? JSON.parse(rolesStr) : []
+  }
 }
+
+// ============================================
+// ✅ ИНИЦИАЛИЗАЦИЯ АВТОРИЗАЦИИ
+// ============================================
+if (route.path !== '/') {
+  // На страницах, кроме главной - проверяем токен
+  authStore.init()
+} else {
+  // На главной - только восстановили токен, без запросов
+  authStore.initialized = true
+}
+
+const { user } = storeToRefs(authStore)
 
 // Состояние мобильного меню
 const mobileMenuOpen = ref(false)
@@ -107,7 +130,6 @@ const handleLogout = async () => {
 // Закрываем мобильное меню при смене маршрута
 watch(route, () => {
   mobileMenuOpen.value = false
-  // ✅ Восстанавливаем скролл при смене маршрута
   restoreScroll()
 })
 
@@ -118,7 +140,6 @@ router.afterEach(() => {
 
 // Инициализация авторизации при загрузке
 onMounted(() => {
-  authStore.init()
   restoreScroll()
 })
 

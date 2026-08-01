@@ -107,7 +107,7 @@
 import { useApi } from '~/composables/useApi'
 import type { Category, Group, Conference } from '~/types/sermon'
 
-// ✅ Типизация пропсов - исправлено: все поля могут быть null или undefined
+// ✅ Типизация пропсов
 interface Props {
   categories: Category[]
   groups: Group[]
@@ -148,10 +148,10 @@ const selectedCategory = ref<number | null>(props.modelValue.category_id ?? null
 const selectedGroup = ref<number | null>(props.modelValue.group_id ?? null)
 const selectedConference = ref<number | null>(props.modelValue.conference_id ?? null)
 
-// Типизация доступных опций
-const availableCategories = ref<Category[]>([])
-const availableGroups = ref<Group[]>([])
-const availableConferences = ref<Conference[]>([])
+// ✅ ИСПОЛЬЗУЕМ ДАННЫЕ ИЗ PROPS вместо отдельных запросов
+const availableCategories = computed(() => props.categories || [])
+const availableGroups = computed(() => props.groups || [])
+const availableConferences = computed(() => props.conferences || [])
 
 // Вычисляемые свойства для проверки наличия опций
 const hasAvailableCategories = computed(() => availableCategories.value.length > 0)
@@ -163,43 +163,13 @@ const hasActiveFilters = computed(() => {
   return selectedCategory.value || selectedGroup.value || selectedConference.value
 })
 
-// Загрузка доступных опций для всех фильтров
-const loadAvailableOptions = async () => {
-  const params = new URLSearchParams()
-  
-  if (selectedCategory.value) {
-    params.append('category_id', String(selectedCategory.value))
-  }
-  if (selectedGroup.value) {
-    params.append('group_id', String(selectedGroup.value))
-  }
-  if (selectedConference.value) {
-    params.append('conference_id', String(selectedConference.value))
-  }
-
-  try {
-    const categoriesRes = await $api<Category[]>(`/filtered-categories?${params.toString()}`)
-    availableCategories.value = categoriesRes || []
-    
-    const groupsRes = await $api<Group[]>(`/filtered-groups?${params.toString()}`)
-    availableGroups.value = groupsRes || []
-    
-    const confsRes = await $api<Conference[]>(`/filtered-conferences?${params.toString()}`)
-    availableConferences.value = confsRes || []
-    
-  } catch (err) {
-    console.error('Error loading available options:', err)
-  }
-}
-
-// Обновление фильтра
-const updateFilter = async (key: string, value: any) => {
+// ✅ Обновление фильтра - БЕЗ дополнительных запросов
+const updateFilter = (key: string, value: any) => {
   if (key === 'category_id') selectedCategory.value = value
   if (key === 'group_id') selectedGroup.value = value
   if (key === 'conference_id') selectedConference.value = value
   
-  await loadAvailableOptions()
-  
+  // ✅ Проверяем валидность выбранных значений (без запросов)
   if (selectedGroup.value && !availableGroups.value.some(g => g.id === selectedGroup.value)) {
     selectedGroup.value = null
     emit('filter-change', 'group_id', null)
@@ -212,26 +182,38 @@ const updateFilter = async (key: string, value: any) => {
   emit('filter-change', key, value)
 }
 
-// Сброс всех фильтров
-const resetAll = async () => {
+// ✅ Сброс всех фильтров - БЕЗ дополнительных запросов
+const resetAll = () => {
   selectedCategory.value = null
   selectedGroup.value = null
   selectedConference.value = null
   
-  await loadAvailableOptions()
   emit('filter-change', 'reset', null)
 }
 
-// Инициализация
-onMounted(async () => {
-  await loadAvailableOptions()
-})
+// ✅ Убираем onMounted и watch с запросами
 
-// Следим за изменениями props
-watch(() => props.modelValue, async (newVal) => {
+// ✅ Следим за изменениями props (синхронизация без запросов)
+watch(() => props.modelValue, (newVal) => {
   selectedCategory.value = newVal.category_id ?? null
   selectedGroup.value = newVal.group_id ?? null
   selectedConference.value = newVal.conference_id ?? null
-  await loadAvailableOptions()
+}, { deep: true })
+
+// ✅ Следим за изменением категорий/групп/конференций из props
+watch(() => [props.categories, props.groups, props.conferences], () => {
+  // Проверяем, что выбранные значения все еще валидны
+  if (selectedCategory.value && !availableCategories.value.some(c => c.id === selectedCategory.value)) {
+    selectedCategory.value = null
+    emit('filter-change', 'category_id', null)
+  }
+  if (selectedGroup.value && !availableGroups.value.some(g => g.id === selectedGroup.value)) {
+    selectedGroup.value = null
+    emit('filter-change', 'group_id', null)
+  }
+  if (selectedConference.value && !availableConferences.value.some(c => c.id === selectedConference.value)) {
+    selectedConference.value = null
+    emit('filter-change', 'conference_id', null)
+  }
 }, { deep: true })
 </script>

@@ -7,7 +7,7 @@ import type {
 } from "~/types/sermon";
 import type { PaginatedResponse } from "~/types/api";
 import { useApi } from "~/composables/useApi";
-import { useRouter, useRoute } from 'vue-router'; // ✅ Добавляем импорт
+import { useRouter, useRoute } from "vue-router"; // ✅ Добавляем импорт
 
 export const usePosts = () => {
   const { $api } = useApi();
@@ -60,27 +60,35 @@ export const usePosts = () => {
   const groups = ref<Group[]>([]);
   const conferences = ref<Conference[]>([]);
 
+  // composables/usePosts.ts
+
   const loadFilterData = async () => {
     try {
-      const [categoriesRes, groupsRes, conferencesRes] = await Promise.all([
-        $api<Category[]>("/categories"),
-        $api<Group[]>("/groups"),
-        $api<Conference[]>("/conferences"),
-      ]);
+      // ✅ ОДИН ЗАПРОС вместо трех
+      const response = await $api<{
+        categories: Category[];
+        groups: Group[];
+        conferences: Conference[];
+      }>("/filters", {
+        params: {
+          category_id: filters.value.category_id || undefined,
+          group_id: filters.value.group_id || undefined,
+          conference_id: filters.value.conference_id || undefined,
+        },
+      });
 
-      categories.value = categoriesRes || [];
-      groups.value = groupsRes || [];
-      conferences.value = conferencesRes || [];
+      categories.value = response.categories || [];
+      groups.value = response.groups || [];
+      conferences.value = response.conferences || [];
     } catch (err) {
       console.error("Error loading filters:", err);
     }
   };
-
   // ✅ Функция для синхронизации URL с фильтрами
   const updateURL = () => {
     if (import.meta.client) {
       const query: Record<string, string> = {};
-      
+
       if (filters.value.category_id) {
         query.category_id = String(filters.value.category_id);
       }
@@ -163,12 +171,12 @@ export const usePosts = () => {
   const setFilter = (key: keyof PostFilters, value: any) => {
     // Обновляем фильтр
     filters.value[key] = value;
-    
+
     // Если это не page, сбрасываем page на 1
-    if (key !== 'page') {
+    if (key !== "page") {
       filters.value.page = 1;
     }
-    
+
     // Загружаем посты с новыми фильтрами
     loadPosts();
   };

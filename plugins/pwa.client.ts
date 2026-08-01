@@ -7,7 +7,7 @@ export default defineNuxtPlugin(() => {
           // ✅ Проверяем обновления каждые 60 минут
           setInterval(() => {
             registration.update();
-            console.log('🔄 Checking for SW updates');
+            //console.log('🔄 Checking for SW updates');
           }, 60 * 60 * 1000);
         })
         .catch(error => {
