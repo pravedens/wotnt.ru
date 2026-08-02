@@ -1,5 +1,5 @@
 // scripts/sw.template.js
-const CACHE_NAME = 'wotnt-1784302118892';
+const CACHE_NAME = 'wotnt-1785602741823';
 const OFFLINE_URL = '/offline';
 
 const urlsToCache = [
