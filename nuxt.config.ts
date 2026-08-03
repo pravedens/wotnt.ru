@@ -4,9 +4,11 @@ export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
   devtools: { enabled: false },
   ssr: true,
-  
+
+  modules: ["@pinia/nuxt", "@nuxtjs/tailwindcss", "@nuxt/image", "nuxt-swiper"],
+
   features: {
-    inlineStyles: false,
+    inlineStyles: true,
   },
 
   dir: {
@@ -15,12 +17,12 @@ export default defineNuxtConfig({
   },
 
   experimental: {
-    payloadExtraction: true,
-    clientFallback: true,
-    asyncEntry: true,
+    payloadExtraction: false,
+    clientFallback: false,
+    asyncEntry: false,
   },
 
-  modules: ["@pinia/nuxt", "@nuxtjs/tailwindcss", "@nuxt/image", "nuxt-swiper"],
+  //css: ["~/assets/css/tailwind.css"],
 
   tailwindcss: {
     config: {
@@ -37,8 +39,6 @@ export default defineNuxtConfig({
   pinia: {
     storesDirs: ["./stores/**"],
   },
-
-  //css: ['~/assets/css/main.css'],
 
   app: {
     baseURL: "/",
@@ -112,12 +112,10 @@ export default defineNuxtConfig({
     },
     "/": {
       swr: true,
-      //isr: process.env.NODE_ENV === "production",
       headers: {
         "Cache-Control": "no-cache, no-store, must-revalidate",
       },
     },
-    // ⚠️ В разработке отключаем всё кэширование
     "/sermons": {
       isr: process.env.NODE_ENV === "production",
       swr: process.env.NODE_ENV === "production" ? 3600 : false,
@@ -150,7 +148,6 @@ export default defineNuxtConfig({
           ? { swr: true, maxAge: 3600 }
           : false,
     },
-    // ✅ Для всех остальных страниц в разработке — без кэша
     ...(process.env.NODE_ENV === "development" && {
       "/**": {
         isr: false,
@@ -178,8 +175,6 @@ export default defineNuxtConfig({
         cache: false,
       },
     }),
-
-    // ⚠️ В продакшене включаем кэширование
     ...(process.env.NODE_ENV === "production" && {
       "/sermons/**": {
         swr: 3600,
@@ -220,7 +215,6 @@ export default defineNuxtConfig({
         cache: { swr: true, maxAge: 3600 },
       },
     }),
-
     "/auth/**": {
       swr: 0,
       headers: {
@@ -343,6 +337,9 @@ export default defineNuxtConfig({
   nitro: {
     compressPublicAssets: true,
     minify: true,
+    experimental: {
+      asyncContext: true,
+    },
     serveStatic: true,
     preset: "node-server",
     output: {
@@ -369,8 +366,8 @@ export default defineNuxtConfig({
       cache: {
         driver:
           process.env.NODE_ENV === "development"
-            ? "memory" // ⚠️ В разработке — в память, чтобы не было ошибок с диском
-            : "fs", // ✅ В продакшене — на диск
+            ? "memory"
+            : "fs",
         ...(process.env.NODE_ENV === "production" && {
           base: ".nuxt/cache",
         }),
@@ -379,7 +376,6 @@ export default defineNuxtConfig({
     esbuild: {
       options: {
         target: "es2022",
-        // Другие опции esbuild
       },
     },
     typescript: {
@@ -394,41 +390,14 @@ export default defineNuxtConfig({
     client: false,
   },
 
-  build: {},
+  devServer: {
+    host: "127.0.0.1",
+    port: 3000,
+  },
 
   vite: {
-    server: {
-      // ✅ Включаем CORS для локальной разработки
-      cors: true,
-      // ✅ Включаем "горячую" перезагрузку через WebSocket
-      hmr: {
-        overlay: false, // Отключаем оверлей ошибок, если он мешает
-      },
-      // ✅ Правильная настройка WebSocket для Nuxt
-      ws: {
-        // protocol: "ws", // Необязательно, будет определен автоматически
-        host: "localhost", // Явно указываем хост
-        port: 3000, // Порт должен совпадать с портом сервера
-      },
-      // ✅ Включаем опрос файлов для Windows (решает проблемы с отслеживанием изменений)
-      watch: {
-        usePolling: true,
-      },
-    },
     build: {
-      rollupOptions: {
-        output: {
-          manualChunks: function (id) {
-            if (
-              id.includes("vue") ||
-              id.includes("pinia") ||
-              id.includes("@vueuse")
-            ) {
-              return "vendor";
-            }
-          },
-        },
-      },
+      sourcemap: false,
     },
   },
 });

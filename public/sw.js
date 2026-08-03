@@ -1,4 +1,3 @@
-// scripts/sw.template.js
 const CACHE_NAME = 'wotnt-1785611748908';
 const OFFLINE_URL = '/offline';
 
@@ -127,7 +126,7 @@ self.addEventListener('fetch', event => {
   );
 });
 
-// Web Push уведомления (без изменений, но тоже можно убрать логи)
+// Web Push уведомления
 self.addEventListener('push', function(event) {
   let data = {
     title: 'Новое уведомление',

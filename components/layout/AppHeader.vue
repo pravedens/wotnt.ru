@@ -18,11 +18,25 @@
         <!-- Десктопное меню -->
         <div class="hidden md:flex items-center gap-6">
           <NuxtLink 
-            to="/" 
+            to="/sermons" 
             class="hover:text-blue-300 transition"
             active-class="text-blue-300 font-semibold"
           >
-            Главная
+            Проповеди
+          </NuxtLink>
+          <NuxtLink 
+            to="/events" 
+            class="hover:text-blue-300 transition"
+            active-class="text-blue-300 font-semibold"
+          >
+            События
+          </NuxtLink>
+          <NuxtLink 
+            to="/contacts" 
+            class="hover:text-blue-300 transition"
+            active-class="text-blue-300 font-semibold"
+          >
+            Контакты
           </NuxtLink>
           
           <NuxtLink 
