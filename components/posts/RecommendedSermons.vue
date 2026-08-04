@@ -5,64 +5,72 @@
       <h2 class="text-2xl sm:text-3xl font-bold text-white">
         📖 Рекомендуемые проповеди
       </h2>
-      <NuxtLink 
-        to="/sermons" 
-        class="text-white/70 hover:text-white transition flex items-center gap-1 bg-white/5 px-4 py-2 rounded-lg hover:bg-white/10 text-sm sm:text-base whitespace-nowrap"
-      >
+      <AppButton to="/sermons" variant="ghost-light" size="sm">
         Все проповеди
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-        </svg>
-      </NuxtLink>
+        <template #right-icon>
+          <svg
+            class="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M9 5l7 7-7 7"
+            />
+          </svg>
+        </template>
+      </AppButton>
     </div>
 
     <!-- Нет проповедей -->
-    <div v-if="sermons.length === 0" class="bg-white/10 backdrop-blur-lg rounded-2xl p-12 text-center">
+    <div
+      v-if="sermons.length === 0"
+      class="bg-white/10 backdrop-blur-lg rounded-2xl p-12 text-center"
+    >
       <p class="text-white/80 text-lg">Нет рекомендуемых проповедей</p>
     </div>
 
     <!-- Сетка проповедей -->
-    <div v-else class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-      <div
-        v-for="sermon in sermons"
-        :key="sermon.id"
-        class="h-full"
-      >
+    <div
+      v-else
+      class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
+    >
+      <div v-for="sermon in sermons" :key="sermon.id" class="h-full">
         <h3 class="sr-only">{{ sermon.title }}</h3>
-        <PostCard 
-          :post="sermon" 
-          :stats="getPostStats(sermon.id)"
-        />
+        <PostCard :post="sermon" :stats="getPostStats(sermon.id)" />
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { useStatsStore } from '~/stores/stats'
-import PostCard from '~/components/posts/PostCard.vue'
-import type { Post } from '~/types/sermon'
+import { useStatsStore } from "~/stores/stats";
+import PostCard from "~/components/posts/PostCard.vue";
+import type { Post } from "~/types/sermon";
 
 // ============================================
 // ПРОПСЫ
 // ============================================
 const props = defineProps<{
-  posts: Post[]
-}>()
+  posts: Post[];
+}>();
 
 // ============================================
 // COMPOSABLES
 // ============================================
-const statsStore = useStatsStore()
+const statsStore = useStatsStore();
 
 // ============================================
 // ВЫЧИСЛЯЕМЫЕ СВОЙСТВА
 // ============================================
-const sermons = computed(() => props.posts || [])
+const sermons = computed(() => props.posts || []);
 
 const getPostStats = (postId: number) => {
-  return statsStore.getPostStats(postId)
-}
+  return statsStore.getPostStats(postId);
+};
 
 // ============================================
 // ЖИЗНЕННЫЙ ЦИКЛ
@@ -70,10 +78,10 @@ const getPostStats = (postId: number) => {
 onMounted(() => {
   // Загружаем статистику для всех постов одним запросом
   if (sermons.value.length) {
-    const postIds = sermons.value.map(p => p.id)
-    statsStore.fetchMultipleStats(postIds)
+    const postIds = sermons.value.map((p) => p.id);
+    statsStore.fetchMultipleStats(postIds);
   }
-})
+});
 </script>
 
 <style scoped>
