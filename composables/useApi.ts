@@ -4,14 +4,17 @@ export const useApi = () => {
   const config = useRuntimeConfig()
   const authStore = useAuthStore()
 
-  // ✅ Используем apiBase из конфига (он разный для dev и prod)
-  const apiBase = config.public.apiBase || '/api'
+  // ✅ Для SSR используем полный URL, для клиента — относительный
+  const isServer = import.meta.server
+  const apiBase = isServer 
+    ? `${config.public.backendUrl}/api`  // На сервере — полный URL
+    : config.public.apiBase              // На клиенте — относительный (/api)
+
   const backendUrl = config.public.backendUrl || 'http://wotgospel.local'
   const storageUrl = config.public.storageUrl || 'https://storage.yandexcloud.net/wotgospel-media'
 
-  // ✅ Создаём экземпляр $fetch
   const $api = $fetch.create({
-    baseURL: apiBase,
+    baseURL: apiBase,  // 👈 Используем правильный baseURL
     
     headers: {
       Accept: 'application/json',
@@ -23,21 +26,15 @@ export const useApi = () => {
       const token = authStore?.token
       if (!token) return
 
-      // ✅ Простое и надёжное решение
       const headers = new Headers(options.headers as HeadersInit || {})
       headers.set('Authorization', `Bearer ${token}`)
       options.headers = headers
     },
 
     onResponseError({ request, response }) {
-      // ✅ Только если авторизован и получил 401
       if (response.status === 401 && authStore?.token) {
         console.warn('API: Unauthorized, logging out')
-        console.log('Request URL:', request)
-        
         authStore.logout()
-        
-        // ✅ Только на клиенте
         if (import.meta.client) {
           navigateTo('/auth/login')
         }

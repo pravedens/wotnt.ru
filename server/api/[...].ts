@@ -1,22 +1,15 @@
 // server/api/[...].ts
 export default defineEventHandler(async (event) => {
-  // Логируем запрос
-  //console.log('🚀 Proxy received:', event.path)
-  
   const config = useRuntimeConfig()
-  const backendUrl = config.public.backendUrl || 'http://wotgospel.local'
+  const backendUrl = config.public.backendUrl || 'http://localhost:8000'
   
-  // Убираем /api из пути
   const path = event.path.replace('/api', '')
   const method = event.method
   const body = method !== 'GET' ? await readBody(event).catch(() => ({})) : undefined
   const query = getQuery(event)
   
   // Копируем заголовки
-  const headers: Record<string, string> = {
-    'Accept': 'application/json',
-  }
-  
+  const headers: Record<string, string> = {}
   for (const [key, value] of event.headers.entries()) {
     if (!['host', 'connection', 'content-length', 'transfer-encoding'].includes(key.toLowerCase())) {
       headers[key] = value
@@ -24,7 +17,6 @@ export default defineEventHandler(async (event) => {
   }
   
   const targetUrl = `${backendUrl}/api${path}`
-  //console.log('➡️ Target:', targetUrl)
   
   try {
     const response = await $fetch(targetUrl, {
@@ -33,10 +25,14 @@ export default defineEventHandler(async (event) => {
       headers,
       query,
     })
-    
     return response
   } catch (error: any) {
-    console.error('❌ Proxy error:', error.message)
+    console.error('❌ Proxy error:', {
+      url: targetUrl,
+      method,
+      status: error.status,
+      message: error.message,
+    })
     throw createError({
       statusCode: error.status || 500,
       statusMessage: error.message || 'Backend error',

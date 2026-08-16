@@ -318,8 +318,8 @@ export default defineNuxtConfig({
       appVersion: process.env.NUXT_PUBLIC_APP_VERSION || "1.0.0",
       siteUrl: process.env.NUXT_PUBLIC_SITE_URL || "http://localhost:3000",
       backendUrl:
-        process.env.NUXT_PUBLIC_BACKEND_URL || "http://wotgospel.local",
-      apiBase: process.env.NUXT_PUBLIC_API_BASE || "http://wotgospel.local/api",
+        process.env.NUXT_PUBLIC_BACKEND_URL || "/",
+      apiBase: process.env.NUXT_PUBLIC_API_BASE || "/api",
       fortifyBaseUrl:
         process.env.NUXT_PUBLIC_FORTIFY_BASE_URL || "http://wotgospel.local",
       storageUrl:

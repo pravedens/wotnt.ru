@@ -64,16 +64,17 @@ export const usePosts = () => {
 
   const loadFilterData = async () => {
     try {
-      // ✅ ОДИН ЗАПРОС вместо трех
       const response = await $api<{
         categories: Category[];
         groups: Group[];
         conferences: Conference[];
       }>("/filters", {
         params: {
+          // ✅ ПЕРЕДАЁМ ТЕКУЩИЕ ФИЛЬТРЫ
           category_id: filters.value.category_id || undefined,
           group_id: filters.value.group_id || undefined,
           conference_id: filters.value.conference_id || undefined,
+          search: filters.value.search || undefined,
         },
       });
 
@@ -168,8 +169,8 @@ export const usePosts = () => {
   };
 
   // ✅ Исправленный setFilter
-  const setFilter = (key: keyof PostFilters, value: any) => {
-    // Обновляем фильтр
+  const setFilter = async (key: keyof PostFilters, value: any) => {
+    // ✅ Обновляем фильтр
     filters.value[key] = value;
 
     // Если это не page, сбрасываем page на 1
@@ -177,11 +178,14 @@ export const usePosts = () => {
       filters.value.page = 1;
     }
 
-    // Загружаем посты с новыми фильтрами
-    loadPosts();
+    // ✅ ЗАГРУЖАЕМ ФИЛЬТРЫ (чтобы обновить доступные опции)
+    await loadFilterData();
+
+    // ✅ Загружаем посты с новыми фильтрами
+    await loadPosts();
   };
 
-  const resetFilters = () => {
+  const resetFilters = async () => {
     filters.value = {
       category_id: null,
       group_id: null,
@@ -190,7 +194,9 @@ export const usePosts = () => {
       page: 1,
       per_page: 8,
     };
-    loadPosts();
+    // ✅ Перезагружаем фильтры и посты
+    await loadFilterData();
+    await loadPosts();
   };
 
   const goToPage = async (page: number) => {
