@@ -57,6 +57,7 @@ import { useAuthStore } from '~/stores/auth';
 import { useImageUrl } from '~/composables/useImageUrl';
 import { useApi } from '~/composables/useApi';
 import type { BibleCourse, ApiResponse } from '~/types/bible-school';
+import { onActivated } from 'vue'
 
 definePageMeta({ layout: 'default' });
 
@@ -84,8 +85,17 @@ const fetchCourses = async () => {
   }
 };
 
+// ✅ Правильное название функции
 onMounted(() => {
   fetchCourses();
+});
+
+// ✅ Обновляем данные при возврате на страницу
+onActivated(() => {
+  // Если курсы уже загружены — обновляем данные
+  if (courses.value.length > 0) {
+    fetchCourses();
+  }
 });
 </script>
 

@@ -534,9 +534,12 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { useAuthStore } from "~/stores/auth";
 import { useApi } from "~/composables/useApi";
+import type { BibleLesson, LessonVideo } from '~/types/bible-school'
+
+const lesson = ref<BibleLesson | null>(null)
 
 definePageMeta({
   middleware: "auth",
@@ -546,7 +549,6 @@ const route = useRoute();
 const authStore = useAuthStore();
 const { $api } = useApi();
 
-const lesson = ref(null);
 const progress = ref(null);
 const courseSlug = ref("");
 const loading = ref(true);
@@ -1128,5 +1130,9 @@ textarea {
   word-break: break-word;
   white-space: pre-wrap;
   overflow-wrap: break-word;
+}
+
+.prose {
+  text-align: justify; /* или left, center, right */
 }
 </style>

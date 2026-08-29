@@ -48,6 +48,7 @@ export interface BibleLesson {
   status?: 'not_started' | 'call_completed' | 'scripture_completed' | 'video_watched' | 'practice_completed' | 'test_passed' | 'completed'
   is_locked?: boolean
   videos?: LessonVideo[]
+  requires_essay?: boolean
 }
 
 export interface LessonVideo {
