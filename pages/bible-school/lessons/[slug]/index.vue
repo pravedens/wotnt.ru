@@ -697,7 +697,7 @@ const restoreProgressFromStatus = (savedStatus) => {
   const hasContentData = hasData.value.content;
   const hasPracticeData = hasData.value.practice;
 
-  // 1. Призыв — всегда пройден, если есть статус
+  // 1. Призыв
   if (
     [
       "call_completed",
@@ -711,8 +711,19 @@ const restoreProgressFromStatus = (savedStatus) => {
     stepCompleted.value.call = true;
   }
 
-  // 2. Писание — НИКОГДА НЕ ПРОЙДЕН ПРИ ЗАГРУЗКЕ
-  stepCompleted.value.scripture = false;
+  // 2. Писание — если есть данные и статус позволяет
+  if (
+    hasScriptureData &&
+    [
+      "scripture_completed",
+      "video_watched",
+      "practice_completed",
+      "test_passed",
+      "completed",
+    ].includes(savedStatus)
+  ) {
+    stepCompleted.value.scripture = true;
+  }
 
   // 3. Контент
   if (
@@ -802,12 +813,6 @@ const fetchLesson = async () => {
     }
 
     const hasLocal = loadFromStorage();
-
-    // ✅ Если Писание появилось в уроке — сбрасываем его статус
-    if (hasLocal && hasData.value.scripture) {
-      stepCompleted.value.scripture = false;
-      saveToStorage();
-    }
 
     if (!hasLocal && progress.value?.status) {
       const savedStatus = progress.value.status;
