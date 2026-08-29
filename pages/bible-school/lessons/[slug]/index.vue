@@ -304,6 +304,7 @@
 
           <!-- Блок 7: Эссе -->
           <div
+            v-if="lesson.requires_essay"
             data-step="essay"
             class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20"
           >
@@ -512,7 +513,7 @@
               <span :class="{ 'text-green-400': stepCompleted.test }">
                 {{ stepCompleted.test ? "✓" : "6" }}. Тест
               </span>
-              <span :class="{ 'text-green-400': stepCompleted.essay }">
+              <span v-if="lesson.requires_essay" :class="{ 'text-green-400': stepCompleted.essay }">
                 {{ stepCompleted.essay ? "✓" : "7" }}. Эссе
               </span>
             </div>
