@@ -150,7 +150,7 @@
           class="line-clamp-2"
           :class="event.is_cancelled ? 'text-white/40 line-through' : 'text-white/80'"
         >
-          {{ event.description }}
+          {{ stripHtml(event.description) }}
         </p>
         
         <!-- Местоположение (если есть) -->
@@ -260,6 +260,11 @@ const formatDate = (dateString: string) => {
     month: 'long', 
     year: 'numeric' 
   })
+}
+
+const stripHtml = (html: string): string => {
+  if (!html) return ''
+  return html.replace(/<[^>]*>/g, '')
 }
 
 // Обработчик ошибки загрузки изображения

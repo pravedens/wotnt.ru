@@ -55,6 +55,11 @@ const formatEventDate = (event: Event) => {
   return parts.join(' • ') || 'Дата уточняется'
 }
 
+const stripHtml = (html: string): string => {
+  if (!html) return ''
+  return html.replace(/<[^>]*>/g, '')
+}
+
 // ✅ Swiper refs
 const swiperCreativeRef = ref(null)
 
@@ -129,7 +134,7 @@ onMounted(() => {
                 
                 <!-- Описание -->
                 <p v-if="event.description" class="text-white/80 mt-2 line-clamp-2">
-                  {{ event.description }}
+                  {{ stripHtml(event.description) }}
                 </p>
               </div>
             </NuxtLink>
