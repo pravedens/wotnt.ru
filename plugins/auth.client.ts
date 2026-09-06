@@ -2,45 +2,67 @@ export default defineNuxtPlugin(async () => {
   const authStore = useAuthStore();
   const route = useRoute();
 
-  // ✅ Восстанавливаем токен из localStorage ВСЕГДА (на всех страницах)
-  if (import.meta.client) {
+  // ✅ Восстанавливаем токен ТОЛЬКО если не главная страница
+  if (import.meta.client && route.path !== "/") {
     const token = localStorage.getItem('auth_token');
-    const userStr = localStorage.getItem('auth_user');
-    const rolesStr = localStorage.getItem('auth_roles');
     
-    if (token && userStr && !authStore.token) {
-      authStore.token = token;
-      authStore.user = JSON.parse(userStr);
-      authStore.roles = rolesStr ? JSON.parse(rolesStr) : [];
-      console.log('🔑 Токен восстановлен из localStorage (plugin)');
+    if (token) {
+      // ✅ Проверяем токен на сервере ДО восстановления
+      try {
+        const { $api } = useApi();
+        const response = await $api('/user/check-token', {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        
+        if (response.success && response.user) {
+          authStore.token = token;
+          authStore.user = response.user;
+          authStore.roles = response.roles || [];
+          console.log('🔑 Токен восстановлен и проверен (plugin)');
+        } else {
+          // ❌ Токен невалидный — очищаем
+          localStorage.removeItem('auth_token');
+          localStorage.removeItem('auth_user');
+          localStorage.removeItem('auth_roles');
+          console.log('❌ Невалидный токен, очищено');
+        }
+      } catch (err) {
+        // ❌ Ошибка проверки — очищаем
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('auth_user');
+        localStorage.removeItem('auth_roles');
+        console.log('❌ Ошибка проверки токена, очищено');
+      }
     }
-  }
-
-  // ✅ Запускаем проверку токена ТОЛЬКО если НЕ главная страница
-  if (route.path !== "/") {
-    await authStore.init();
-  } else {
-    // ✅ На главной - отмечаем как инициализированный
+  } else if (route.path === "/") {
+    // ✅ На главной - пропускаем авторизацию
     authStore.initialized = true;
     console.log('⏭️ Плагин: главная страница - пропускаем проверку авторизации');
   }
 
-  if (import.meta.client) {
-    // ✅ Проверяем, нужно ли обновить сессию
+  // ✅ Refresh сессии ТОЛЬКО если токен валидный
+  if (import.meta.client && authStore.isAuthenticated) {
     const lastActivity = localStorage.getItem("last_activity");
     const now = Date.now();
 
-    // Если прошло больше 30 минут с последней активности, обновляем сессию
     if (lastActivity && now - parseInt(lastActivity) > 30 * 60 * 1000) {
       await authStore.refreshSession();
     }
 
-    // ✅ Периодически обновляем сессию (каждые 15 минут)
+    // ✅ Периодическое обновление с проверкой
     setInterval(
       async () => {
-        if (authStore.isAuthenticated) {
-          await authStore.refreshSession();
-          console.log("🔄 Session refreshed");
+        if (authStore.isAuthenticated && authStore.token) {
+          try {
+            await authStore.refreshSession();
+            console.log("🔄 Session refreshed");
+          } catch (err) {
+            // ❌ Если refresh не удался — разлогиниваем
+            authStore.logout();
+            console.log("❌ Session refresh failed, logged out");
+          }
         }
       },
       15 * 60 * 1000,
