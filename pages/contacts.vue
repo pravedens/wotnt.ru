@@ -3,7 +3,10 @@
     <div class="container mx-auto px-4">
       <!-- Хлебные крошки -->
       <nav class="flex items-center gap-2 text-white/70 mb-6">
-        <NuxtLink to="/" class="hover:text-white transition">Главная</NuxtLink>
+        <NuxtLink to="/" class="hover:text-white transition">
+          Главная
+        </NuxtLink>
+
         <svg
           class="w-4 h-4"
           fill="none"
@@ -17,6 +20,7 @@
             d="M9 5l7 7-7 7"
           />
         </svg>
+
         <span class="text-white">Контакты</span>
       </nav>
 
@@ -55,9 +59,14 @@
                   />
                 </svg>
               </div>
+
               <div>
-                <h2 class="text-xl font-semibold text-white mb-2">Адрес</h2>
-                <p class="text-white/80">г. Нижний Тагил, ул. Чехова, 10</p>
+                <h2 class="text-xl font-semibold text-white mb-2">
+                  Адрес
+                </h2>
+                <p class="text-white/80">
+                  г. Нижний Тагил, ул. Чехова, 10
+                </p>
               </div>
             </div>
           </div>
@@ -84,13 +93,17 @@
                   />
                 </svg>
               </div>
+
               <div>
-                <h2 class="text-xl font-semibold text-white mb-2">Телефон</h2>
+                <h2 class="text-xl font-semibold text-white mb-2">
+                  Телефон
+                </h2>
                 <a
                   href="tel:+79991234567"
                   class="text-white/80 hover:text-white transition block"
-                  >+7 (999) ...</a
                 >
+                  +7 (999) ...
+                </a>
               </div>
             </div>
           </div>
@@ -117,13 +130,17 @@
                   />
                 </svg>
               </div>
+
               <div>
-                <h2 class="text-xl font-semibold text-white mb-2">Email</h2>
+                <h2 class="text-xl font-semibold text-white mb-2">
+                  Email
+                </h2>
                 <a
                   href="mailto:admin@wotgospel.ru"
                   class="text-white/80 hover:text-white transition block"
-                  >admin@wotgospel.ru</a
                 >
+                  admin@wotgospel.ru
+                </a>
               </div>
             </div>
           </div>
@@ -146,10 +163,12 @@
                   />
                 </svg>
               </div>
+
               <div>
                 <h2 class="text-xl font-semibold text-white mb-2">
                   Социальные сети
                 </h2>
+
                 <div class="flex flex-wrap gap-3 mt-2">
                   <a
                     href="https://vk.com/truechurch"
@@ -195,13 +214,18 @@
                   />
                 </svg>
               </div>
+
               <div>
                 <h2 class="text-xl font-semibold text-white mb-2">
                   Режим работы
                 </h2>
                 <div class="space-y-1 text-white/80">
-                  <p>🗓️ Воскресное служение: <strong>11:00</strong></p>
-                  <p>🙏 Молитвенная встреча: среда <strong>18:30</strong></p>
+                  <p>
+                    🗓️ Воскресное служение: <strong>11:00</strong>
+                  </p>
+                  <p>
+                    🙏 Молитвенная встреча: среда <strong>18:30</strong>
+                  </p>
                 </div>
               </div>
             </div>
@@ -235,36 +259,52 @@
           </h2>
 
           <form @submit.prevent="sendMessage" class="space-y-4">
-            <!-- Для неавторизованных — поля имени и email -->
+            <!-- Только гости вводят имя и email -->
             <template v-if="!isAuthenticated">
               <div>
-                <label class="block text-white/80 mb-2 text-sm">
+                <label
+                  for="contact-name"
+                  class="block text-white/80 mb-2 text-sm"
+                >
                   Ваше имя <span class="text-red-300">*</span>
                 </label>
+
                 <input
+                  id="contact-name"
                   v-model="form.name"
                   type="text"
+                  autocomplete="name"
+                  maxlength="255"
                   required
+                  :disabled="sending"
                   class="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-blue-400 transition"
                   placeholder="Иван Петров"
                 />
               </div>
 
               <div>
-                <label class="block text-white/80 mb-2 text-sm">
+                <label
+                  for="contact-email"
+                  class="block text-white/80 mb-2 text-sm"
+                >
                   Ваш Email <span class="text-red-300">*</span>
                 </label>
+
                 <input
+                  id="contact-email"
                   v-model="form.email"
                   type="email"
+                  autocomplete="email"
+                  maxlength="255"
                   required
+                  :disabled="sending"
                   class="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-blue-400 transition"
                   placeholder="ivan@example.com"
                 />
               </div>
             </template>
 
-            <!-- Для авторизованных — показываем данные из профиля -->
+            <!-- Данные авторизованного пользователя -->
             <div v-else class="bg-white/5 rounded-lg p-3 text-white/70 text-sm">
               <p>
                 📧 От: <strong>{{ userEmail }}</strong>
@@ -276,32 +316,48 @@
 
             <!-- Выбор получателя -->
             <div>
-              <label class="block text-white/80 mb-2 text-sm">
+              <label
+                for="contact-recipient"
+                class="block text-white/80 mb-2 text-sm"
+              >
                 Кому отправить <span class="text-red-300">*</span>
               </label>
 
               <select
+                id="contact-recipient"
                 v-model="form.recipientRole"
                 required
+                :disabled="sending || loadingRecipients"
                 class="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-blue-400 transition"
-                @change="onRecipientChange"
               >
-                <option value="" disabled>Выберите получателя</option>
+                <option value="" disabled>
+                  {{
+                    loadingRecipients
+                      ? "Загрузка получателей..."
+                      : "Выберите получателя"
+                  }}
+                </option>
+
                 <option
                   v-for="recipient in recipients"
                   :key="recipient.role"
                   :value="recipient.role"
                   :disabled="!recipient.has_recipients"
-                  :class="{ 'opacity-50': !recipient.has_recipients }"
                 >
                   {{ recipient.name }}
                   ({{ recipient.count }}
                   {{ getRecipientWord(recipient.count) }})
-                  <span v-if="!recipient.has_recipients">
-                    - нет получателей</span
-                  >
+                  {{ recipient.has_recipients ? "" : "— нет получателей" }}
                 </option>
               </select>
+
+              <p
+                v-if="recipientsError"
+                class="mt-2 text-sm text-red-300"
+                role="alert"
+              >
+                {{ recipientsError }}
+              </p>
 
               <!-- Описание выбранного получателя -->
               <div
@@ -327,40 +383,100 @@
 
             <!-- Сообщение -->
             <div>
-              <label class="block text-white/80 mb-2 text-sm"
-                >Сообщение <span class="text-red-300">*</span></label
+              <label
+                for="contact-message"
+                class="block text-white/80 mb-2 text-sm"
               >
+                Сообщение <span class="text-red-300">*</span>
+              </label>
+
               <textarea
+                id="contact-message"
                 v-model="form.message"
                 required
                 rows="4"
+                maxlength="5000"
+                :disabled="sending"
                 class="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-blue-400 transition resize-none"
                 placeholder="Ваше сообщение..."
                 @input="sanitizeMessage"
               ></textarea>
+
+              <p class="mt-1 text-right text-xs text-white/50">
+                {{ form.message.length }} / 5000
+              </p>
             </div>
 
-            <!-- Капча (только для неавторизованных) -->
-            <div v-if="!isAuthenticated" class="flex justify-center">
-              <div
-                id="contacts-captcha-container"
-                class="smart-captcha"
-                :data-sitekey="siteKey"
-                data-hl="ru"
-                style="height: 80px"
-              ></div>
+            <!-- Капча обязательна для всех пользователей -->
+            <div class="space-y-2">
+              <div class="flex justify-center">
+                <!-- Виджет создаётся вручную через smartCaptcha.render() -->
+                <div
+                  id="contacts-captcha-container"
+                  ref="captchaContainer"
+                  class="contacts-captcha"
+                ></div>
+              </div>
+
+              <p
+                v-if="captchaLoading"
+                class="text-center text-sm text-white/60"
+                role="status"
+              >
+                Загрузка проверки...
+              </p>
+
+              <div v-if="captchaError" class="text-center" role="alert">
+                <p class="text-sm text-red-300">
+                  {{ captchaError }}
+                </p>
+
+                <button
+                  type="button"
+                  class="mt-2 text-sm text-blue-300 underline hover:text-blue-200 transition"
+                  :disabled="captchaLoading || sending"
+                  @click="initCaptcha"
+                >
+                  Повторить загрузку капчи
+                </button>
+              </div>
+
+              <p
+                v-else-if="!captchaLoading && !form.captchaToken"
+                class="text-center text-sm text-white/60"
+              >
+                Подтвердите, что вы не робот, перед отправкой сообщения.
+              </p>
             </div>
 
             <div class="text-center">
-              <AppButton type="submit" variant="submit" :disabled="sending">
+              <AppButton
+                type="submit"
+                variant="submit"
+                :disabled="
+                  sending ||
+                  loadingRecipients ||
+                  captchaLoading ||
+                  !form.captchaToken
+                "
+              >
                 {{ sending ? "Отправка..." : "Отправить" }}
               </AppButton>
             </div>
 
-            <div v-if="formSuccess" class="text-green-300 text-sm text-center">
+            <div
+              v-if="formSuccess"
+              class="text-green-300 text-sm text-center"
+              role="status"
+            >
               Сообщение отправлено! Мы свяжемся с вами.
             </div>
-            <div v-if="formError" class="text-red-300 text-sm text-center">
+
+            <div
+              v-if="formError"
+              class="text-red-300 text-sm text-center"
+              role="alert"
+            >
               {{ formError }}
             </div>
           </form>
@@ -371,8 +487,15 @@
 </template>
 
 <script setup lang="ts">
+import {
+  computed,
+  onBeforeUnmount,
+  onMounted,
+  reactive,
+  ref,
+  watch,
+} from "vue";
 import { useAuthStore } from "~/stores/auth";
-import { useRoute } from "vue-router";
 import { useApi } from "~/composables/useApi";
 
 // ============================================
@@ -382,7 +505,7 @@ import { useApi } from "~/composables/useApi";
 interface Recipient {
   role: string;
   name: string;
-  emails: string[];
+  emails?: string[];
   count: number;
   description: string;
   has_recipients: boolean;
@@ -399,21 +522,48 @@ interface SendMessageResponse {
   message?: string;
 }
 
+interface ApiError {
+  data?: {
+    message?: string;
+    errors?: Record<string, string[]>;
+  };
+}
+
+interface SmartCaptchaApi {
+  render: (
+    container: HTMLElement,
+    options: {
+      sitekey: string;
+      hl: string;
+      callback: (token: string) => void;
+    },
+  ) => number;
+
+  reset: (widgetId: number) => void;
+  destroy: (widgetId: number) => void;
+
+  subscribe: (
+    widgetId: number,
+    event: "token-expired",
+    callback: () => void,
+  ) => () => void;
+}
+
 // ============================================
 // COMPOSABLES
 // ============================================
 
-const route = useRoute();
 const authStore = useAuthStore();
 const { $api } = useApi();
+const config = useRuntimeConfig();
+
+const siteKey = String(config.public.yandexCaptchaSiteKey || "");
 
 // ============================================
-// STATE
+// AUTH
 // ============================================
 
 const isAuthenticated = computed(() => authStore.isAuthenticated);
-const token = computed(() => authStore.token);
-const siteKey = useRuntimeConfig().public.yandexCaptchaSiteKey;
 
 const userName = computed(
   () =>
@@ -421,14 +571,21 @@ const userName = computed(
     authStore.user?.email?.split("@")[0] ||
     "Пользователь",
 );
+
 const userEmail = computed(() => authStore.user?.email || "");
+
+// ============================================
+// RECIPIENTS
+// ============================================
 
 const recipients = ref<Recipient[]>([]);
 const loadingRecipients = ref(false);
-const selectedRecipientDescription = ref("");
+const recipientsError = ref("");
+
+let recipientsRequestId = 0;
 
 // ============================================
-// FORM STATE
+// FORM
 // ============================================
 
 const form = reactive({
@@ -443,52 +600,104 @@ const sending = ref(false);
 const formSuccess = ref(false);
 const formError = ref("");
 
+const selectedRecipientDescription = computed(() => {
+  const selected = recipients.value.find(
+    (recipient) => recipient.role === form.recipientRole,
+  );
+
+  return selected?.description || "";
+});
+
 // ============================================
-// METHODS
+// CAPTCHA STATE
 // ============================================
 
-const getRecipientWord = (count: number) => {
-  if (count === 1) return "получатель";
-  if (count >= 2 && count <= 4) return "получателя";
+const captchaContainer = ref<HTMLElement | null>(null);
+const captchaLoading = ref(false);
+const captchaError = ref("");
+
+let captchaWidgetId: number | null = null;
+let unsubscribeCaptchaExpired: (() => void) | null = null;
+let componentDestroyed = false;
+let successTimer: ReturnType<typeof setTimeout> | null = null;
+
+// ============================================
+// RECIPIENT METHODS
+// ============================================
+
+const getRecipientWord = (count: number): string => {
+  const lastTwoDigits = count % 100;
+  const lastDigit = count % 10;
+
+  if (lastTwoDigits >= 11 && lastTwoDigits <= 14) {
+    return "получателей";
+  }
+
+  if (lastDigit === 1) {
+    return "получатель";
+  }
+
+  if (lastDigit >= 2 && lastDigit <= 4) {
+    return "получателя";
+  }
+
   return "получателей";
 };
 
 const loadRecipients = async () => {
+  const requestId = ++recipientsRequestId;
+
   loadingRecipients.value = true;
+  recipientsError.value = "";
 
   try {
     const url = isAuthenticated.value
       ? "/contacts/recipients"
       : "/contacts/recipients-public";
-    // ✅ Типизируем ответ
+
     const response = await $api<ContactsResponse>(url);
 
-    if (response.success) {
-      recipients.value = response.recipients || [];
+    // Не применяем устаревший ответ после смены авторизации.
+    if (componentDestroyed || requestId !== recipientsRequestId) {
+      return;
     }
-  } catch (err) {
+
+    if (!response.success) {
+      recipients.value = [];
+      recipientsError.value =
+        response.message || "Не удалось загрузить получателей.";
+      return;
+    }
+
+    recipients.value = response.recipients || [];
+
+    const selectedIsAvailable = recipients.value.some(
+      (recipient) =>
+        recipient.role === form.recipientRole &&
+        recipient.has_recipients,
+    );
+
+    if (!selectedIsAvailable) {
+      form.recipientRole = "";
+    }
+  } catch (err: unknown) {
     console.error("Error loading recipients:", err);
+
+    if (!componentDestroyed && requestId === recipientsRequestId) {
+      recipients.value = [];
+      recipientsError.value =
+        "Не удалось загрузить получателей. Обновите страницу.";
+    }
   } finally {
-    loadingRecipients.value = false;
-  }
-};
-
-const onRecipientChange = () => {
-  const selected = recipients.value.find((r) => r.role === form.recipientRole);
-  selectedRecipientDescription.value = selected?.description || "";
-};
-
-const getCsrfToken = (): string | null => {
-  if (typeof document === "undefined") return null;
-  const cookies = document.cookie.split(";").map((c) => c.trim());
-  for (const cookie of cookies) {
-    const [name, value] = cookie.split("=");
-    if (name === "XSRF-TOKEN" && value) {
-      return decodeURIComponent(value);
+    if (!componentDestroyed && requestId === recipientsRequestId) {
+      loadingRecipients.value = false;
     }
   }
-  return null;
 };
+
+// ============================================
+// MESSAGE METHODS
+// ============================================
 
 const sanitizeMessage = () => {
   form.message = form.message.replace(/<[^>]*>/g, "");
@@ -496,30 +705,198 @@ const sanitizeMessage = () => {
   form.message = form.message.replace(/on\w+=/gi, "");
 };
 
-const getCaptchaToken = (): string | null => {
-  if (typeof document === "undefined") return null;
-  const container = document.getElementById("contacts-captcha-container");
-  if (!container) return null;
-  const input = container.querySelector(
-    'input[name="smart-token"]',
-  ) as HTMLInputElement;
-  return input?.value || null;
+const clearSuccessTimer = () => {
+  if (successTimer !== null) {
+    clearTimeout(successTimer);
+    successTimer = null;
+  }
 };
 
-const initCaptcha = () => {
-  if (isAuthenticated.value) return;
-  if (typeof document === "undefined") return;
-  if (document.querySelector("#yandex-captcha-script")) return;
+// ============================================
+// CAPTCHA METHODS
+// ============================================
 
-  const script = document.createElement("script");
-  script.id = "yandex-captcha-script";
-  script.src = "https://smartcaptcha.cloud.yandex.ru/captcha.js";
-  script.defer = true;
-  document.head.appendChild(script);
+const getSmartCaptcha = (): SmartCaptchaApi | undefined => {
+  if (typeof window === "undefined") {
+    return undefined;
+  }
+
+  return (
+    window as Window & {
+      smartCaptcha?: SmartCaptchaApi;
+    }
+  ).smartCaptcha;
 };
+
+const loadCaptchaScript = (): Promise<void> => {
+  if (getSmartCaptcha()) {
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve, reject) => {
+    let script = document.getElementById(
+      "yandex-captcha-script",
+    ) as HTMLScriptElement | null;
+
+    const isNewScript = script === null;
+
+    if (!script) {
+      script = document.createElement("script");
+      script.id = "yandex-captcha-script";
+
+      // Явная отрисовка виджета через render().
+      script.src =
+        "https://smartcaptcha.cloud.yandex.ru/captcha.js?render=onload";
+      script.async = true;
+    }
+
+    const scriptElement = script;
+
+    const cleanup = () => {
+      clearTimeout(timeoutId);
+      scriptElement.removeEventListener("load", onLoad);
+      scriptElement.removeEventListener("error", onError);
+    };
+
+    const onLoad = () => {
+      cleanup();
+
+      if (getSmartCaptcha()) {
+        resolve();
+      } else {
+        scriptElement.remove();
+        reject(new Error("API SmartCaptcha недоступен"));
+      }
+    };
+
+    const onError = () => {
+      cleanup();
+      scriptElement.remove();
+      reject(new Error("Не удалось загрузить скрипт SmartCaptcha"));
+    };
+
+    const timeoutId = setTimeout(() => {
+      cleanup();
+
+      // Скрипт мог успеть загрузиться из другого компонента.
+      if (getSmartCaptcha()) {
+        resolve();
+        return;
+      }
+
+      scriptElement.remove();
+      reject(new Error("Превышено время ожидания SmartCaptcha"));
+    }, 15000);
+
+    scriptElement.addEventListener("load", onLoad);
+    scriptElement.addEventListener("error", onError);
+
+    if (isNewScript) {
+      document.head.appendChild(scriptElement);
+    }
+  });
+};
+
+const destroyCaptcha = () => {
+  unsubscribeCaptchaExpired?.();
+  unsubscribeCaptchaExpired = null;
+
+  if (captchaWidgetId !== null) {
+    getSmartCaptcha()?.destroy(captchaWidgetId);
+    captchaWidgetId = null;
+  }
+
+  form.captchaToken = "";
+};
+
+const initCaptcha = async () => {
+  if (
+    typeof document === "undefined" ||
+    componentDestroyed ||
+    captchaLoading.value ||
+    captchaWidgetId !== null
+  ) {
+    return;
+  }
+
+  captchaError.value = "";
+  form.captchaToken = "";
+
+  if (!siteKey) {
+    captchaError.value = "Не настроен публичный ключ капчи.";
+    return;
+  }
+
+  captchaLoading.value = true;
+
+  try {
+    await loadCaptchaScript();
+
+    if (componentDestroyed) {
+      return;
+    }
+
+    const captcha = getSmartCaptcha();
+    const container = captchaContainer.value;
+
+    if (!captcha || !container) {
+      throw new Error("Не удалось инициализировать SmartCaptcha");
+    }
+
+    captchaWidgetId = captcha.render(container, {
+      sitekey: siteKey,
+      hl: "ru",
+
+      callback: (captchaToken: string) => {
+        if (!componentDestroyed) {
+          form.captchaToken = captchaToken;
+        }
+      },
+    });
+
+    unsubscribeCaptchaExpired = captcha.subscribe(
+      captchaWidgetId,
+      "token-expired",
+      () => {
+        if (!componentDestroyed) {
+          form.captchaToken = "";
+        }
+      },
+    );
+  } catch (err: unknown) {
+    console.error("Captcha initialization error:", err);
+
+    if (!componentDestroyed) {
+      destroyCaptcha();
+      captchaError.value =
+        "Не удалось загрузить капчу. Проверьте соединение и повторите попытку.";
+    }
+  } finally {
+    if (!componentDestroyed) {
+      captchaLoading.value = false;
+    }
+  }
+};
+
+const resetCaptcha = () => {
+  form.captchaToken = "";
+
+  if (captchaWidgetId !== null) {
+    getSmartCaptcha()?.reset(captchaWidgetId);
+  }
+};
+
+// ============================================
+// SEND MESSAGE
+// ============================================
 
 const sendMessage = async () => {
-  sending.value = true;
+  if (sending.value) {
+    return;
+  }
+
+  clearSuccessTimer();
+
   formSuccess.value = false;
   formError.value = "";
 
@@ -527,71 +904,113 @@ const sendMessage = async () => {
 
   if (!form.message.trim()) {
     formError.value = "Сообщение не может быть пустым";
-    sending.value = false;
+    return;
+  }
+
+  if (form.message.length > 5000) {
+    formError.value = "Сообщение не должно превышать 5000 символов";
+    return;
+  }
+
+  if (loadingRecipients.value) {
+    formError.value = "Дождитесь загрузки получателей";
     return;
   }
 
   if (!form.recipientRole) {
     formError.value = "Пожалуйста, выберите получателя сообщения";
-    sending.value = false;
     return;
   }
 
-  const body: Record<string, any> = {
-    message: form.message.trim(),
-    recipient_role: form.recipientRole,
-  };
+  const selectedRecipient = recipients.value.find(
+    (recipient) => recipient.role === form.recipientRole,
+  );
 
-  if (!isAuthenticated.value) {
-    if (!form.name.trim() || !form.email.trim()) {
-      formError.value = "Пожалуйста, заполните имя и email";
-      sending.value = false;
-      return;
-    }
-
-    const captchaToken = getCaptchaToken();
-    if (!captchaToken) {
-      formError.value = "Пожалуйста, подтвердите, что вы не робот";
-      sending.value = false;
-      return;
-    }
-
-    body.name = form.name.trim();
-    body.email = form.email.trim();
-    body.captcha_token = captchaToken;
+  if (!selectedRecipient?.has_recipients) {
+    formError.value = "Выбранный получатель сейчас недоступен";
+    return;
   }
 
+  if (
+    !isAuthenticated.value &&
+    (!form.name.trim() || !form.email.trim())
+  ) {
+    formError.value = "Пожалуйста, заполните имя и email";
+    return;
+  }
+
+  // Проверка капчи обязательна для всех.
+  if (!form.captchaToken) {
+    formError.value = "Пожалуйста, подтвердите, что вы не робот";
+    return;
+  }
+
+  const body: Record<string, string> = {
+    message: form.message.trim(),
+    recipient_role: form.recipientRole,
+    captcha_token: form.captchaToken,
+  };
+
+  // Для авторизованных имя и email определяются на сервере.
+  if (!isAuthenticated.value) {
+    body.name = form.name.trim();
+    body.email = form.email.trim();
+  }
+
+  sending.value = true;
+
   try {
-    // ✅ Типизируем ответ
     const response = await $api<SendMessageResponse>("/contacts", {
       method: "POST",
       body,
     });
 
+    if (componentDestroyed) {
+      return;
+    }
+
     if (response.success) {
       formSuccess.value = true;
       form.message = "";
       form.recipientRole = "";
-      selectedRecipientDescription.value = "";
+
       if (!isAuthenticated.value) {
         form.name = "";
         form.email = "";
-        const container = document.getElementById("contacts-captcha-container");
-        if (container) container.innerHTML = "";
-        initCaptcha();
       }
 
-      setTimeout(() => {
+      successTimer = setTimeout(() => {
         formSuccess.value = false;
+        successTimer = null;
       }, 5000);
     } else {
       formError.value = response.message || "Ошибка отправки";
     }
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("Error sending message:", err);
-    formError.value = err.data?.message || "Ошибка отправки. Попробуйте позже.";
+
+    if (!componentDestroyed) {
+      const apiError = err as ApiError;
+      const errors = apiError.data?.errors;
+
+      const firstValidationError = errors
+        ? Object.values(errors).flat()[0]
+        : undefined;
+
+      formError.value =
+        errors?.captcha_token?.[0] ||
+        firstValidationError ||
+        apiError.data?.message ||
+        "Ошибка отправки. Попробуйте позже.";
+    }
   } finally {
     sending.value = false;
+
+    // Токен мог быть использован сервером даже при ошибке.
+    // Для следующего запроса пользователь проходит капчу заново.
+    if (!componentDestroyed) {
+      resetCaptcha();
+    }
   }
 };
 
@@ -600,29 +1019,38 @@ const sendMessage = async () => {
 // ============================================
 
 onMounted(() => {
-  loadRecipients();
-  if (!isAuthenticated.value) {
-    setTimeout(initCaptcha, 100);
-  }
+  void loadRecipients();
+  void initCaptcha();
 });
 
-watch(
-  isAuthenticated,
-  (newVal) => {
-    loadRecipients();
-    if (!newVal) {
-      setTimeout(initCaptcha, 100);
-    }
-  },
-  { immediate: true },
-);
+watch(isAuthenticated, () => {
+  if (typeof window === "undefined" || componentDestroyed) {
+    return;
+  }
+
+  void loadRecipients();
+  resetCaptcha();
+});
+
+onBeforeUnmount(() => {
+  componentDestroyed = true;
+
+  // Ответы незавершённых запросов получателей больше не применяются.
+  recipientsRequestId++;
+
+  clearSuccessTimer();
+  destroyCaptcha();
+});
 </script>
 
 <style scoped>
-.smart-captcha {
+.contacts-captcha {
   min-height: 80px;
-  display: flex;
-  justify-content: center;
   width: 100%;
+}
+
+select option {
+  background-color: #1e3a8a;
+  color: #fff;
 }
 </style>
