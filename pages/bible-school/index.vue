@@ -63,7 +63,7 @@
             </h3>
             <p
               class="text-white/60 text-sm line-clamp-2"
-              v-html="stripTags(course.description)"
+              v-sanitize-html="stripTags(course.description)"
             ></p>
 
             <div class="mt-4">

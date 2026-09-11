@@ -54,10 +54,10 @@
         </div>
         
         <!-- Контент (HTML) -->
-        <div v-if="event?.content" class="text-white/80 prose prose-invert max-w-none" v-html="event.content"></div>
+        <div v-if="event?.content" class="text-white/80 prose prose-invert max-w-none" v-sanitize-html="event.content"></div>
         
         <!-- Доп. информация -->
-        <div v-if="event?.info" class="text-white/80 prose prose-invert max-w-none" v-html="event.info"></div>
+        <div v-if="event?.info" class="text-white/80 prose prose-invert max-w-none" v-sanitize-html="event.info"></div>
         
         <!-- Кнопка перехода на полную страницу -->
         <div class="mt-6 text-center">

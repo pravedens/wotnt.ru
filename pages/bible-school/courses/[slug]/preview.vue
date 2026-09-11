@@ -14,7 +14,7 @@
       </div>
       
       <h1 class="text-3xl font-bold text-white mb-4">{{ course?.title || 'Курс не найден' }}</h1>
-      <div class="text-white/80 mb-8" v-html="course?.description || ''"></div>
+      <div class="text-white/80 mb-8" v-sanitize-html="course?.description || ''"></div>
       
       <!-- Уроки курса -->
       <h2 class="text-2xl font-bold text-white mb-4">📚 Уроки курса</h2>

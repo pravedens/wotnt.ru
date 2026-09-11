@@ -57,11 +57,7 @@
                 👁️ {{ currentArticle.views }} просмотров
               </span>
             </div>
-
-            <div
-              class="text-white/80 text-lg leading-relaxed"
-              v-html="currentArticle.content"
-            ></div>
+            <div class="text-white/80 text-lg leading-relaxed" v-sanitize-html="currentArticle.content"></div>
           </div>
         </div>
 

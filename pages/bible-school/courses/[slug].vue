@@ -32,7 +32,7 @@
           class="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 mb-8"
         >
           <h1 class="text-3xl font-bold text-white mb-4">{{ course.title }}</h1>
-          <p class="text-white/70" v-html="course.description"></p>
+          <p class="text-white/70" v-sanitize-html="course.description"></p>
           <div v-if="course.progress" class="mt-6">
             <div class="flex justify-between text-sm text-white/50 mb-2">
               <span>Ваш прогресс</span>

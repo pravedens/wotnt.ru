@@ -45,7 +45,7 @@
             <div
               v-if="lesson.call_question"
               class="text-white/80 prose"
-              v-html="lesson.call_question"
+              v-sanitize-html="lesson.call_question"
             ></div>
             <div
               v-if="lesson.call_answer"
@@ -56,7 +56,7 @@
               </p>
               <div
                 class="text-white/80 prose"
-                v-html="lesson.call_answer"
+                v-sanitize-html="lesson.call_answer"
               ></div>
             </div>
             <div
@@ -103,7 +103,7 @@
                 </p>
                 <div
                   class="text-white/80 prose italic"
-                  v-html="verse.text"
+                  v-sanitize-html="verse.text"
                 ></div>
               </div>
             </div>
@@ -141,7 +141,7 @@
             <div
               v-if="lesson.content"
               class="text-white/80 prose max-w-none"
-              v-html="lesson.content"
+              v-sanitize-html="lesson.content"
             ></div>
             <div v-else class="text-white/50 text-center py-4">
               Контент для этого урока пока не добавлен
@@ -239,7 +239,7 @@
             <div
               v-if="lesson.practice_task"
               class="text-white/80 prose"
-              v-html="lesson.practice_task"
+              v-sanitize-html="lesson.practice_task"
             ></div>
             <div v-else class="text-white/50 text-center py-4">
               Практическое задание для этого урока пока не добавлено

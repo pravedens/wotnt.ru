@@ -18,7 +18,7 @@
           >
           <div class="p-6">
             <h2 class="text-xl font-bold text-white mb-2">{{ course.title }}</h2>
-            <p class="text-white/60 text-sm mb-4" v-html="stripTags(course.description)"></p>
+            <p class="text-white/60 text-sm mb-4" v-sanitize-html="stripTags(course.description)"></p>
             <button 
               @click="openCoursePreview(course)"
               class="w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"

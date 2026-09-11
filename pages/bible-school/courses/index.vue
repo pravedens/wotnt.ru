@@ -32,7 +32,7 @@
           </div>
           <div class="p-6">
             <h2 class="text-xl font-bold text-white mb-2">{{ course.title }}</h2>
-            <p class="text-white/60 text-sm line-clamp-2" v-html="stripTags(course.description)"></p>
+            <p class="text-white/60 text-sm line-clamp-2" v-sanitize-html="stripTags(course.description)"></p>
             <div v-if="course.progress" class="mt-4">
               <div class="flex justify-between text-xs text-white/50 mb-1">
                 <span>Прогресс</span>

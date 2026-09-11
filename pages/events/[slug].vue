@@ -87,8 +87,8 @@
         <!-- Краткое описание -->
         <div v-if="event.description" class="bg-white/10 backdrop-blur-lg rounded-2xl p-3 border border-white/20 mb-8">
             <p class="text-white/80 whitespace-pre-line leading-relaxed border-l-4 border-indigo-500 pl-3 italic mb-8">{{ stripHtml(event.description) }}</p>
-            <div class="text-white/80 prose prose-invert max-w-none border-l-4 border-red-500 pl-3 mb-8" v-html="event.content"></div>
-            <div class="text-white/80 prose prose-invert max-w-none border-l-4 border-green-500 pl-3" v-html="event.info"></div>
+            <div class="text-white/80 prose prose-invert max-w-none border-l-4 border-red-500 pl-3 mb-8" v-sanitize-html="event.content"></div>
+            <div class="text-white/80 prose prose-invert max-w-none border-l-4 border-green-500 pl-3" v-sanitize-html="event.info"></div>
         </div>
       </article>
     </div>

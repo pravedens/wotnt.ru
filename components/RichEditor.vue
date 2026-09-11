@@ -29,7 +29,7 @@
         ➡️
       </button>
       <span class="w-px h-6 bg-white/20"></span>
-      <button type="button" @click="execCommand('createLink')" class="px-2 py-1 bg-white/10 rounded hover:bg-white/20" title="Вставить ссылку">
+      <button type="button" @click="insertLink" class="px-2 py-1 bg-white/10 rounded hover:bg-white/20" title="Вставить ссылку">
         🔗
       </button>
       <button type="button" @click="insertImage" class="px-2 py-1 bg-white/10 rounded hover:bg-white/20" title="Вставить изображение">
@@ -45,6 +45,7 @@
       :data-placeholder="placeholder"
       @input="onInput"
       @blur="onBlur"
+      @paste="onPaste"
       @keydown="saveSelection"
       @mouseup="saveSelection"
     ></div>
@@ -52,6 +53,8 @@
 </template>
 
 <script setup>
+import DOMPurify from 'isomorphic-dompurify'
+
 const props = defineProps({
   modelValue: {
     type: String,
@@ -114,16 +117,51 @@ const execCommand = (command, value = null) => {
 
 const insertImage = () => {
   const url = prompt('Введите URL изображения:');
-  if (url) {
-    execCommand('insertImage', url);
+  if (!url) return;
+
+  // Разрешаем только http/https
+  if (!/^https?:\/\//i.test(url)) {
+    alert('URL изображения должен начинаться с http:// или https://');
+    return;
   }
+
+  execCommand('insertImage', url);
+};
+
+const insertLink = () => {
+  const url = prompt('Введите URL:');
+  if (!url) return;
+
+  // Разрешаем только http/https/mailto/tel
+  if (!/^(https?:\/\/|mailto:|tel:)/i.test(url)) {
+    alert('Разрешены только ссылки http://, https://, mailto: или tel:');
+    return;
+  }
+
+  execCommand('createLink', url);
 };
 
 const emitInput = () => {
   if (editorRef.value) {
-    const html = editorRef.value.innerHTML;
-    if (html !== props.modelValue) {
-      emit('update:modelValue', html);
+    const rawHtml = editorRef.value.innerHTML;
+    const cleanHtml = DOMPurify.sanitize(rawHtml);
+
+    if (cleanHtml !== props.modelValue) {
+      // Если санитизация что-то вырезала — синхронизируем DOM
+      if (cleanHtml !== rawHtml) {
+        const selection = window.getSelection();
+        const hadFocus = document.activeElement === editorRef.value;
+        editorRef.value.innerHTML = cleanHtml;
+        if (hadFocus) {
+          // Ставим курсор в конец, чтобы не потерять фокус
+          const range = document.createRange();
+          range.selectNodeContents(editorRef.value);
+          range.collapse(false);
+          selection?.removeAllRanges();
+          selection?.addRange(range);
+        }
+      }
+      emit('update:modelValue', cleanHtml);
     }
   }
 };
@@ -136,11 +174,25 @@ const onBlur = () => {
   emitInput();
 };
 
+// Обработка вставки: санируем HTML до попадания в редактор
+const onPaste = (e) => {
+  e.preventDefault();
+  const html = e.clipboardData?.getData('text/html');
+  const text = e.clipboardData?.getData('text/plain');
+
+  if (html) {
+    const clean = DOMPurify.sanitize(html);
+    document.execCommand('insertHTML', false, clean);
+  } else if (text) {
+    document.execCommand('insertText', false, text);
+  }
+};
+
 // Синхронизация внешнего изменения (без сброса курсора)
 watch(() => props.modelValue, (newVal) => {
   if (editorRef.value && editorRef.value.innerHTML !== newVal) {
     saveSelection();
-    editorRef.value.innerHTML = newVal || '';
+    editorRef.value.innerHTML = DOMPurify.sanitize(newVal || '');
     nextTick(() => {
       restoreSelection();
     });
@@ -149,7 +201,7 @@ watch(() => props.modelValue, (newVal) => {
 
 onMounted(() => {
   if (editorRef.value) {
-    editorRef.value.innerHTML = props.modelValue || '';
+    editorRef.value.innerHTML = DOMPurify.sanitize(props.modelValue || '');
     // Добавляем стиль для placeholder
     if (!props.modelValue) {
       editorRef.value.classList.add('empty');

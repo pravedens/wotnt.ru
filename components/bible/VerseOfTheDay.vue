@@ -17,7 +17,7 @@
           <div class="text-center">
             <h3 class="text-lg font-semibold text-blue-200 mb-2">{{ verse.title }}</h3>
             <div class="text-white/90 text-lg leading-relaxed italic prose prose-invert max-w-none">
-              <div v-html="cleanDescription"></div>
+              <div v-sanitize-html="cleanDescription"></div>
             </div>
           </div>
         </div>

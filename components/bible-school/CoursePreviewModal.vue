@@ -15,7 +15,7 @@
         </div>
         
         <h2 class="text-3xl font-bold text-white mb-4">{{ course.title }}</h2>
-        <div class="text-white/80 mb-6" v-html="course.description"></div>
+        <div class="text-white/80 mb-6" v-sanitize-html="course.description"></div>
         
         <!-- 1. Темы курса (только те, где есть уроки) -->
         <div v-if="filteredThemes.length" class="mb-6">
@@ -51,13 +51,13 @@
         <!-- 3. Что вы узнаете -->
         <div v-if="course.what_you_will_learn" class="mb-6 p-4 bg-blue-500/10 rounded-xl border border-blue-500/20">
           <h3 class="text-lg font-semibold text-white mb-2">🎯 Что вы узнаете</h3>
-          <div class="text-white/70" v-html="course.what_you_will_learn"></div>
+          <div class="text-white/70" v-sanitize-html="course.what_you_will_learn"></div>
         </div>
         
         <!-- 4. Практические навыки -->
         <div v-if="course.skills" class="mb-6 p-4 bg-green-500/10 rounded-xl border border-green-500/20">
           <h3 class="text-lg font-semibold text-white mb-2">💡 Практические навыки</h3>
-          <div class="text-white/70" v-html="course.skills"></div>
+          <div class="text-white/70" v-sanitize-html="course.skills"></div>
         </div>
         
         <!-- 5. Сертификат -->

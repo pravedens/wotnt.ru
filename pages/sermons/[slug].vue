@@ -416,7 +416,14 @@ const trackExternalLink = (platform: string) => {
 // Функция шаринга в Одноклассники
 const shareOnOK = () => {
   const shareUrl = `https://connect.ok.ru/dk?st.cmd=WidgetSharePreview&st.shareUrl=${encodeURIComponent(currentUrl.value)}&st.title=${encodeURIComponent(shareTitle.value)}&st.description=${encodeURIComponent(cleanDescription.value)}`;
-  window.open(shareUrl, "_blank", "width=600,height=400");
+  
+  // Защита: открываем только доверенный домен
+  if (!shareUrl.startsWith("https://connect.ok.ru/")) {
+    console.error("Blocked window.open for untrusted URL:", shareUrl);
+    return;
+  }
+  
+  window.open(shareUrl, "_blank", "width=600,height=400,noopener,noreferrer");
 };
 
 // Отслеживание шаринга в OK

@@ -79,7 +79,7 @@
         
         <!-- Основной контент -->
         <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 prose prose-invert max-w-none animate-fade-in">
-          <div class="text-white/80 leading-relaxed" v-html="about.content"></div>
+          <div class="text-white/80 leading-relaxed" v-sanitize-html="about.content"></div>
         </div>
         
         <!-- Навигация -->

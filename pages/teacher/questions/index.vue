@@ -13,7 +13,7 @@
             <tr v-for="q in questions" :key="q.id" class="border-t border-white/10">
               <td class="p-3">{{ q.lesson?.title }}</td>
               <td class="p-3">{{ getQuestionTypeLabel(q.type) }}</td>
-              <td class="p-3" v-html="q.question"></td>
+              <td class="p-3" v-sanitize-html="q.question"></td>
               <td class="p-3">{{ q.points }}</td>
               <td class="p-3 flex gap-2"><NuxtLink :to="`/teacher/questions/${q.id}`" class="px-3 py-1 bg-blue-500 rounded-lg">✏️</NuxtLink><button @click="deleteQuestion(q.id)" class="px-3 py-1 bg-red-500 rounded-lg">🗑️</button></td>
             </tr>

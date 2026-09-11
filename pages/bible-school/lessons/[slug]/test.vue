@@ -18,7 +18,7 @@
           <form @submit.prevent="submitTest" @keydown.enter.prevent class="space-y-8">
             <div v-for="(question, index) in questions" :key="question.id" class="bg-white/5 rounded-xl p-6 border border-white/10">
               <h3 class="text-lg font-semibold text-white mb-4">Вопрос {{ index + 1 }} ({{ question.points }} баллов)</h3>
-              <div class="text-white/80 mb-4 prose" v-html="question.question"></div>
+              <div class="text-white/80 mb-4 prose" v-sanitize-html="question.question"></div>
 
               <!-- 1. Одиночный выбор -->
               <div v-if="question.type === 'single_choice'" class="space-y-2">
@@ -136,7 +136,7 @@
                   <input type="radio" :name="`q${question.id}`" :value="option.verse" v-model="answers[question.id]">
                   <div>
                     <div class="text-white/80 font-medium">{{ option.verse }}</div>
-                    <div class="text-white/60 text-sm" v-html="option.text"></div>
+                    <div class="text-white/60 text-sm" v-sanitize-html="option.text"></div>
                   </div>
                 </label>
               </div>
@@ -156,7 +156,7 @@
               <!-- 9. Заполнить пропуски -->
               <div v-else-if="question.type === 'fill_blank'">
                 <div class="mb-4 p-4 bg-white/5 rounded-lg">
-                  <p class="text-white/80 whitespace-pre-wrap leading-relaxed" v-html="getFillBlankPreview(question)"></p>
+                  <p class="text-white/80 whitespace-pre-wrap leading-relaxed" v-sanitize-html="getFillBlankPreview(question)"></p>
                 </div>
                 <div class="mt-3">
                   <label class="block text-white/80 text-sm mb-2">Вставьте пропущенное слово:</label>
