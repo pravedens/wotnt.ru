@@ -309,12 +309,12 @@ export default defineNuxtConfig({
   runtimeConfig: {
     fortifyOrigin: process.env.NUXT_FORTIFY_ORIGIN || "",
     siteEnv: process.env.NUXT_SITE_ENV || "local",
-    vapidPublicKey: process.env.VAPID_PUBLIC_KEY || "",
     vapidPrivateKey: process.env.VAPID_PRIVATE_KEY || "",
     vapidSubject: process.env.VAPID_SUBJECT || "",
     carouselLimit: Number(process.env.CAROUSEL_LIMIT || 6),
 
     public: {
+      vapidPublicKey: process.env.VAPID_PUBLIC_KEY || "",
       appVersion: process.env.NUXT_PUBLIC_APP_VERSION || "1.0.0",
       siteUrl: process.env.NUXT_PUBLIC_SITE_URL || "http://localhost:3000",
       backendUrl:

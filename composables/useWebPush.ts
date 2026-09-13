@@ -14,7 +14,7 @@ export const useWebPush = () => {
     const unsupportedReason = ref<string | null>(null)
     
     // ✅ Исправлено: явное приведение к string
-    const VAPID_PUBLIC_KEY = (config.public.vapidPublicKey as string) || 'BHI-yFDLo4lx0oNdXlMD2PmGi7cZWGYpK5NilsPdOHSUk3ELnqze--Sh1Hj4j690-M1TRivckGbJlVmFvLaN_qM'
+    const VAPID_PUBLIC_KEY = (config.public.vapidPublicKey as string) || ''
     
     const init = async (): Promise<void> => {
         if (!import.meta.client) {

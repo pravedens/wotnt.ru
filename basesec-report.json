@@ -1,14 +1,14 @@
 {
   "version": "0.1.7",
-  "timestamp": "2026-09-11T13:34:44.834Z",
+  "timestamp": "2026-09-13T11:09:05.253Z",
   "target": ".",
   "frameworks": [
     "vue"
   ],
   "stats": {
-    "filesScanned": 164,
+    "filesScanned": 165,
     "filesSkipped": 0,
-    "duration": 4638,
+    "duration": 31405,
     "rulesRun": 65
   },
   "findings": [
@@ -342,12 +342,12 @@
       "category": "xss",
       "severity": "high",
       "filePath": "G:/projects/wotnt.ru/components/RichEditor.vue",
-      "line": 143,
-      "column": 5,
-      "endLine": 143,
-      "endColumn": 45,
+      "line": 154,
+      "column": 9,
+      "endLine": 154,
+      "endColumn": 46,
       "message": "Assigning a dynamic value to `.innerHTML` can introduce DOM-based XSS.",
-      "codeSnippet": "editorRef.value.innerHTML = newVal || '';",
+      "codeSnippet": "editorRef.value.innerHTML = cleanHtml;",
       "remediation": "Use textContent, or sanitize the value with DOMPurify before assigning to innerHTML/outerHTML.",
       "references": [
         "https://owasp.org/www-community/attacks/DOM_Based_XSS",
@@ -361,12 +361,31 @@
       "category": "xss",
       "severity": "high",
       "filePath": "G:/projects/wotnt.ru/components/RichEditor.vue",
-      "line": 152,
+      "line": 195,
       "column": 5,
-      "endLine": 152,
-      "endColumn": 55,
+      "endLine": 195,
+      "endColumn": 65,
       "message": "Assigning a dynamic value to `.innerHTML` can introduce DOM-based XSS.",
-      "codeSnippet": "editorRef.value.innerHTML = props.modelValue || '';",
+      "codeSnippet": "editorRef.value.innerHTML = DOMPurify.sanitize(newVal || '');",
+      "remediation": "Use textContent, or sanitize the value with DOMPurify before assigning to innerHTML/outerHTML.",
+      "references": [
+        "https://owasp.org/www-community/attacks/DOM_Based_XSS",
+        "https://cwe.mitre.org/data/definitions/79.html"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "ruleId": "DOM-001",
+      "ruleName": "Unsafe innerHTML/outerHTML/insertAdjacentHTML Assignment",
+      "category": "xss",
+      "severity": "high",
+      "filePath": "G:/projects/wotnt.ru/components/RichEditor.vue",
+      "line": 204,
+      "column": 5,
+      "endLine": 204,
+      "endColumn": 75,
+      "message": "Assigning a dynamic value to `.innerHTML` can introduce DOM-based XSS.",
+      "codeSnippet": "editorRef.value.innerHTML = DOMPurify.sanitize(props.modelValue || '');",
       "remediation": "Use textContent, or sanitize the value with DOMPurify before assigning to innerHTML/outerHTML.",
       "references": [
         "https://owasp.org/www-community/attacks/DOM_Based_XSS",
@@ -632,6 +651,24 @@
       "category": "error-handling",
       "severity": "low",
       "filePath": "G:/projects/wotnt.ru/composables/usePosts.ts",
+      "line": 1,
+      "column": 1,
+      "endLine": 1,
+      "endColumn": 1,
+      "message": "No process.on('unhandledRejection') handler found. Unhandled promise rejections can crash the process.",
+      "codeSnippet": "",
+      "remediation": "Add process.on('unhandledRejection', (reason) => { logger.error(reason); }) at the application entry point.",
+      "references": [
+        "https://nodejs.org/api/process.html#process_event_unhandledrejection"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "ruleId": "ERR-003",
+      "ruleName": "Unhandled Promise Rejection",
+      "category": "error-handling",
+      "severity": "low",
+      "filePath": "G:/projects/wotnt.ru/composables/useSanitize.ts",
       "line": 1,
       "column": 1,
       "endLine": 1,
@@ -1781,9 +1818,9 @@
       "category": "error-handling",
       "severity": "low",
       "filePath": "G:/projects/wotnt.ru/components/about/AboutCategories.vue",
-      "line": 265,
+      "line": 261,
       "column": 1,
-      "endLine": 265,
+      "endLine": 261,
       "endColumn": 258,
       "message": "Async operation without error handling may cause unhandled promise rejection.",
       "codeSnippet": "onMounted(async () => {",
@@ -1792,25 +1829,6 @@
         "https://nodejs.org/api/process.html#process_event_unhandledrejection"
       ],
       "confidence": "low"
-    },
-    {
-      "ruleId": "VUE-001",
-      "ruleName": "v-html with Dynamic Binding",
-      "category": "xss",
-      "severity": "critical",
-      "filePath": "G:/projects/wotnt.ru/components/about/AboutCategories.vue",
-      "line": 63,
-      "column": 15,
-      "endLine": 63,
-      "endColumn": 46,
-      "message": "v-html renders raw HTML from `currentArticle.content`, bypassing Vue's escaping (XSS).",
-      "codeSnippet": "v-html=\"currentArticle.content\"",
-      "remediation": "Render text with {{ }} or v-text; if HTML is required, sanitize it with DOMPurify first.",
-      "references": [
-        "https://vuejs.org/guide/best-practices/security.html",
-        "https://cwe.mitre.org/data/definitions/79.html"
-      ],
-      "confidence": "medium"
     },
     {
       "ruleId": "ERR-003",
@@ -1939,25 +1957,6 @@
       "confidence": "medium"
     },
     {
-      "ruleId": "VUE-001",
-      "ruleName": "v-html with Dynamic Binding",
-      "category": "xss",
-      "severity": "critical",
-      "filePath": "G:/projects/wotnt.ru/components/bible/VerseOfTheDay.vue",
-      "line": 20,
-      "column": 20,
-      "endLine": 20,
-      "endColumn": 45,
-      "message": "v-html renders raw HTML from `cleanDescription`, bypassing Vue's escaping (XSS).",
-      "codeSnippet": "<div v-html=\"cleanDescription\"></div>",
-      "remediation": "Render text with {{ }} or v-text; if HTML is required, sanitize it with DOMPurify first.",
-      "references": [
-        "https://vuejs.org/guide/best-practices/security.html",
-        "https://cwe.mitre.org/data/definitions/79.html"
-      ],
-      "confidence": "medium"
-    },
-    {
       "ruleId": "ERR-003",
       "ruleName": "Unhandled Promise Rejection",
       "category": "error-handling",
@@ -1972,63 +1971,6 @@
       "remediation": "Add process.on('unhandledRejection', (reason) => { logger.error(reason); }) at the application entry point.",
       "references": [
         "https://nodejs.org/api/process.html#process_event_unhandledrejection"
-      ],
-      "confidence": "medium"
-    },
-    {
-      "ruleId": "VUE-001",
-      "ruleName": "v-html with Dynamic Binding",
-      "category": "xss",
-      "severity": "critical",
-      "filePath": "G:/projects/wotnt.ru/components/bible-school/CoursePreviewModal.vue",
-      "line": 18,
-      "column": 41,
-      "endLine": 18,
-      "endColumn": 68,
-      "message": "v-html renders raw HTML from `course.description`, bypassing Vue's escaping (XSS).",
-      "codeSnippet": "<div class=\"text-white/80 mb-6\" v-html=\"course.description\"></div>",
-      "remediation": "Render text with {{ }} or v-text; if HTML is required, sanitize it with DOMPurify first.",
-      "references": [
-        "https://vuejs.org/guide/best-practices/security.html",
-        "https://cwe.mitre.org/data/definitions/79.html"
-      ],
-      "confidence": "medium"
-    },
-    {
-      "ruleId": "VUE-001",
-      "ruleName": "v-html with Dynamic Binding",
-      "category": "xss",
-      "severity": "critical",
-      "filePath": "G:/projects/wotnt.ru/components/bible-school/CoursePreviewModal.vue",
-      "line": 54,
-      "column": 38,
-      "endLine": 54,
-      "endColumn": 73,
-      "message": "v-html renders raw HTML from `course.what_you_will_learn`, bypassing Vue's escaping (XSS).",
-      "codeSnippet": "<div class=\"text-white/70\" v-html=\"course.what_you_will_learn\"></div>",
-      "remediation": "Render text with {{ }} or v-text; if HTML is required, sanitize it with DOMPurify first.",
-      "references": [
-        "https://vuejs.org/guide/best-practices/security.html",
-        "https://cwe.mitre.org/data/definitions/79.html"
-      ],
-      "confidence": "medium"
-    },
-    {
-      "ruleId": "VUE-001",
-      "ruleName": "v-html with Dynamic Binding",
-      "category": "xss",
-      "severity": "critical",
-      "filePath": "G:/projects/wotnt.ru/components/bible-school/CoursePreviewModal.vue",
-      "line": 60,
-      "column": 38,
-      "endLine": 60,
-      "endColumn": 60,
-      "message": "v-html renders raw HTML from `course.skills`, bypassing Vue's escaping (XSS).",
-      "codeSnippet": "<div class=\"text-white/70\" v-html=\"course.skills\"></div>",
-      "remediation": "Render text with {{ }} or v-text; if HTML is required, sanitize it with DOMPurify first.",
-      "references": [
-        "https://vuejs.org/guide/best-practices/security.html",
-        "https://cwe.mitre.org/data/definitions/79.html"
       ],
       "confidence": "medium"
     },
@@ -2551,44 +2493,6 @@
       "remediation": "Add process.on('unhandledRejection', (reason) => { logger.error(reason); }) at the application entry point.",
       "references": [
         "https://nodejs.org/api/process.html#process_event_unhandledrejection"
-      ],
-      "confidence": "medium"
-    },
-    {
-      "ruleId": "VUE-001",
-      "ruleName": "v-html with Dynamic Binding",
-      "category": "xss",
-      "severity": "critical",
-      "filePath": "G:/projects/wotnt.ru/components/events/EventModal.vue",
-      "line": 57,
-      "column": 88,
-      "endLine": 57,
-      "endColumn": 110,
-      "message": "v-html renders raw HTML from `event.content`, bypassing Vue's escaping (XSS).",
-      "codeSnippet": "<div v-if=\"event?.content\" class=\"text-white/80 prose prose-invert max-w-none\" v-html=\"event.content\"></div>",
-      "remediation": "Render text with {{ }} or v-text; if HTML is required, sanitize it with DOMPurify first.",
-      "references": [
-        "https://vuejs.org/guide/best-practices/security.html",
-        "https://cwe.mitre.org/data/definitions/79.html"
-      ],
-      "confidence": "medium"
-    },
-    {
-      "ruleId": "VUE-001",
-      "ruleName": "v-html with Dynamic Binding",
-      "category": "xss",
-      "severity": "critical",
-      "filePath": "G:/projects/wotnt.ru/components/events/EventModal.vue",
-      "line": 60,
-      "column": 85,
-      "endLine": 60,
-      "endColumn": 104,
-      "message": "v-html renders raw HTML from `event.info`, bypassing Vue's escaping (XSS).",
-      "codeSnippet": "<div v-if=\"event?.info\" class=\"text-white/80 prose prose-invert max-w-none\" v-html=\"event.info\"></div>",
-      "remediation": "Render text with {{ }} or v-text; if HTML is required, sanitize it with DOMPurify first.",
-      "references": [
-        "https://vuejs.org/guide/best-practices/security.html",
-        "https://cwe.mitre.org/data/definitions/79.html"
       ],
       "confidence": "medium"
     },
@@ -3191,25 +3095,6 @@
       "confidence": "low"
     },
     {
-      "ruleId": "VUE-001",
-      "ruleName": "v-html with Dynamic Binding",
-      "category": "xss",
-      "severity": "critical",
-      "filePath": "G:/projects/wotnt.ru/pages/about/[slug].vue",
-      "line": 82,
-      "column": 54,
-      "endLine": 82,
-      "endColumn": 76,
-      "message": "v-html renders raw HTML from `about.content`, bypassing Vue's escaping (XSS).",
-      "codeSnippet": "<div class=\"text-white/80 leading-relaxed\" v-html=\"about.content\"></div>",
-      "remediation": "Render text with {{ }} or v-text; if HTML is required, sanitize it with DOMPurify first.",
-      "references": [
-        "https://vuejs.org/guide/best-practices/security.html",
-        "https://cwe.mitre.org/data/definitions/79.html"
-      ],
-      "confidence": "medium"
-    },
-    {
       "ruleId": "ERR-003",
       "ruleName": "Unhandled Promise Rejection",
       "category": "error-handling",
@@ -3336,25 +3221,6 @@
       "confidence": "medium"
     },
     {
-      "ruleId": "VUE-001",
-      "ruleName": "v-html with Dynamic Binding",
-      "category": "xss",
-      "severity": "critical",
-      "filePath": "G:/projects/wotnt.ru/pages/bible-school/index.vue",
-      "line": 66,
-      "column": 15,
-      "endLine": 66,
-      "endColumn": 53,
-      "message": "v-html renders raw HTML from `stripTags(course.description)`, bypassing Vue's escaping (XSS).",
-      "codeSnippet": "v-html=\"stripTags(course.description)\"",
-      "remediation": "Render text with {{ }} or v-text; if HTML is required, sanitize it with DOMPurify first.",
-      "references": [
-        "https://vuejs.org/guide/best-practices/security.html",
-        "https://cwe.mitre.org/data/definitions/79.html"
-      ],
-      "confidence": "medium"
-    },
-    {
       "ruleId": "ERR-003",
       "ruleName": "Unhandled Promise Rejection",
       "category": "error-handling",
@@ -3463,44 +3329,6 @@
       "confidence": "medium"
     },
     {
-      "ruleId": "VUE-001",
-      "ruleName": "v-html with Dynamic Binding",
-      "category": "xss",
-      "severity": "critical",
-      "filePath": "G:/projects/wotnt.ru/pages/events/[slug].vue",
-      "line": 90,
-      "column": 106,
-      "endLine": 90,
-      "endColumn": 128,
-      "message": "v-html renders raw HTML from `event.content`, bypassing Vue's escaping (XSS).",
-      "codeSnippet": "<div class=\"text-white/80 prose prose-invert max-w-none border-l-4 border-red-500 pl-3 mb-8\" v-html=\"event.content\"></div>",
-      "remediation": "Render text with {{ }} or v-text; if HTML is required, sanitize it with DOMPurify first.",
-      "references": [
-        "https://vuejs.org/guide/best-practices/security.html",
-        "https://cwe.mitre.org/data/definitions/79.html"
-      ],
-      "confidence": "medium"
-    },
-    {
-      "ruleId": "VUE-001",
-      "ruleName": "v-html with Dynamic Binding",
-      "category": "xss",
-      "severity": "critical",
-      "filePath": "G:/projects/wotnt.ru/pages/events/[slug].vue",
-      "line": 91,
-      "column": 103,
-      "endLine": 91,
-      "endColumn": 122,
-      "message": "v-html renders raw HTML from `event.info`, bypassing Vue's escaping (XSS).",
-      "codeSnippet": "<div class=\"text-white/80 prose prose-invert max-w-none border-l-4 border-green-500 pl-3\" v-html=\"event.info\"></div>",
-      "remediation": "Render text with {{ }} or v-text; if HTML is required, sanitize it with DOMPurify first.",
-      "references": [
-        "https://vuejs.org/guide/best-practices/security.html",
-        "https://cwe.mitre.org/data/definitions/79.html"
-      ],
-      "confidence": "medium"
-    },
-    {
       "ruleId": "ERR-003",
       "ruleName": "Unhandled Promise Rejection",
       "category": "error-handling",
@@ -3596,9 +3424,9 @@
       "category": "error-handling",
       "severity": "low",
       "filePath": "G:/projects/wotnt.ru/pages/sermons/[slug].vue",
-      "line": 634,
+      "line": 641,
       "column": 1,
-      "endLine": 634,
+      "endLine": 641,
       "endColumn": 332,
       "message": "Async operation without error handling may cause unhandled promise rejection.",
       "codeSnippet": "watch(",
@@ -3614,12 +3442,12 @@
       "category": "xss",
       "severity": "high",
       "filePath": "G:/projects/wotnt.ru/pages/sermons/[slug].vue",
-      "line": 419,
+      "line": 426,
       "column": 3,
-      "endLine": 419,
-      "endColumn": 58,
+      "endLine": 426,
+      "endColumn": 78,
       "message": "`window.open()` with dynamic input can cause an open redirect or execute a javascript: URI.",
-      "codeSnippet": "window.open(shareUrl, \"_blank\", \"width=600,height=400\");",
+      "codeSnippet": "window.open(shareUrl, \"_blank\", \"width=600,height=400,noopener,noreferrer\");",
       "remediation": "Validate the destination against an allowlist and reject non-http(s) schemes before navigating.",
       "references": [
         "https://owasp.org/www-community/attacks/Unvalidated_Redirects_and_Forwards_Cheat_Sheet",
@@ -3718,25 +3546,6 @@
       "confidence": "medium"
     },
     {
-      "ruleId": "VUE-001",
-      "ruleName": "v-html with Dynamic Binding",
-      "category": "xss",
-      "severity": "critical",
-      "filePath": "G:/projects/wotnt.ru/pages/bible-school/courses/index.vue",
-      "line": 35,
-      "column": 59,
-      "endLine": 35,
-      "endColumn": 97,
-      "message": "v-html renders raw HTML from `stripTags(course.description)`, bypassing Vue's escaping (XSS).",
-      "codeSnippet": "<p class=\"text-white/60 text-sm line-clamp-2\" v-html=\"stripTags(course.description)\"></p>",
-      "remediation": "Render text with {{ }} or v-text; if HTML is required, sanitize it with DOMPurify first.",
-      "references": [
-        "https://vuejs.org/guide/best-practices/security.html",
-        "https://cwe.mitre.org/data/definitions/79.html"
-      ],
-      "confidence": "medium"
-    },
-    {
       "ruleId": "ERR-003",
       "ruleName": "Unhandled Promise Rejection",
       "category": "error-handling",
@@ -3755,25 +3564,6 @@
       "confidence": "medium"
     },
     {
-      "ruleId": "VUE-001",
-      "ruleName": "v-html with Dynamic Binding",
-      "category": "xss",
-      "severity": "critical",
-      "filePath": "G:/projects/wotnt.ru/pages/bible-school/courses/[slug].vue",
-      "line": 35,
-      "column": 36,
-      "endLine": 35,
-      "endColumn": 63,
-      "message": "v-html renders raw HTML from `course.description`, bypassing Vue's escaping (XSS).",
-      "codeSnippet": "<p class=\"text-white/70\" v-html=\"course.description\"></p>",
-      "remediation": "Render text with {{ }} or v-text; if HTML is required, sanitize it with DOMPurify first.",
-      "references": [
-        "https://vuejs.org/guide/best-practices/security.html",
-        "https://cwe.mitre.org/data/definitions/79.html"
-      ],
-      "confidence": "medium"
-    },
-    {
       "ruleId": "ERR-003",
       "ruleName": "Unhandled Promise Rejection",
       "category": "error-handling",
@@ -3788,25 +3578,6 @@
       "remediation": "Add process.on('unhandledRejection', (reason) => { logger.error(reason); }) at the application entry point.",
       "references": [
         "https://nodejs.org/api/process.html#process_event_unhandledrejection"
-      ],
-      "confidence": "medium"
-    },
-    {
-      "ruleId": "VUE-001",
-      "ruleName": "v-html with Dynamic Binding",
-      "category": "xss",
-      "severity": "critical",
-      "filePath": "G:/projects/wotnt.ru/pages/bible-school/public/index.vue",
-      "line": 21,
-      "column": 51,
-      "endLine": 21,
-      "endColumn": 89,
-      "message": "v-html renders raw HTML from `stripTags(course.description)`, bypassing Vue's escaping (XSS).",
-      "codeSnippet": "<p class=\"text-white/60 text-sm mb-4\" v-html=\"stripTags(course.description)\"></p>",
-      "remediation": "Render text with {{ }} or v-text; if HTML is required, sanitize it with DOMPurify first.",
-      "references": [
-        "https://vuejs.org/guide/best-practices/security.html",
-        "https://cwe.mitre.org/data/definitions/79.html"
       ],
       "confidence": "medium"
     },
@@ -3937,25 +3708,6 @@
       "confidence": "medium"
     },
     {
-      "ruleId": "VUE-001",
-      "ruleName": "v-html with Dynamic Binding",
-      "category": "xss",
-      "severity": "critical",
-      "filePath": "G:/projects/wotnt.ru/pages/teacher/questions/index.vue",
-      "line": 16,
-      "column": 31,
-      "endLine": 16,
-      "endColumn": 50,
-      "message": "v-html renders raw HTML from `q.question`, bypassing Vue's escaping (XSS).",
-      "codeSnippet": "<td class=\"p-3\" v-html=\"q.question\"></td>",
-      "remediation": "Render text with {{ }} or v-text; if HTML is required, sanitize it with DOMPurify first.",
-      "references": [
-        "https://vuejs.org/guide/best-practices/security.html",
-        "https://cwe.mitre.org/data/definitions/79.html"
-      ],
-      "confidence": "medium"
-    },
-    {
       "ruleId": "ERR-003",
       "ruleName": "Unhandled Promise Rejection",
       "category": "error-handling",
@@ -4064,25 +3816,6 @@
       "confidence": "medium"
     },
     {
-      "ruleId": "VUE-001",
-      "ruleName": "v-html with Dynamic Binding",
-      "category": "xss",
-      "severity": "critical",
-      "filePath": "G:/projects/wotnt.ru/pages/bible-school/courses/[slug]/preview.vue",
-      "line": 17,
-      "column": 39,
-      "endLine": 17,
-      "endColumn": 73,
-      "message": "v-html renders raw HTML from `course?.description || ''`, bypassing Vue's escaping (XSS).",
-      "codeSnippet": "<div class=\"text-white/80 mb-8\" v-html=\"course?.description || ''\"></div>",
-      "remediation": "Render text with {{ }} or v-text; if HTML is required, sanitize it with DOMPurify first.",
-      "references": [
-        "https://vuejs.org/guide/best-practices/security.html",
-        "https://cwe.mitre.org/data/definitions/79.html"
-      ],
-      "confidence": "medium"
-    },
-    {
       "ruleId": "ERR-003",
       "ruleName": "Unhandled Promise Rejection",
       "category": "error-handling",
@@ -4119,101 +3852,6 @@
       "confidence": "low"
     },
     {
-      "ruleId": "VUE-001",
-      "ruleName": "v-html with Dynamic Binding",
-      "category": "xss",
-      "severity": "critical",
-      "filePath": "G:/projects/wotnt.ru/pages/bible-school/lessons/[slug]/index.vue",
-      "line": 48,
-      "column": 15,
-      "endLine": 48,
-      "endColumn": 44,
-      "message": "v-html renders raw HTML from `lesson.call_question`, bypassing Vue's escaping (XSS).",
-      "codeSnippet": "v-html=\"lesson.call_question\"",
-      "remediation": "Render text with {{ }} or v-text; if HTML is required, sanitize it with DOMPurify first.",
-      "references": [
-        "https://vuejs.org/guide/best-practices/security.html",
-        "https://cwe.mitre.org/data/definitions/79.html"
-      ],
-      "confidence": "medium"
-    },
-    {
-      "ruleId": "VUE-001",
-      "ruleName": "v-html with Dynamic Binding",
-      "category": "xss",
-      "severity": "critical",
-      "filePath": "G:/projects/wotnt.ru/pages/bible-school/lessons/[slug]/index.vue",
-      "line": 59,
-      "column": 17,
-      "endLine": 59,
-      "endColumn": 44,
-      "message": "v-html renders raw HTML from `lesson.call_answer`, bypassing Vue's escaping (XSS).",
-      "codeSnippet": "v-html=\"lesson.call_answer\"",
-      "remediation": "Render text with {{ }} or v-text; if HTML is required, sanitize it with DOMPurify first.",
-      "references": [
-        "https://vuejs.org/guide/best-practices/security.html",
-        "https://cwe.mitre.org/data/definitions/79.html"
-      ],
-      "confidence": "medium"
-    },
-    {
-      "ruleId": "VUE-001",
-      "ruleName": "v-html with Dynamic Binding",
-      "category": "xss",
-      "severity": "critical",
-      "filePath": "G:/projects/wotnt.ru/pages/bible-school/lessons/[slug]/index.vue",
-      "line": 106,
-      "column": 19,
-      "endLine": 106,
-      "endColumn": 38,
-      "message": "v-html renders raw HTML from `verse.text`, bypassing Vue's escaping (XSS).",
-      "codeSnippet": "v-html=\"verse.text\"",
-      "remediation": "Render text with {{ }} or v-text; if HTML is required, sanitize it with DOMPurify first.",
-      "references": [
-        "https://vuejs.org/guide/best-practices/security.html",
-        "https://cwe.mitre.org/data/definitions/79.html"
-      ],
-      "confidence": "medium"
-    },
-    {
-      "ruleId": "VUE-001",
-      "ruleName": "v-html with Dynamic Binding",
-      "category": "xss",
-      "severity": "critical",
-      "filePath": "G:/projects/wotnt.ru/pages/bible-school/lessons/[slug]/index.vue",
-      "line": 144,
-      "column": 15,
-      "endLine": 144,
-      "endColumn": 38,
-      "message": "v-html renders raw HTML from `lesson.content`, bypassing Vue's escaping (XSS).",
-      "codeSnippet": "v-html=\"lesson.content\"",
-      "remediation": "Render text with {{ }} or v-text; if HTML is required, sanitize it with DOMPurify first.",
-      "references": [
-        "https://vuejs.org/guide/best-practices/security.html",
-        "https://cwe.mitre.org/data/definitions/79.html"
-      ],
-      "confidence": "medium"
-    },
-    {
-      "ruleId": "VUE-001",
-      "ruleName": "v-html with Dynamic Binding",
-      "category": "xss",
-      "severity": "critical",
-      "filePath": "G:/projects/wotnt.ru/pages/bible-school/lessons/[slug]/index.vue",
-      "line": 242,
-      "column": 15,
-      "endLine": 242,
-      "endColumn": 44,
-      "message": "v-html renders raw HTML from `lesson.practice_task`, bypassing Vue's escaping (XSS).",
-      "codeSnippet": "v-html=\"lesson.practice_task\"",
-      "remediation": "Render text with {{ }} or v-text; if HTML is required, sanitize it with DOMPurify first.",
-      "references": [
-        "https://vuejs.org/guide/best-practices/security.html",
-        "https://cwe.mitre.org/data/definitions/79.html"
-      ],
-      "confidence": "medium"
-    },
-    {
       "ruleId": "ERR-003",
       "ruleName": "Unhandled Promise Rejection",
       "category": "error-handling",
@@ -4228,63 +3866,6 @@
       "remediation": "Add process.on('unhandledRejection', (reason) => { logger.error(reason); }) at the application entry point.",
       "references": [
         "https://nodejs.org/api/process.html#process_event_unhandledrejection"
-      ],
-      "confidence": "medium"
-    },
-    {
-      "ruleId": "VUE-001",
-      "ruleName": "v-html with Dynamic Binding",
-      "category": "xss",
-      "severity": "critical",
-      "filePath": "G:/projects/wotnt.ru/pages/bible-school/lessons/[slug]/test.vue",
-      "line": 21,
-      "column": 53,
-      "endLine": 21,
-      "endColumn": 79,
-      "message": "v-html renders raw HTML from `question.question`, bypassing Vue's escaping (XSS).",
-      "codeSnippet": "<div class=\"text-white/80 mb-4 prose\" v-html=\"question.question\"></div>",
-      "remediation": "Render text with {{ }} or v-text; if HTML is required, sanitize it with DOMPurify first.",
-      "references": [
-        "https://vuejs.org/guide/best-practices/security.html",
-        "https://cwe.mitre.org/data/definitions/79.html"
-      ],
-      "confidence": "medium"
-    },
-    {
-      "ruleId": "VUE-001",
-      "ruleName": "v-html with Dynamic Binding",
-      "category": "xss",
-      "severity": "critical",
-      "filePath": "G:/projects/wotnt.ru/pages/bible-school/lessons/[slug]/test.vue",
-      "line": 139,
-      "column": 56,
-      "endLine": 139,
-      "endColumn": 76,
-      "message": "v-html renders raw HTML from `option.text`, bypassing Vue's escaping (XSS).",
-      "codeSnippet": "<div class=\"text-white/60 text-sm\" v-html=\"option.text\"></div>",
-      "remediation": "Render text with {{ }} or v-text; if HTML is required, sanitize it with DOMPurify first.",
-      "references": [
-        "https://vuejs.org/guide/best-practices/security.html",
-        "https://cwe.mitre.org/data/definitions/79.html"
-      ],
-      "confidence": "medium"
-    },
-    {
-      "ruleId": "VUE-001",
-      "ruleName": "v-html with Dynamic Binding",
-      "category": "xss",
-      "severity": "critical",
-      "filePath": "G:/projects/wotnt.ru/pages/bible-school/lessons/[slug]/test.vue",
-      "line": 159,
-      "column": 80,
-      "endLine": 159,
-      "endColumn": 118,
-      "message": "v-html renders raw HTML from `getFillBlankPreview(question)`, bypassing Vue's escaping (XSS).",
-      "codeSnippet": "<p class=\"text-white/80 whitespace-pre-wrap leading-relaxed\" v-html=\"getFillBlankPreview(question)\"></p>",
-      "remediation": "Render text with {{ }} or v-text; if HTML is required, sanitize it with DOMPurify first.",
-      "references": [
-        "https://vuejs.org/guide/best-practices/security.html",
-        "https://cwe.mitre.org/data/definitions/79.html"
       ],
       "confidence": "medium"
     },
@@ -4478,9 +4059,9 @@
       "column": 1,
       "endLine": 29,
       "endColumn": 120,
-      "message": "Dependency \"laravel-echo\" is declared but never imported in source files.",
-      "codeSnippet": "  \"laravel-echo\"",
-      "remediation": "Remove unused dependency or add imports for \"laravel-echo\".",
+      "message": "Dependency \"isomorphic-dompurify\" is declared but never imported in source files.",
+      "codeSnippet": "  \"isomorphic-dompurify\"",
+      "remediation": "Remove unused dependency or add imports for \"isomorphic-dompurify\".",
       "references": [
         "https://docs.npmjs.com/cli/v10/configuring-npm/package-json#dependencies"
       ],
@@ -4496,9 +4077,9 @@
       "column": 1,
       "endLine": 30,
       "endColumn": 120,
-      "message": "Dependency \"nuxt\" is declared but never imported in source files.",
-      "codeSnippet": "  \"nuxt\"",
-      "remediation": "Remove unused dependency or add imports for \"nuxt\".",
+      "message": "Dependency \"laravel-echo\" is declared but never imported in source files.",
+      "codeSnippet": "  \"laravel-echo\"",
+      "remediation": "Remove unused dependency or add imports for \"laravel-echo\".",
       "references": [
         "https://docs.npmjs.com/cli/v10/configuring-npm/package-json#dependencies"
       ],
@@ -4514,9 +4095,9 @@
       "column": 1,
       "endLine": 31,
       "endColumn": 120,
-      "message": "Dependency \"nuxt-gtag\" is declared but never imported in source files.",
-      "codeSnippet": "  \"nuxt-gtag\"",
-      "remediation": "Remove unused dependency or add imports for \"nuxt-gtag\".",
+      "message": "Dependency \"nuxt\" is declared but never imported in source files.",
+      "codeSnippet": "  \"nuxt\"",
+      "remediation": "Remove unused dependency or add imports for \"nuxt\".",
       "references": [
         "https://docs.npmjs.com/cli/v10/configuring-npm/package-json#dependencies"
       ],
@@ -4532,9 +4113,9 @@
       "column": 1,
       "endLine": 32,
       "endColumn": 120,
-      "message": "Dependency \"nuxt-swiper\" is declared but never imported in source files.",
-      "codeSnippet": "  \"nuxt-swiper\"",
-      "remediation": "Remove unused dependency or add imports for \"nuxt-swiper\".",
+      "message": "Dependency \"nuxt-gtag\" is declared but never imported in source files.",
+      "codeSnippet": "  \"nuxt-gtag\"",
+      "remediation": "Remove unused dependency or add imports for \"nuxt-gtag\".",
       "references": [
         "https://docs.npmjs.com/cli/v10/configuring-npm/package-json#dependencies"
       ],
@@ -4550,9 +4131,9 @@
       "column": 1,
       "endLine": 33,
       "endColumn": 120,
-      "message": "Dependency \"pinia\" is declared but never imported in source files.",
-      "codeSnippet": "  \"pinia\"",
-      "remediation": "Remove unused dependency or add imports for \"pinia\".",
+      "message": "Dependency \"nuxt-swiper\" is declared but never imported in source files.",
+      "codeSnippet": "  \"nuxt-swiper\"",
+      "remediation": "Remove unused dependency or add imports for \"nuxt-swiper\".",
       "references": [
         "https://docs.npmjs.com/cli/v10/configuring-npm/package-json#dependencies"
       ],
@@ -4568,9 +4149,9 @@
       "column": 1,
       "endLine": 34,
       "endColumn": 120,
-      "message": "Dependency \"pusher-js\" is declared but never imported in source files.",
-      "codeSnippet": "  \"pusher-js\"",
-      "remediation": "Remove unused dependency or add imports for \"pusher-js\".",
+      "message": "Dependency \"pinia\" is declared but never imported in source files.",
+      "codeSnippet": "  \"pinia\"",
+      "remediation": "Remove unused dependency or add imports for \"pinia\".",
       "references": [
         "https://docs.npmjs.com/cli/v10/configuring-npm/package-json#dependencies"
       ],
@@ -4586,9 +4167,9 @@
       "column": 1,
       "endLine": 35,
       "endColumn": 120,
-      "message": "Dependency \"swiper\" is declared but never imported in source files.",
-      "codeSnippet": "  \"swiper\"",
-      "remediation": "Remove unused dependency or add imports for \"swiper\".",
+      "message": "Dependency \"pusher-js\" is declared but never imported in source files.",
+      "codeSnippet": "  \"pusher-js\"",
+      "remediation": "Remove unused dependency or add imports for \"pusher-js\".",
       "references": [
         "https://docs.npmjs.com/cli/v10/configuring-npm/package-json#dependencies"
       ],
@@ -4604,9 +4185,9 @@
       "column": 1,
       "endLine": 36,
       "endColumn": 120,
-      "message": "Dependency \"uuid\" is declared but never imported in source files.",
-      "codeSnippet": "  \"uuid\"",
-      "remediation": "Remove unused dependency or add imports for \"uuid\".",
+      "message": "Dependency \"swiper\" is declared but never imported in source files.",
+      "codeSnippet": "  \"swiper\"",
+      "remediation": "Remove unused dependency or add imports for \"swiper\".",
       "references": [
         "https://docs.npmjs.com/cli/v10/configuring-npm/package-json#dependencies"
       ],
@@ -4622,9 +4203,9 @@
       "column": 1,
       "endLine": 37,
       "endColumn": 120,
-      "message": "Dependency \"vue\" is declared but never imported in source files.",
-      "codeSnippet": "  \"vue\"",
-      "remediation": "Remove unused dependency or add imports for \"vue\".",
+      "message": "Dependency \"uuid\" is declared but never imported in source files.",
+      "codeSnippet": "  \"uuid\"",
+      "remediation": "Remove unused dependency or add imports for \"uuid\".",
       "references": [
         "https://docs.npmjs.com/cli/v10/configuring-npm/package-json#dependencies"
       ],
@@ -4639,6 +4220,24 @@
       "line": 38,
       "column": 1,
       "endLine": 38,
+      "endColumn": 120,
+      "message": "Dependency \"vue\" is declared but never imported in source files.",
+      "codeSnippet": "  \"vue\"",
+      "remediation": "Remove unused dependency or add imports for \"vue\".",
+      "references": [
+        "https://docs.npmjs.com/cli/v10/configuring-npm/package-json#dependencies"
+      ],
+      "confidence": "low"
+    },
+    {
+      "ruleId": "DEP-003",
+      "ruleName": "Unused Dependencies",
+      "category": "dependency-check",
+      "severity": "low",
+      "filePath": "G:\\projects\\wotnt.ru\\package.json",
+      "line": 39,
+      "column": 1,
+      "endLine": 39,
       "endColumn": 120,
       "message": "Dependency \"vue-router\" is declared but never imported in source files.",
       "codeSnippet": "  \"vue-router\"",

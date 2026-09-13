@@ -420,6 +420,7 @@ interface PushSubscriptionResponse {
 const authStore = useAuthStore();
 const notificationStore = useNotificationStore();
 const { $api } = useApi();  // ✅ ДОБАВЛЕНО
+const config = useRuntimeConfig();
 
 const settings = ref<NotificationSettings>({
   notify_new_events_email: false,
@@ -689,8 +690,7 @@ const enablePushNotifications = async () => {
       await navigator.serviceWorker.ready;
     }
 
-    const publicKey =
-      "BHI-yFDLo4lx0oNdXlMD2PmGi7cZWGYpK5NilsPdOHSUk3ELnqze--Sh1Hj4j690-M1TRivckGbJlVmFvLaN_qM";
+    const publicKey = config.public.vapidPublicKey;
 
     const applicationServerKey = urlBase64ToUint8Array(publicKey);
 
