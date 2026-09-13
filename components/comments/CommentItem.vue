@@ -48,10 +48,11 @@
           </div>
         </div>
         
-        <!-- Текст комментария -->
-        <p class="text-white/80 text-sm leading-relaxed">
-          {{ comment.content }}
-        </p>
+<!-- Текст комментария -->
+<div
+  class="text-white/80 text-sm leading-relaxed"
+  v-sanitize-html="comment.content"
+></div>
         
         <!-- Кнопка лайка -->
         <button 
