@@ -130,9 +130,11 @@
                         >
                           {{ about.title }}
                         </h3>
-                        <p class="text-white/60 text-sm line-clamp-1">
-                          {{ about.description }}
-                        </p>
+                        <p
+                          v-sanitize-html="about.description"
+                          class="text-white/60 text-sm line-clamp-1"
+                        ></p>
+                        
                         <div class="flex items-center justify-between mt-2">
                           <span
                             class="text-white/40 text-xs flex items-center gap-1"

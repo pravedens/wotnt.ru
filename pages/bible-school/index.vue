@@ -24,7 +24,7 @@
       <!-- Статус-бар -->
       <div v-if="pageData.message && !isTeacher" class="mb-8 max-w-2xl mx-auto">
         <div class="rounded-2xl p-4 text-center border" :class="statusClass">
-          <p class="text-white">{{ pageData.message }}</p>
+          <p class="text-white" v-sanitize-html="pageData.message"></p>
           <NuxtLink
             v-if="pageData.enrollment_status === 'guest'"
             to="/auth/register"
@@ -197,9 +197,7 @@
           </button>
         </div>
 
-        <div
-          class="grid grid-cols-1 md:grid-cols-3 gap-6"
-        >
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div
             v-for="grad in filteredGraduates"
             :key="grad.id"

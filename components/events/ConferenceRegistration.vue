@@ -59,7 +59,7 @@
                     {{ formatDateOnly(service.service_date) }}
                     <span v-if="service.start_time"> в {{ formatTimeOnly(service.start_time) }}</span>
                   </div>
-                  <div v-if="service.description" class="text-white/40 text-xs mt-1">{{ service.description }}</div>
+                  <div v-if="service.description" class="text-white/40 text-xs mt-1" v-sanitize-html="service.description"></div>
                   <div class="text-white/40 text-xs mt-1">
                     🪑 Мест: {{ service.available_count }} из {{ service.capacity || '∞' }}
                   </div>

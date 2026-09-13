@@ -78,9 +78,8 @@
                   <p
                     v-if="theme.description"
                     class="text-white/60 text-sm mt-1"
-                  >
-                    {{ theme.description }}
-                  </p>
+                    v-sanitize-html="theme.description"
+                  ></p>
                   <p class="text-white/40 text-xs mt-2">
                     {{ theme.lessons.length }} уроков
                   </p>
