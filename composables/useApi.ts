@@ -2,73 +2,73 @@
 
 export const useApi = () => {
   const config = useRuntimeConfig()
+  const authStore = useAuthStore()
 
+  // ✅ Для SSR используем полный URL, для клиента — относительный
   const isServer = import.meta.server
-  const apiBase = isServer
-    ? `${config.public.backendUrl}/api`
-    : config.public.apiBase
+  const apiBase = isServer 
+    ? `${config.public.backendUrl}/api`  // На сервере — полный URL
+    : config.public.apiBase              // На клиенте — относительный (/api)
 
-  const backendUrl = config.public.backendUrl || 'http://localhost:8000'
+  const backendUrl = config.public.backendUrl || 'http://wotgospel.local'
   const storageUrl = config.public.storageUrl || 'https://storage.yandexcloud.net/wotgospel-media'
 
-  // ✅ Читаем XSRF-TOKEN из cookie
-  const getXsrfToken = (): string | null => {
-    if (!import.meta.client) return null
-    const match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]+)/)
-    return match ? decodeURIComponent(match[1]) : null
-  }
-
-  // ✅ Обычный API-клиент (с /api)
   const $api = $fetch.create({
-    baseURL: apiBase,
-    credentials: 'include',
+    baseURL: apiBase,  // 👈 Используем правильный baseURL
+    
     headers: {
       Accept: 'application/json',
       'Cache-Control': 'no-cache, no-store, must-revalidate',
       Pragma: 'no-cache',
     },
+
     onRequest({ options }) {
-      const token = getXsrfToken()
-      if (token) {
-        const headers = new Headers(options.headers as HeadersInit || {})
-        headers.set('X-XSRF-TOKEN', token)
-        options.headers = headers
-      }
+      const token = authStore?.token
+      if (!token) return
+
+      const headers = new Headers(options.headers as HeadersInit || {})
+      headers.set('Authorization', `Bearer ${token}`)
+      options.headers = headers
     },
-    onResponseError({ response }) {
-      if (response.status === 401) {
-        console.warn('API: Unauthorized (401)')
+
+    onResponseError({ request, response }) {
+      if (response.status === 401 && authStore?.token) {
+        console.warn('API: Unauthorized, logging out')
+        authStore.logout()
+        if (import.meta.client) {
+          navigateTo('/auth/login')
+        }
       }
     },
   })
 
-  // ✅ Auth-клиент (без /api) — для login/logout/user/register/email
-  const $authApi = $fetch.create({
-    baseURL: backendUrl,
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-    },
-    onRequest({ options }) {
-      const token = getXsrfToken()
-      if (token) {
-        const headers = new Headers(options.headers as HeadersInit || {})
-        headers.set('X-XSRF-TOKEN', token)
-        options.headers = headers
-      }
-    },
-  })
-
+  // Вспомогательные функции для работы с изображениями
   const getImageUrl = (
     path: string | null | undefined,
     type?: 'events' | 'sermons' | 'abouts'
   ): string | null => {
     if (!path) return null
-    if (path.startsWith('http://') || path.startsWith('https://')) return path
-    if (path.startsWith('/storage')) return `${backendUrl}${path}`
-    if (path.includes('public/')) return `${backendUrl}/storage/${path.replace('public/', '')}`
-    if (path.startsWith('avatars/')) return `${storageUrl}/${path}`
-    if (type && !path.includes('/')) return `${backendUrl}/storage/${type}/${path}`
+
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return path
+    }
+
+    if (path.startsWith('/storage')) {
+      return `${backendUrl}${path}`
+    }
+
+    if (path.includes('public/')) {
+      return `${backendUrl}/storage/${path.replace('public/', '')}`
+    }
+
+    if (path.startsWith('avatars/')) {
+      return `${storageUrl}/${path}`
+    }
+
+    if (type && !path.includes('/')) {
+      return `${backendUrl}/storage/${type}/${path}`
+    }
+
     return `${backendUrl}/storage/${path}`
   }
 
@@ -83,7 +83,6 @@ export const useApi = () => {
     apiBase,
     storageUrl,
     $api,
-    $authApi,
     getImageUrl,
     handleError,
   }

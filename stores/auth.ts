@@ -42,6 +42,11 @@ interface ConsentHistoryItem {
   ip: string;
 }
 
+function getApi() {
+  const { $api } = useApi();
+  return $api;
+}
+
 function getConfig() {
   const config = useRuntimeConfig();
   return {
@@ -54,6 +59,7 @@ function getConfig() {
 export const useAuthStore = defineStore("auth", {
   state: () => ({
     user: null as User | null,
+    token: null as string | null,
     roles: [] as string[],
     loading: false,
     initialized: false,
@@ -64,7 +70,7 @@ export const useAuthStore = defineStore("auth", {
   }),
 
   getters: {
-    isAuthenticated: (state) => !!state.user,
+    isAuthenticated: (state) => !!state.user && !!state.token,
     isEmailVerified: (state) => !!state.user?.email_verified_at,
     isAdmin: (state) =>
       state.roles.includes("admin") ||
@@ -79,14 +85,32 @@ export const useAuthStore = defineStore("auth", {
     isGroupLeader: (state) => state.roles.includes("group_leader"),
 
     userRoles: (state) => {
-      if (!state.roles || state.roles.length === 0) return "Пользователь";
-      if (state.roles.includes("minister")) return "Служитель";
-      if (state.roles.includes("member")) return "Прихожанин";
-      if (state.roles.includes("super_admin")) return "Супер-администратор";
-      if (state.roles.includes("admin")) return "Администратор";
-      if (state.roles.includes("editor")) return "Редактор";
-      if (state.roles.includes("teacher")) return "Преподаватель";
-      if (state.roles.includes("student")) return "Ученик";
+      if (!state.roles || state.roles.length === 0) {
+        return "Пользователь";
+      }
+
+      if (state.roles.includes("minister")) {
+        return "Служитель";
+      }
+      if (state.roles.includes("member")) {
+        return "Прихожанин";
+      }
+      if (state.roles.includes("super_admin")) {
+        return "Супер-администратор";
+      }
+      if (state.roles.includes("admin")) {
+        return "Администратор";
+      }
+      if (state.roles.includes("editor")) {
+        return "Редактор";
+      }
+      if (state.roles.includes("teacher")) {
+        return "Преподаватель";
+      }
+      if (state.roles.includes("student")) {
+        return "Ученик";
+      }
+
       return "Пользователь";
     },
 
@@ -102,6 +126,7 @@ export const useAuthStore = defineStore("auth", {
         group_leader: "Лидер группы",
         user: "Пользователь",
       };
+
       return state.roles.map((role) => roleNames[role] || role);
     },
 
@@ -126,6 +151,7 @@ export const useAuthStore = defineStore("auth", {
   actions: {
     $reset() {
       this.user = null;
+      this.token = null;
       this.roles = [];
       this.loading = false;
       this.initialized = false;
@@ -135,21 +161,57 @@ export const useAuthStore = defineStore("auth", {
       this.consentHistory = [];
     },
 
-    async validateSession(): Promise<boolean> {
-      try {
-        const { $authApi } = useApi();
-        const response: any = await $authApi("/user");
+    // ✅ НОВЫЙ МЕТОД: восстановление из localStorage без запросов
+    restoreFromStorage(): boolean {
+      if (import.meta.client) {
+        const token = localStorage.getItem("auth_token");
+        const userStr = localStorage.getItem("auth_user");
+        const rolesStr = localStorage.getItem("auth_roles");
 
-        if (response && response.id) {
-          this.user = response;
+        if (token && userStr) {
+          this.token = token;
+          this.user = JSON.parse(userStr);
+          this.roles = rolesStr ? JSON.parse(rolesStr) : [];
+          this.initialized = true;
+          console.log("🔑 Восстановлено из localStorage");
+          return true;
+        }
+      }
+      return false;
+    },
+
+    async validateToken(): Promise<boolean> {
+      if (!this.token) return false;
+
+      try {
+        const $api = getApi();
+        const response: any = await $api("/user/check-token", {
+          headers: {
+            Authorization: `Bearer ${this.token}`,
+          },
+        });
+
+        if (response && response.success && response.user) {
+          this.user = response.user;
           this.roles = response.roles || [];
+
+          if (import.meta.client) {
+            localStorage.setItem("auth_user", JSON.stringify(this.user));
+            localStorage.setItem("auth_roles", JSON.stringify(this.roles));
+          }
           return true;
         }
         return false;
       } catch (err: any) {
         if (err?.status === 401) {
-          this.user = null;
-          this.roles = [];
+          console.log("Token invalid, clearing session");
+          this.$reset();
+          if (import.meta.client) {
+            localStorage.removeItem("auth_token");
+            localStorage.removeItem("auth_user");
+            localStorage.removeItem("auth_roles");
+            localStorage.removeItem("auth_remember");
+          }
         }
         return false;
       }
@@ -159,35 +221,36 @@ export const useAuthStore = defineStore("auth", {
       this.loading = true;
 
       try {
-        const { $authApi } = useApi();
-        const config = useRuntimeConfig();
-
-        // CSRF-cookie (напрямую, без /api)
-        await $fetch(`${config.public.backendUrl}/sanctum/csrf-cookie`, {
-          method: "GET",
-          credentials: "include",
-        });
-
-        // Логин
-        await $authApi("/login", {
+        const $api = getApi();
+        const response: any = await $api("/login", {
           method: "POST",
           body: { email, password, remember },
         });
 
-        // Пользователь
-        const userResponse: any = await $authApi("/user");
-
-        if (!userResponse || !userResponse.id) {
-          throw new Error("Не удалось получить данные пользователя");
+        if (!response?.token) {
+          throw new Error("Токен не получен");
         }
 
-        this.user = userResponse;
-        this.roles = userResponse.roles || [];
+        this.token = response.token;
+        this.user = response.user;
+        this.roles = response.roles || [];
+
+        if (import.meta.client) {
+          if (this.token) {
+            localStorage.setItem("auth_token", this.token);
+          }
+          localStorage.setItem("auth_user", JSON.stringify(this.user));
+          localStorage.setItem("auth_roles", JSON.stringify(this.roles));
+          localStorage.setItem(
+            "auth_remember",
+            response.remember ? "true" : "false",
+          );
+        }
 
         return {
           success: true,
-          canAccessAdmin: this.roles.some((role) => role !== "user"),
-          isVerified: !!this.user?.email_verified_at,
+          canAccessAdmin: response.can_access_admin === true,
+          isVerified: !!response.user?.email_verified_at,
         };
       } catch (err: any) {
         let errorMessage = "Ошибка входа";
@@ -199,7 +262,10 @@ export const useAuthStore = defineStore("auth", {
           errorMessage = err.data.message;
         }
 
-        return { success: false, error: errorMessage };
+        return {
+          success: false,
+          error: errorMessage,
+        };
       } finally {
         this.loading = false;
       }
@@ -207,21 +273,43 @@ export const useAuthStore = defineStore("auth", {
 
     async init(force: boolean = false) {
       if (this.initialized && !force) return;
-      console.log("🔐 Проверка сессии...");
-      const isValid = await this.validateSession();
-      this.initialized = true;
-      if (isValid) {
+
+      // ✅ Сначала пробуем восстановить из localStorage
+      if (this.restoreFromStorage()) {
+        console.log("🔐 Токен восстановлен, проверяем валидность...");
+
+        // ✅ ТОЛЬКО ЕСЛИ ЕСТЬ ТОКЕН - делаем запросы
+        const isValid = await this.validateToken();
+        if (!isValid) {
+          this.$reset();
+          if (import.meta.client) {
+            localStorage.removeItem("auth_token");
+            localStorage.removeItem("auth_user");
+            localStorage.removeItem("auth_roles");
+          }
+          this.initialized = true;
+          return;
+        }
+
+        // ❌ НЕ ЗАГРУЖАЕМ consent-history здесь (только при необходимости)
+        // await this.fetchConsentHistory();
+
+        this.initialized = true;
         console.log("✅ Авторизация подтверждена");
-      } else {
-        console.log("⏭️ Пользователь не авторизован");
+        return;
       }
+
+      // ❌ Нет токена - просто выходим
+      console.log("⏭️ Нет токена, пропускаем проверку авторизации");
+      this.initialized = true;
     },
 
     async register(data: RegisterData) {
       this.loading = true;
+
       try {
-        const { $authApi } = useApi();
-        const response: any = await $authApi("/register", {
+        const $api = getApi();
+        const response: any = await $api("/register", {
           method: "POST",
           body: data,
         });
@@ -235,6 +323,7 @@ export const useAuthStore = defineStore("auth", {
         };
       } catch (err: any) {
         console.error("Register error:", err);
+
         if (err?.data?.error_code === "user_exists") {
           return {
             success: false,
@@ -244,6 +333,7 @@ export const useAuthStore = defineStore("auth", {
             reset_url: err.data.reset_url,
           };
         }
+
         return {
           success: false,
           error: err?.data?.message || err?.message || "Ошибка регистрации",
@@ -254,13 +344,25 @@ export const useAuthStore = defineStore("auth", {
     },
 
     async fetchUser() {
-      if (!import.meta.client) return;
+      if (!this.token || !import.meta.client) return;
+
       try {
-        const { $authApi } = useApi();
-        const response: any = await $authApi("/user");
+        const $api = getApi();
+        const response: any = await $api("/user", {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${this.token}`,
+          },
+        });
+
         if (response && response.id) {
           this.user = response;
           this.roles = response.roles || [];
+
+          if (import.meta.client) {
+            localStorage.setItem("auth_user", JSON.stringify(this.user));
+            localStorage.setItem("auth_roles", JSON.stringify(this.roles));
+          }
         }
       } catch (err) {
         console.error("Error fetching user:", err);
@@ -268,13 +370,47 @@ export const useAuthStore = defineStore("auth", {
     },
 
     async refreshSession() {
-      return await this.validateSession();
+      if (!this.token) return false;
+
+      try {
+        const $api = getApi();
+        const response: any = await $api("/user", {
+          headers: {
+            Authorization: `Bearer ${this.token}`,
+          },
+        });
+
+        if (response && response.id) {
+          this.user = response;
+          this.roles = response.roles || [];
+
+          if (import.meta.client) {
+            localStorage.setItem("auth_user", JSON.stringify(this.user));
+            localStorage.setItem("auth_roles", JSON.stringify(this.roles));
+          }
+          return true;
+        }
+        return false;
+      } catch (err) {
+        console.error("Session refresh failed:", err);
+        return false;
+      }
     },
 
     async resendVerification() {
+      if (!this.token) {
+        return { success: false, error: "Не авторизован" };
+      }
+
       try {
-        const { $authApi } = useApi();
-        await $authApi("/email/verification-notification", { method: "POST" });
+        const $api = getApi();
+        await $api("/email/verification-notification", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${this.token}`,
+          },
+        });
+
         return {
           success: true,
           message: "Письмо подтверждения отправлено повторно",
@@ -289,11 +425,18 @@ export const useAuthStore = defineStore("auth", {
     },
 
     async updateConsent(version: string) {
+      if (!this.token) {
+        return { success: false, error: "Не авторизован" };
+      }
+
       try {
-        const { $authApi } = useApi();
-        const response: any = await $authApi("/user/consent", {
+        const $api = getApi();
+        const response: any = await $api("/user/consent", {
           method: "POST",
           body: { policy_version: version },
+          headers: {
+            Authorization: `Bearer ${this.token}`,
+          },
         });
 
         if (response.success) {
@@ -341,10 +484,15 @@ export const useAuthStore = defineStore("auth", {
     },
 
     async fetchConsentHistory() {
+      if (!this.token) return;
+
       try {
-        const { $authApi } = useApi();
-        const response: any = await $authApi("/user/consent/history", {
+        const $api = getApi();
+        const response: any = await $api("/user/consent/history", {
           method: "GET",
+          headers: {
+            Authorization: `Bearer ${this.token}`,
+          },
         });
 
         if (
@@ -388,10 +536,15 @@ export const useAuthStore = defineStore("auth", {
     },
 
     async logout() {
-      if (import.meta.client) {
+      if (this.token && import.meta.client) {
         try {
-          const { $authApi } = useApi();
-          await $authApi("/logout", { method: "POST" });
+          const $api = getApi();
+          await $api("/logout", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${this.token}`,
+            },
+          });
         } catch (err) {
           console.error("Logout API error:", err);
         }
@@ -400,6 +553,9 @@ export const useAuthStore = defineStore("auth", {
       this.$reset();
 
       if (import.meta.client) {
+        localStorage.removeItem("auth_token");
+        localStorage.removeItem("auth_user");
+        localStorage.removeItem("auth_roles");
         localStorage.removeItem("consent_date");
         localStorage.removeItem("consent_version");
         localStorage.removeItem("consent_ip");
@@ -411,8 +567,8 @@ export const useAuthStore = defineStore("auth", {
 
     async forgotPassword(email: string) {
       try {
-        const { $authApi } = useApi();
-        const response: any = await $authApi("/forgot-password", {
+        const $api = getApi();
+        const response: any = await $api("/forgot-password", {
           method: "POST",
           body: { email },
         });
@@ -430,11 +586,17 @@ export const useAuthStore = defineStore("auth", {
           const errorValues = Object.values(errors);
           const firstError =
             errorValues.length > 0 ? (errorValues[0] as any)?.[0] : undefined;
-          if (firstError) errorMessage = firstError;
+          if (firstError) {
+            errorMessage = firstError;
+          }
         } else if (err?.data?.message) {
           errorMessage = err.data.message;
         }
-        return { success: false, error: errorMessage };
+
+        return {
+          success: false,
+          error: errorMessage,
+        };
       }
     },
 
@@ -445,9 +607,10 @@ export const useAuthStore = defineStore("auth", {
       password_confirmation: string;
     }) {
       this.loading = true;
+
       try {
-        const { $authApi } = useApi();
-        const response: any = await $authApi("/reset-password", {
+        const $api = getApi();
+        const response: any = await $api("/reset-password", {
           method: "POST",
           body: data,
         });

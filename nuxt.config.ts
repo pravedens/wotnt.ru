@@ -5,7 +5,7 @@ export default defineNuxtConfig({
   devtools: { enabled: false },
   ssr: true,
 
-  modules: ["@pinia/nuxt", "@nuxtjs/tailwindcss", "@nuxt/image", "nuxt-swiper", "@radya/nuxt-dompurify"],
+  modules: ["@pinia/nuxt", "@nuxtjs/tailwindcss", "@nuxt/image", "nuxt-swiper"],
 
   features: {
     inlineStyles: true,
