@@ -36,3 +36,5 @@ logs
 Thumbs.db
 
 public/sw.js
+
+public/version.json
