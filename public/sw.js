@@ -1,4 +1,3 @@
-// scripts/sw.template.js
 const CACHE_NAME = 'wotnt-1789162374433';
 const OFFLINE_URL = '/offline';
 

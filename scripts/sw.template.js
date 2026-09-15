@@ -159,12 +159,29 @@ self.addEventListener('push', function(event) {
   };
   
   event.waitUntil(
-    self.registration.showNotification(data.title, options)
+    Promise.all([
+      self.registration.showNotification(data.title, options),
+      // ✅ Обновляем бейдж на иконке PWA
+      self.registration.getNotifications().then(notifications => {
+        if ('setAppBadge' in self.navigator) {
+          if (notifications.length > 0) {
+            return self.navigator.setAppBadge(notifications.length);
+          } else {
+            return self.navigator.clearAppBadge();
+          }
+        }
+      }).catch(() => {})
+    ])
   );
 });
 
 self.addEventListener('notificationclick', function(event) {
   event.notification.close();
+  
+  // ✅ Очищаем бейдж при клике
+  if ('clearAppBadge' in self.navigator) {
+    self.navigator.clearAppBadge().catch(() => {});
+  }
   
   if (event.action === 'open') {
     const url = event.notification.data?.url || '/';

@@ -197,6 +197,14 @@ const loadUnreadCount = async () => {
     );
     unreadCount.value = response.count || 0;
     emit("unread-count-update", unreadCount.value);
+    // ✅ Бейдж на иконке PWA
+    if (import.meta.client && 'setAppBadge' in navigator) {
+      if (unreadCount.value > 0) {
+        navigator.setAppBadge(unreadCount.value).catch(() => {})
+      } else {
+        navigator.clearAppBadge().catch(() => {})
+      }
+    }
   } catch (error) {
     console.error("Failed to load unread count:", error);
   }
