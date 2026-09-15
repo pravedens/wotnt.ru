@@ -97,7 +97,7 @@
                       🗑️
                     </button>
                   </div>
-                  <p class="text-sm whitespace-pre-wrap break-words">{{ msg.message }}</p>
+                  <p class="text-sm whitespace-pre-wrap break-words" v-sanitize-html="msg.message"></p>
                 </div>
               </div>
               <div v-if="loadingMessages" class="text-center py-4">

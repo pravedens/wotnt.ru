@@ -31,7 +31,7 @@
           <div v-if="!msg.is_mine" class="text-xs text-white/60 mb-1">
             {{ msg.sender_name }}
           </div>
-          <p class="text-sm break-words">{{ msg.message }}</p>
+          <p class="text-sm break-words" v-sanitize-html="msg.message"></p>
           <p class="text-xs opacity-50 mt-1">{{ formatTime(msg.created_at) }}</p>
         </div>
       </div>

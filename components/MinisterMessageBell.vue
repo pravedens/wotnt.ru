@@ -22,7 +22,7 @@
             <span class="text-white font-medium">{{ msg.sender_name }}</span>
             <span class="text-white/40 text-xs">{{ formatTime(msg.created_at) }}</span>
           </div>
-          <p class="text-white/60 text-sm truncate">{{ msg.message }}</p>
+          <p class="text-white/60 text-sm truncate" v-sanitize-html="msg.message"></p>
         </div>
       </div>
       <div class="p-2 border-t border-gray-700">
