@@ -225,22 +225,17 @@
                 Помощь
               </NuxtLink>
             </li>
-
-            <!-- ✅ Личный кабинет: только для авторизованных, с бейджем -->
             <li v-if="authStore.isAuthenticated">
-              <NuxtLink
-                to="/dashboard"
-                class="text-white/70 hover:text-white transition flex items-center gap-2 justify-center md:justify-start group"
-              >
-                <span
-                  class="w-1 h-1 bg-purple-400 rounded-full group-hover:w-2 transition-all"
-                ></span>
-                <span>Личный кабинет</span>
+              <NuxtLink to="/dashboard" class="...">
 
-                <!-- ✅ Бейдж -->
+                  <span
+                    class="w-1 h-1 bg-purple-400 rounded-full group-hover:w-2 transition-all"
+                  ></span>
+                  <span>Личный кабинет</span>
+
                 <span
                   v-if="notificationsStore.unreadMessagesCount > 0"
-                  class="bg-red-500 text-white text-xs rounded-full min-w-[20px] h-5 px-1.5 flex items-center justify-center font-bold ml-auto md:ml-0"
+                  class="bg-red-500 text-white text-xs rounded-full min-w-[20px] h-5 px-1.5 flex items-center justify-center font-bold"
                 >
                   {{
                     notificationsStore.unreadMessagesCount > 9

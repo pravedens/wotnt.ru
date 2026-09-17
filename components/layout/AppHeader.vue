@@ -132,13 +132,6 @@
                 rounded="full" 
                 :border="false"
               />
-              <!-- ✅ Бейдж на аватаре -->
-              <span
-                v-if="notificationsStore.unreadMessagesCount > 0"
-                class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full min-w-[18px] h-[18px] px-1 flex items-center justify-center font-bold"
-              >
-                {{ notificationsStore.unreadMessagesCount > 9 ? '9+' : notificationsStore.unreadMessagesCount }}
-              </span>
             </NuxtLink>
             
             <NuxtLink 
