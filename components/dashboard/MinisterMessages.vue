@@ -6,10 +6,10 @@
       <h3 class="text-xl font-bold text-white">📬 Сообщения от прихожан</h3>
       <div class="flex gap-2">
         <span
-          v-if="unreadCount > 0"
+          v-if="notificationsStore.unreadMessagesCount > 0"
           class="bg-red-500 text-white px-2 py-1 rounded-full text-xs"
         >
-          {{ unreadCount }} новых
+          {{ notificationsStore.unreadMessagesCount }} новых
         </span>
         <button
           @click="refreshMessages"
@@ -134,15 +134,13 @@
 <script setup lang="ts">
 import { useNotificationStore } from "~/stores/notification";
 import { useAuthStore } from "~/stores/auth";
+import { useNotificationsStore } from "~/stores/notifications";
 import { useApi } from "~/composables/useApi";
-import type {
-  Message,
-  MessagesResponse,
-  UnreadCountResponse,
-} from "~/types/chat";
+import type { Message, MessagesResponse } from "~/types/chat";
 
 const notificationStore = useNotificationStore();
 const authStore = useAuthStore();
+const notificationsStore = useNotificationsStore();
 const { $api } = useApi();
 
 // ✅ Типизируем сообщения
@@ -151,7 +149,6 @@ interface MessageItem extends Message {
 }
 
 const messages = ref<MessageItem[]>([]);
-const unreadCount = ref(0);
 const loading = ref(true);
 const expandedMessages = ref<Record<number, boolean>>({});
 const pagination = ref<any>(null);
@@ -167,12 +164,10 @@ const formatDate = (date: string) => {
   });
 };
 
-// ✅ Типизируем ответ
 const loadMessages = async (page = 1) => {
   loading.value = true;
   try {
     const response = await $api<MessagesResponse>(`/my-messages?page=${page}`);
-    // Обрабатываем оба варианта ответа
     const messageData = response.messages?.data || response.data || [];
     messages.value = messageData;
     pagination.value = response.messages || {
@@ -181,7 +176,7 @@ const loadMessages = async (page = 1) => {
       total: messageData.length,
     };
     await loadUnreadCount();
-    emit("unread-count-update", unreadCount.value);
+    emit("unread-count-update", notificationsStore.unreadMessagesCount);
   } catch (error) {
     console.error("Failed to load messages:", error);
   } finally {
@@ -189,24 +184,19 @@ const loadMessages = async (page = 1) => {
   }
 };
 
-// ✅ Типизируем ответ
 const loadUnreadCount = async () => {
-  try {
-    const response = await $api<UnreadCountResponse>(
-      "/my-messages/unread-count",
-    );
-    unreadCount.value = response.count || 0;
-    emit("unread-count-update", unreadCount.value);
-    // ✅ Бейдж на иконке PWA
-    if (import.meta.client && 'setAppBadge' in navigator) {
-      if (unreadCount.value > 0) {
-        navigator.setAppBadge(unreadCount.value).catch(() => {})
-      } else {
-        navigator.clearAppBadge().catch(() => {})
-      }
+  await notificationsStore.fetchUnreadCount();
+  emit("unread-count-update", notificationsStore.unreadMessagesCount);
+
+  // ✅ Бейдж на иконке PWA
+  if (import.meta.client && "setAppBadge" in navigator) {
+    if (notificationsStore.unreadMessagesCount > 0) {
+      navigator
+        .setAppBadge(notificationsStore.unreadMessagesCount)
+        .catch(() => {});
+    } else {
+      navigator.clearAppBadge().catch(() => {});
     }
-  } catch (error) {
-    console.error("Failed to load unread count:", error);
   }
 };
 
@@ -263,7 +253,7 @@ const goToPage = (page: number) => {
 onMounted(() => {
   loadMessages();
   loadUnreadCount();
-  emit("unread-count-update", unreadCount.value);
+  emit("unread-count-update", notificationsStore.unreadMessagesCount);
 
   intervalId = setInterval(() => {
     loadUnreadCount();

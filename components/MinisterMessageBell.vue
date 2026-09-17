@@ -17,11 +17,12 @@
           d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
         />
       </svg>
+      <!-- ✅ Из стора -->
       <span
-        v-if="unreadCount > 0"
+        v-if="notificationsStore.unreadMessagesCount > 0"
         class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center"
       >
-        {{ unreadCount > 9 ? "9+" : unreadCount }}
+        {{ notificationsStore.unreadMessagesCount > 9 ? "9+" : notificationsStore.unreadMessagesCount }}
       </span>
     </button>
 
@@ -71,18 +72,18 @@
 
 <script setup lang="ts">
 import { useAuthStore } from "~/stores/auth";
+import { useNotificationsStore } from "~/stores/notifications";
 import { useApi } from "~/composables/useApi";
 import type {
   Message,
   MessagesResponse,
-  UnreadCountResponse,
 } from "~/types/chat";
 
 const authStore = useAuthStore();
+const notificationsStore = useNotificationsStore();
 const { $api } = useApi();
 
 const isMinister = computed(() => authStore.isMinister);
-const unreadCount = ref(0);
 const recentMessages = ref<Message[]>([]);
 const showDropdown = ref(false);
 let intervalId: NodeJS.Timeout | null = null;
@@ -102,21 +103,16 @@ const formatTime = (date: string) => {
 const loadUnreadCount = async () => {
   if (!authStore.isAuthenticated) return;
 
-  try {
-    const response = await $api<UnreadCountResponse>(
-      "/my-messages/unread-count",
-    );
-    unreadCount.value = response.count || 0;
-    // ✅ Бейдж на иконке PWA
-    if (import.meta.client && "setAppBadge" in navigator) {
-      if (unreadCount.value > 0) {
-        navigator.setAppBadge(unreadCount.value).catch(() => {});
-      } else {
-        navigator.clearAppBadge().catch(() => {});
-      }
+  // ✅ Загружаем через стор
+  await notificationsStore.fetchUnreadCount();
+
+  // ✅ Бейдж на иконке PWA (оставляем)
+  if (import.meta.client && "setAppBadge" in navigator) {
+    if (notificationsStore.unreadMessagesCount > 0) {
+      navigator.setAppBadge(notificationsStore.unreadMessagesCount).catch(() => {});
+    } else {
+      navigator.clearAppBadge().catch(() => {});
     }
-  } catch (error) {
-    // Ошибка не критична
   }
 };
 

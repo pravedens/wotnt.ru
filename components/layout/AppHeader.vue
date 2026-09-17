@@ -68,7 +68,7 @@
                   </svg>
                 </button>
                 
-                <!-- ✅ ВЫПАДАЮЩЕЕ МЕНЮ (было пропущено) -->
+                <!-- ✅ ВЫПАДАЮЩЕЕ МЕНЮ -->
                 <div 
                   v-if="showUserMenu"
                   class="absolute right-0 mt-2 w-48 bg-white/10 backdrop-blur-lg border border-white/20 rounded-lg shadow-xl z-50"
@@ -79,10 +79,17 @@
                   </div>
                   <NuxtLink 
                     to="/dashboard" 
-                    class="block px-4 py-2 text-white/80 hover:text-white hover:bg-white/10 transition"
+                    class="flex items-center justify-between px-4 py-2 text-white/80 hover:text-white hover:bg-white/10 transition"
                     @click="showUserMenu = false"
                   >
-                    Личный кабинет
+                    <span>Личный кабинет</span>
+                    <!-- ✅ Бейдж -->
+                    <span
+                      v-if="notificationsStore.unreadMessagesCount > 0"
+                      class="bg-red-500 text-white text-xs rounded-full min-w-[20px] h-5 px-1.5 flex items-center justify-center font-bold"
+                    >
+                      {{ notificationsStore.unreadMessagesCount > 9 ? '9+' : notificationsStore.unreadMessagesCount }}
+                    </span>
                   </NuxtLink>
                   <button 
                     @click="handleLogout"
@@ -116,7 +123,7 @@
             <NuxtLink 
               v-if="user"
               to="/dashboard"
-              class="p-2 hover:bg-white/10 rounded-lg transition"
+              class="relative p-2 hover:bg-white/10 rounded-lg transition"
             >
               <Avatar 
                 :src="avatarUrl" 
@@ -125,6 +132,13 @@
                 rounded="full" 
                 :border="false"
               />
+              <!-- ✅ Бейдж на аватаре -->
+              <span
+                v-if="notificationsStore.unreadMessagesCount > 0"
+                class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full min-w-[18px] h-[18px] px-1 flex items-center justify-center font-bold"
+              >
+                {{ notificationsStore.unreadMessagesCount > 9 ? '9+' : notificationsStore.unreadMessagesCount }}
+              </span>
             </NuxtLink>
             
             <NuxtLink 
@@ -142,14 +156,23 @@
             </template>
           </ClientOnly>
           
+          <!-- ✅ Гамбургер с бейджем -->
           <button 
             @click="$emit('toggle-mobile-menu')"
-            class="p-2 hover:bg-white/10 rounded-lg transition"
+            class="relative p-2 hover:bg-white/10 rounded-lg transition"
             aria-label="Меню"
           >
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
             </svg>
+            
+            <!-- ✅ Бейдж на гамбургере -->
+            <span
+              v-if="notificationsStore.unreadMessagesCount > 0"
+              class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full min-w-[18px] h-[18px] px-1 flex items-center justify-center font-bold"
+            >
+              {{ notificationsStore.unreadMessagesCount > 9 ? '9+' : notificationsStore.unreadMessagesCount }}
+            </span>
           </button>
         </div>
       </div>
@@ -159,6 +182,7 @@
 
 <script setup>
 import { useAuthStore } from '~/stores/auth'
+import { useNotificationsStore } from '~/stores/notifications'
 import Avatar from '~/components/auth/Avatar.vue'
 import { storeToRefs } from 'pinia'
 
@@ -169,6 +193,7 @@ defineProps({
 const emit = defineEmits(['toggle-mobile-menu', 'update:mobile-menu'])
 
 const authStore = useAuthStore()
+const notificationsStore = useNotificationsStore()
 const router = useRouter()
 
 const { user, userRoles, avatarUrl } = storeToRefs(authStore)
@@ -181,6 +206,11 @@ const closeUserMenu = () => {
 
 onMounted(() => {
   document.addEventListener('click', closeUserMenu)
+  
+  // ✅ Загружаем счётчик
+  if (authStore.isAuthenticated) {
+    notificationsStore.fetchUnreadCount()
+  }
 })
 
 onUnmounted(() => {
@@ -190,11 +220,11 @@ onUnmounted(() => {
 const toggleUserMenu = (event) => {
   event.stopPropagation()
   showUserMenu.value = !showUserMenu.value
-  console.log('👆 Menu toggled:', showUserMenu.value) // ✅ Для отладки
 }
 
 const handleLogout = async () => {
   await authStore.logout()
+  notificationsStore.reset()
   showUserMenu.value = false
   router.push('/')
 }

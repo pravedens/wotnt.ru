@@ -58,7 +58,7 @@
             </NuxtLink>
           </li>
           
-                    <!-- Служители -->
+          <!-- Служители -->
           <li>
             <NuxtLink 
               to="/ministers" 
@@ -69,7 +69,7 @@
             </NuxtLink>
           </li>
           
-          <!-- Ссылка для пастора (только для авторизованных с ролью pastor) -->
+          <!-- Ссылка для пастора -->
           <li v-if="authStore.isPastor">
             <NuxtLink 
               to="/pastor/users" 
@@ -110,13 +110,23 @@
               <NuxtLink 
                 v-else
                 to="/dashboard" 
-                class="flex items-center gap-2 px-4 py-3 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition"
+                class="flex items-center justify-between gap-2 px-4 py-3 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition"
                 @click="$emit('update:modelValue', false)"
               >
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-                <span>Кабинет</span>
+                <span class="flex items-center gap-2">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  <span>Кабинет</span>
+                </span>
+                
+                <!-- ✅ Бейдж -->
+                <span
+                  v-if="notificationsStore.unreadMessagesCount > 0"
+                  class="bg-red-500 text-white text-xs rounded-full min-w-[20px] h-5 px-1.5 flex items-center justify-center font-bold"
+                >
+                  {{ notificationsStore.unreadMessagesCount > 9 ? '9+' : notificationsStore.unreadMessagesCount }}
+                </span>
               </NuxtLink>
             </li>
             
@@ -170,6 +180,7 @@
 <script setup>
 import Avatar from '~/components/auth/Avatar.vue'
 import { useAuthStore } from '~/stores/auth'
+import { useNotificationsStore } from '~/stores/notifications'
 import { storeToRefs } from 'pinia'
 
 const props = defineProps({
@@ -181,11 +192,8 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue', 'logout'])
 
 const authStore = useAuthStore()
+const notificationsStore = useNotificationsStore()
 const { user, userRoles, avatarUrl, isPastor } = storeToRefs(authStore)
-
-if (!authStore) {
-  console.error('❌ authStore не инициализирован')
-}
 
 const handleLogout = () => {
   emit('logout')
