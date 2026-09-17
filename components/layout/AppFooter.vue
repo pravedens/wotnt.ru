@@ -226,16 +226,18 @@
               </NuxtLink>
             </li>
             <li v-if="authStore.isAuthenticated">
-              <NuxtLink to="/dashboard" class="...">
-
-                  <span
-                    class="w-1 h-1 bg-purple-400 rounded-full group-hover:w-2 transition-all"
-                  ></span>
-                  <span>Личный кабинет</span>
+              <NuxtLink
+                to="/dashboard"
+                class="text-white/70 hover:text-white transition inline-flex items-center gap-2 group"
+              >
+                <span
+                  class="w-1 h-1 bg-purple-400 rounded-full group-hover:w-2 transition-all"
+                ></span>
+                <span>Личный кабинет</span>
 
                 <span
                   v-if="notificationsStore.unreadMessagesCount > 0"
-                  class="bg-red-500 text-white text-xs rounded-full min-w-[20px] h-5 px-1.5 flex items-center justify-center font-bold"
+                  class="bg-red-500 text-white text-[10px] leading-none rounded-full w-5 h-5 flex items-center justify-center font-bold shrink-0"
                 >
                   {{
                     notificationsStore.unreadMessagesCount > 9
