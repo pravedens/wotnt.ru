@@ -49,6 +49,19 @@
                 msg.sender_name
               }}</span>
               <span class="text-white/40 text-sm">{{ msg.sender_email }}</span>
+              <!-- ✅ Статус: Новое / Прочитано -->
+              <span
+                v-if="!msg.is_read"
+                class="bg-red-500 text-white text-[10px] leading-none rounded-full px-2 py-0.5 font-bold uppercase"
+              >
+                Новое
+              </span>
+              <span
+                v-else
+                class="bg-white/10 text-white/50 text-[10px] leading-none rounded-full px-2 py-0.5 font-medium uppercase"
+              >
+                Прочитано
+              </span>
             </div>
           </div>
           <div class="flex items-center gap-2">
