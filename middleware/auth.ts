@@ -23,12 +23,5 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
                 query: { redirect: to.fullPath }
             })
         }
-        
-        if (!authStore.isEmailVerified && to.path !== '/auth/verify') {
-            return navigateTo({
-                path: '/auth/verify',
-                query: { redirect: to.fullPath }
-            })
-        }
     }
 })

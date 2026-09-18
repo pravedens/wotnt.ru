@@ -1933,15 +1933,35 @@ watch(
 );
 
 onMounted(async () => {
-  if (!authStore.initialized) await authStore.init();
+  console.log('🚀 Dashboard onMounted START')
+  console.log('initialized:', authStore.initialized)
+  console.log('isAuthenticated:', authStore.isAuthenticated)
+  console.log('user:', authStore.user)
+  console.log('email_verified_at:', authStore.user?.email_verified_at)
+  console.log('isEmailVerified:', authStore.isEmailVerified)
+
+  if (!authStore.initialized) {
+    console.log('⏳ Ждём init()...')
+    await authStore.init();
+    console.log('✅ init() завершён')
+    console.log('user после init:', authStore.user)
+    console.log('email_verified_at после init:', authStore.user?.email_verified_at)
+  }
+
   if (!authStore.isAuthenticated) {
+    console.log('❌ Не авторизован — редирект на /auth/login')
     await router.push("/auth/login");
     return;
   }
+
+  console.log('🔍 Проверка isEmailVerified:', authStore.isEmailVerified)
   if (!authStore.isEmailVerified) {
+    console.log('❌ Email не подтверждён — редирект на /auth/verify')
     await router.push("/auth/verify");
     return;
   }
+
+  console.log('✅ Все проверки пройдены — загружаем данные')
   loadUserData();
   await loadFavoritesCount();
   await authStore.fetchConsentHistory();

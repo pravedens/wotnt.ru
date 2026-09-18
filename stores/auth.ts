@@ -272,11 +272,11 @@ export const useAuthStore = defineStore("auth", {
     },
 
     async init(force: boolean = false) {
-      if (this.initialized && !force) return;
-
+      if (this.initialized && !force) {
+        return;
+      }
       // ✅ Сначала пробуем восстановить из localStorage
       if (this.restoreFromStorage()) {
-        console.log("🔐 Токен восстановлен, проверяем валидность...");
 
         // ✅ ТОЛЬКО ЕСЛИ ЕСТЬ ТОКЕН - делаем запросы
         const isValid = await this.validateToken();
@@ -295,12 +295,10 @@ export const useAuthStore = defineStore("auth", {
         // await this.fetchConsentHistory();
 
         this.initialized = true;
-        console.log("✅ Авторизация подтверждена");
         return;
       }
 
       // ❌ Нет токена - просто выходим
-      console.log("⏭️ Нет токена, пропускаем проверку авторизации");
       this.initialized = true;
     },
 
