@@ -70,32 +70,6 @@ const authStore = useAuthStore()
 const router = useRouter()
 const route = useRoute()
 
-// ============================================
-// ✅ ВОССТАНОВЛЕНИЕ ТОКЕНА ИЗ LOCALSTORAGE
-// ============================================
-if (import.meta.client) {
-  const token = localStorage.getItem('auth_token')
-  const userStr = localStorage.getItem('auth_user')
-  const rolesStr = localStorage.getItem('auth_roles')
-  
-  if (token && userStr && !authStore.token) {
-    authStore.token = token
-    authStore.user = JSON.parse(userStr)
-    authStore.roles = rolesStr ? JSON.parse(rolesStr) : []
-  }
-}
-
-// ============================================
-// ✅ ИНИЦИАЛИЗАЦИЯ АВТОРИЗАЦИИ
-// ============================================
-if (route.path !== '/') {
-  // На страницах, кроме главной - проверяем токен
-  authStore.init()
-} else {
-  // На главной - только восстановили токен, без запросов
-  authStore.initialized = true
-}
-
 const { user } = storeToRefs(authStore)
 
 // Состояние мобильного меню
@@ -140,6 +114,7 @@ router.afterEach(() => {
 
 // Инициализация авторизации при загрузке
 onMounted(() => {
+  authStore.init()  // ✅ ВСЕГДА вызываем init()
   restoreScroll()
 })
 
