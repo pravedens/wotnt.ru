@@ -1548,14 +1548,79 @@ const closeUploadModal = () => {
 const triggerFileInput = () => {
   fileInput.value?.click();
 };
-const handleFileSelect = (event: Event) => {
-  const target = event.target as HTMLInputElement;
-  const file = target.files?.[0];
-  if (file) {
-    selectedFile.value = file;
-    previewUrl.value = URL.createObjectURL(file);
+// ✅ Сжимаем изображение до 512×512
+const compressImage = (file: File, maxSize = 512): Promise<File> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    const reader = new FileReader()
+
+    reader.onload = (e) => {
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        let { width, height } = img
+
+        if (width > height && width > maxSize) {
+          height = (height * maxSize) / width
+          width = maxSize
+        } else if (height > maxSize) {
+          width = (width * maxSize) / height
+          height = maxSize
+        }
+
+        canvas.width = width
+        canvas.height = height
+        const ctx = canvas.getContext('2d')!
+        ctx.drawImage(img, 0, 0, width, height)
+
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) return reject(new Error('Ошибка сжатия'))
+            resolve(
+              new File([blob], 'avatar.jpg', {
+                type: 'image/jpeg',
+                lastModified: Date.now(),
+              })
+            )
+          },
+          'image/jpeg',
+          0.85
+        )
+      }
+      img.onerror = reject
+      img.src = e.target?.result as string
+    }
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
+}
+
+const handleFileSelect = async (event: Event) => {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+  if (!file) return
+
+  // ✅ Проверяем размер (до сжатия)
+  if (file.size > 20 * 1024 * 1024) {
+    notificationStore.warning('Файл слишком большой', 'Максимум 20 МБ')
+    return
   }
-};
+
+  try {
+    // ✅ Сжимаем до 512×512
+    const compressed = await compressImage(file)
+    
+    selectedFile.value = compressed
+    previewUrl.value = URL.createObjectURL(compressed)
+    
+    console.log('Сжатие:', {
+      original: (file.size / 1024 / 1024).toFixed(2) + ' МБ',
+      compressed: (compressed.size / 1024).toFixed(0) + ' КБ',
+    })
+  } catch (err) {
+    console.error('Ошибка сжатия:', err)
+    notificationStore.error('Ошибка', 'Не удалось обработать изображение')
+  }
+}
 
 const uploadAvatar = async () => {
   if (!selectedFile.value) {
