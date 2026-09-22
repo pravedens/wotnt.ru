@@ -277,7 +277,6 @@ export const useAuthStore = defineStore("auth", {
       }
       // ✅ Сначала пробуем восстановить из localStorage
       if (this.restoreFromStorage()) {
-
         // ✅ ТОЛЬКО ЕСЛИ ЕСТЬ ТОКЕН - делаем запросы
         const isValid = await this.validateToken();
         if (!isValid) {
@@ -346,6 +345,7 @@ export const useAuthStore = defineStore("auth", {
 
       try {
         const $api = getApi();
+
         const response: any = await $api("/user", {
           method: "GET",
           headers: {
@@ -353,41 +353,69 @@ export const useAuthStore = defineStore("auth", {
           },
         });
 
-        if (response && response.id) {
-          this.user = response;
-          this.roles = response.roles || [];
+        console.log("👤 fetchUser response:", response);
+
+        const freshUser = response?.user ?? (response?.id ? response : null);
+        const freshRoles = response?.roles ?? freshUser?.roles ?? [];
+
+        if (freshUser) {
+          this.user = freshUser;
+          this.roles = freshRoles;
 
           if (import.meta.client) {
             localStorage.setItem("auth_user", JSON.stringify(this.user));
             localStorage.setItem("auth_roles", JSON.stringify(this.roles));
           }
+
+          console.log("✅ fetchUser: пользователь обновлён:", this.user);
+        } else {
+          console.warn(
+            "⚠️ fetchUser: пользователь не найден в ответе API",
+            response,
+          );
         }
       } catch (err) {
         console.error("Error fetching user:", err);
       }
     },
-
+    
     async refreshSession() {
       if (!this.token) return false;
 
       try {
         const $api = getApi();
+
         const response: any = await $api("/user", {
+          method: "GET",
           headers: {
             Authorization: `Bearer ${this.token}`,
           },
         });
 
-        if (response && response.id) {
-          this.user = response;
-          this.roles = response.roles || [];
+        console.log("🔄 refreshSession response:", response);
+
+        const freshUser = response?.user ?? (response?.id ? response : null);
+        const freshRoles = response?.roles ?? freshUser?.roles ?? [];
+
+        if (freshUser) {
+          this.user = freshUser;
+          this.roles = freshRoles;
 
           if (import.meta.client) {
             localStorage.setItem("auth_user", JSON.stringify(this.user));
             localStorage.setItem("auth_roles", JSON.stringify(this.roles));
           }
+
+          console.log("✅ Пользователь обновлён в authStore:", this.user);
+          console.log("✅ Роли обновлены:", this.roles);
+
           return true;
         }
+
+        console.warn(
+          "⚠️ refreshSession: пользователь не найден в ответе API",
+          response,
+        );
         return false;
       } catch (err) {
         console.error("Session refresh failed:", err);

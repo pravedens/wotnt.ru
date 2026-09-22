@@ -1246,7 +1246,7 @@ import type {
   EnrollmentStatusResponse,
   ProgressResponse,
   CertificatesResponse,
-  PartyResponse
+  PartyResponse,
 } from "~/types/bible-school";
 
 definePageMeta({ middleware: "auth" });
@@ -1436,16 +1436,16 @@ const registrationDate = computed(() => {
 });
 
 const formatDateForInput = (dateString: string | undefined | null): string => {
-  if (!dateString) return ''
-  const str = String(dateString)
+  if (!dateString) return "";
+  const str = String(dateString);
   // ✅ Используем ?? для защиты от undefined
-  return str.includes('T') ? (str.split('T')[0] ?? str) : str
-}
+  return str.includes("T") ? (str.split("T")[0] ?? str) : str;
+};
 
 const birthDateFormatted = computed({
   get: (): string => formatDateForInput(profileForm.value.birth_date),
   set: (value: string) => {
-    profileForm.value.birth_date = value || ''
+    profileForm.value.birth_date = value || "";
   },
 });
 
@@ -1551,76 +1551,76 @@ const triggerFileInput = () => {
 // ✅ Сжимаем изображение до 512×512
 const compressImage = (file: File, maxSize = 512): Promise<File> => {
   return new Promise((resolve, reject) => {
-    const img = new Image()
-    const reader = new FileReader()
+    const img = new Image();
+    const reader = new FileReader();
 
     reader.onload = (e) => {
       img.onload = () => {
-        const canvas = document.createElement('canvas')
-        let { width, height } = img
+        const canvas = document.createElement("canvas");
+        let { width, height } = img;
 
         if (width > height && width > maxSize) {
-          height = (height * maxSize) / width
-          width = maxSize
+          height = (height * maxSize) / width;
+          width = maxSize;
         } else if (height > maxSize) {
-          width = (width * maxSize) / height
-          height = maxSize
+          width = (width * maxSize) / height;
+          height = maxSize;
         }
 
-        canvas.width = width
-        canvas.height = height
-        const ctx = canvas.getContext('2d')!
-        ctx.drawImage(img, 0, 0, width, height)
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d")!;
+        ctx.drawImage(img, 0, 0, width, height);
 
         canvas.toBlob(
           (blob) => {
-            if (!blob) return reject(new Error('Ошибка сжатия'))
+            if (!blob) return reject(new Error("Ошибка сжатия"));
             resolve(
-              new File([blob], 'avatar.jpg', {
-                type: 'image/jpeg',
+              new File([blob], "avatar.jpg", {
+                type: "image/jpeg",
                 lastModified: Date.now(),
-              })
-            )
+              }),
+            );
           },
-          'image/jpeg',
-          0.85
-        )
-      }
-      img.onerror = reject
-      img.src = e.target?.result as string
-    }
-    reader.onerror = reject
-    reader.readAsDataURL(file)
-  })
-}
+          "image/jpeg",
+          0.85,
+        );
+      };
+      img.onerror = reject;
+      img.src = e.target?.result as string;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+};
 
 const handleFileSelect = async (event: Event) => {
-  const target = event.target as HTMLInputElement
-  const file = target.files?.[0]
-  if (!file) return
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
+  if (!file) return;
 
   // ✅ Проверяем размер (до сжатия)
   if (file.size > 20 * 1024 * 1024) {
-    notificationStore.warning('Файл слишком большой', 'Максимум 20 МБ')
-    return
+    notificationStore.warning("Файл слишком большой", "Максимум 20 МБ");
+    return;
   }
 
   try {
     // ✅ Сжимаем до 512×512
-    const compressed = await compressImage(file)
-    
-    selectedFile.value = compressed
-    previewUrl.value = URL.createObjectURL(compressed)
-    
-    console.log('Сжатие:', {
-      original: (file.size / 1024 / 1024).toFixed(2) + ' МБ',
-      compressed: (compressed.size / 1024).toFixed(0) + ' КБ',
-    })
+    const compressed = await compressImage(file);
+
+    selectedFile.value = compressed;
+    previewUrl.value = URL.createObjectURL(compressed);
+
+    console.log("Сжатие:", {
+      original: (file.size / 1024 / 1024).toFixed(2) + " МБ",
+      compressed: (compressed.size / 1024).toFixed(0) + " КБ",
+    });
   } catch (err) {
-    console.error('Ошибка сжатия:', err)
-    notificationStore.error('Ошибка', 'Не удалось обработать изображение')
+    console.error("Ошибка сжатия:", err);
+    notificationStore.error("Ошибка", "Не удалось обработать изображение");
   }
-}
+};
 
 const uploadAvatar = async () => {
   if (!selectedFile.value) {
@@ -1751,7 +1751,7 @@ const loadEnrollmentStatus = async () => {
     if (response.is_enrolled) {
       isBibleStudent.value = true;
     } else if (response.has_request) {
-      enrollmentStatus.value = response.status || null // ✅ Преобразуем undefined в null
+      enrollmentStatus.value = response.status || null; // ✅ Преобразуем undefined в null
     }
   } catch (err) {
     console.error("Load enrollment status error:", err);
@@ -1760,7 +1760,10 @@ const loadEnrollmentStatus = async () => {
 
 const submitEnrollmentRequest = async () => {
   if (!profileForm.value.marital_status) {
-    notificationStore.warning("Внимание", "Пожалуйста, выберите семейное положение");
+    notificationStore.warning(
+      "Внимание",
+      "Пожалуйста, выберите семейное положение",
+    );
     return;
   }
   if (!profileForm.value.gender) {
@@ -1786,16 +1789,19 @@ const submitEnrollmentRequest = async () => {
           bible_courses_experience: profileForm.value.bible_courses_experience,
           learning_expectations: profileForm.value.learning_expectations,
         },
-      }
+      },
     );
     if (response.success) {
       enrollmentStatus.value = "pending";
-      notificationStore.success("Заявка отправлена", response.message || "Заявка отправлена");
+      notificationStore.success(
+        "Заявка отправлена",
+        response.message || "Заявка отправлена",
+      );
     }
   } catch (err: any) {
     notificationStore.error(
       "Ошибка",
-      err.data?.message || "Не удалось отправить заявку"
+      err.data?.message || "Не удалось отправить заявку",
     );
   } finally {
     enrollmentLoading.value = false;
@@ -1845,7 +1851,7 @@ const joinParty = async () => {
     notificationStore.warning("Внимание", "Введите код приглашения");
     return;
   }
-  
+
   joinLoading.value = true;
   try {
     const response = await $api<{ success: boolean; message?: string }>(
@@ -1853,17 +1859,20 @@ const joinParty = async () => {
       {
         method: "POST",
         body: { join_code: joinCode.value.toUpperCase() },
-      }
+      },
     );
     if (response.success) {
-      notificationStore.success("Успех", response.message || "Вы вступили в группу");
+      notificationStore.success(
+        "Успех",
+        response.message || "Вы вступили в группу",
+      );
       await loadMyParty();
       joinCode.value = "";
     }
   } catch (err: any) {
     notificationStore.error(
       "Ошибка",
-      err.data?.message || "Не удалось вступить в группу"
+      err.data?.message || "Не удалось вступить в группу",
     );
   } finally {
     joinLoading.value = false;
@@ -1998,41 +2007,40 @@ watch(
 );
 
 onMounted(async () => {
-  console.log('🚀 Dashboard onMounted START')
-  console.log('initialized:', authStore.initialized)
-  console.log('isAuthenticated:', authStore.isAuthenticated)
-  console.log('user:', authStore.user)
-  console.log('email_verified_at:', authStore.user?.email_verified_at)
-  console.log('isEmailVerified:', authStore.isEmailVerified)
+  console.log("🚀 Dashboard onMounted START");
 
   if (!authStore.initialized) {
-    console.log('⏳ Ждём init()...')
+    console.log("⏳ Ждём init()...");
     await authStore.init();
-    console.log('✅ init() завершён')
-    console.log('user после init:', authStore.user)
-    console.log('email_verified_at после init:', authStore.user?.email_verified_at)
   }
 
   if (!authStore.isAuthenticated) {
-    console.log('❌ Не авторизован — редирект на /auth/login')
+    console.log("❌ Не авторизован — редирект на /auth/login");
     await router.push("/auth/login");
     return;
   }
 
-  console.log('🔍 Проверка isEmailVerified:', authStore.isEmailVerified)
+  const refreshed = await authStore.refreshSession();
+
+  console.log("REFRESH RESULT:", refreshed);
+  console.log("USER AFTER REFRESH:", authStore.user);
+
   if (!authStore.isEmailVerified) {
-    console.log('❌ Email не подтверждён — редирект на /auth/verify')
+    console.log("❌ Email не подтверждён — редирект на /auth/verify");
     await router.push("/auth/verify");
     return;
   }
 
-  console.log('✅ Все проверки пройдены — загружаем данные')
+  dataLoaded.value = false;
   loadUserData();
+
+  console.log("PROFILE FORM AFTER LOAD:", profileForm.value);
+
   await loadFavoritesCount();
   await authStore.fetchConsentHistory();
   await loadMyRegistrations();
 
-  await refreshStudentStatus();
+  await loadEnrollmentStatus();
 
   if (isBibleStudent.value) {
     await loadStudentProgress();
@@ -2041,10 +2049,10 @@ onMounted(async () => {
     await loadBibleSchoolNotificationSettings();
   }
 
-  // ✅ route теперь доступен на верхнем уровне
   if (route.query.tab === "bibleSchool") {
     activeTab.value = "bibleSchool";
   }
+
   if (route.query.tab === "teacher" && isTeacher.value) {
     activeTab.value = "teacher";
   }
@@ -2053,28 +2061,35 @@ onMounted(async () => {
 watch(
   user,
   (newUser) => {
-    if (newUser && !dataLoaded.value) loadUserData();
+    console.log("👀 USER WATCH:", newUser);
+
+    if (newUser && !dataLoaded.value) {
+      loadUserData();
+    }
   },
-  { immediate: true, deep: true },
+  { deep: true },
 );
 
 watch(
   profileForm,
   (newVal) => {
     if (user.value && dataLoaded.value) {
-      // ✅ Проверяем, что поле существует перед присваиванием
       if ("marital_status" in user.value) {
         user.value.marital_status = newVal.marital_status;
       }
+
       if ("gender" in user.value) {
         user.value.gender = newVal.gender;
       }
+
       if ("ministry" in user.value) {
         user.value.ministry = newVal.ministry;
       }
+
       if ("bible_courses_experience" in user.value) {
         user.value.bible_courses_experience = newVal.bible_courses_experience;
       }
+
       if ("learning_expectations" in user.value) {
         user.value.learning_expectations = newVal.learning_expectations;
       }
