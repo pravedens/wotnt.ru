@@ -331,6 +331,15 @@ export const useAuthStore = defineStore("auth", {
           };
         }
 
+        // ✅ НОВОЕ: пробрасываем ошибки валидации (422)
+        if (err?.status === 422 && err?.data?.errors) {
+          return {
+            success: false,
+            error: err.data.message || "Ошибка валидации",
+            errors: err.data.errors, // ← карта { field: [messages] }
+          };
+        }
+
         return {
           success: false,
           error: err?.data?.message || err?.message || "Ошибка регистрации",
@@ -378,7 +387,7 @@ export const useAuthStore = defineStore("auth", {
         console.error("Error fetching user:", err);
       }
     },
-    
+
     async refreshSession() {
       if (!this.token) return false;
 

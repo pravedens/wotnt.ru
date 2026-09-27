@@ -1,14 +1,14 @@
 {
   "version": "0.1.7",
-  "timestamp": "2026-09-13T11:09:05.253Z",
+  "timestamp": "2026-09-23T13:56:07.705Z",
   "target": ".",
   "frameworks": [
     "vue"
   ],
   "stats": {
-    "filesScanned": 165,
+    "filesScanned": 164,
     "filesSkipped": 0,
-    "duration": 31405,
+    "duration": 4039,
     "rulesRun": 65
   },
   "findings": [
@@ -243,24 +243,6 @@
       "remediation": "Add process.on('unhandledRejection', (reason) => { logger.error(reason); }) at the application entry point.",
       "references": [
         "https://nodejs.org/api/process.html#process_event_unhandledrejection"
-      ],
-      "confidence": "medium"
-    },
-    {
-      "ruleId": "SEC-001",
-      "ruleName": "Hardcoded API Key",
-      "category": "secrets",
-      "severity": "critical",
-      "filePath": "G:/projects/wotnt.ru/components/NotificationSettings.vue",
-      "line": 692,
-      "column": 11,
-      "endLine": 692,
-      "endColumn": 119,
-      "message": "Hardcoded secret detected in variable \"publicKey\". Use environment variables instead.",
-      "codeSnippet": "const publicKey =",
-      "remediation": "Store secrets in environment variables or secret managers. Never commit secrets to source code.",
-      "references": [
-        "https://cwe.mitre.org/data/definitions/798.html"
       ],
       "confidence": "medium"
     },
@@ -1065,24 +1047,6 @@
       "ruleName": "Unhandled Promise Rejection",
       "category": "error-handling",
       "severity": "low",
-      "filePath": "G:/projects/wotnt.ru/plugins/auth.client.ts",
-      "line": 1,
-      "column": 1,
-      "endLine": 1,
-      "endColumn": 1,
-      "message": "No process.on('unhandledRejection') handler found. Unhandled promise rejections can crash the process.",
-      "codeSnippet": "",
-      "remediation": "Add process.on('unhandledRejection', (reason) => { logger.error(reason); }) at the application entry point.",
-      "references": [
-        "https://nodejs.org/api/process.html#process_event_unhandledrejection"
-      ],
-      "confidence": "medium"
-    },
-    {
-      "ruleId": "ERR-003",
-      "ruleName": "Unhandled Promise Rejection",
-      "category": "error-handling",
-      "severity": "low",
       "filePath": "G:/projects/wotnt.ru/plugins/echo.client.ts",
       "line": 1,
       "column": 1,
@@ -1120,138 +1084,6 @@
       "category": "error-handling",
       "severity": "low",
       "filePath": "G:/projects/wotnt.ru/plugins/yandex-metrika.client.ts",
-      "line": 1,
-      "column": 1,
-      "endLine": 1,
-      "endColumn": 1,
-      "message": "No process.on('unhandledRejection') handler found. Unhandled promise rejections can crash the process.",
-      "codeSnippet": "",
-      "remediation": "Add process.on('unhandledRejection', (reason) => { logger.error(reason); }) at the application entry point.",
-      "references": [
-        "https://nodejs.org/api/process.html#process_event_unhandledrejection"
-      ],
-      "confidence": "medium"
-    },
-    {
-      "ruleId": "AUTH-001",
-      "ruleName": "Missing Authentication Guard",
-      "category": "auth",
-      "severity": "high",
-      "filePath": "G:/projects/wotnt.ru/public/sw.js",
-      "line": 19,
-      "column": 21,
-      "endLine": 19,
-      "endColumn": 45,
-      "message": "Route handler for `.put()` has no authentication middleware.",
-      "codeSnippet": "await cache.put(url, response);",
-      "remediation": "Add authentication middleware to all mutating endpoints.",
-      "references": [
-        "https://owasp.org/www-project-web-security-testing-guide/",
-        "https://cwe.mitre.org/data/definitions/306.html"
-      ],
-      "confidence": "low"
-    },
-    {
-      "ruleId": "AUTH-001",
-      "ruleName": "Missing Authentication Guard",
-      "category": "auth",
-      "severity": "high",
-      "filePath": "G:/projects/wotnt.ru/public/sw.js",
-      "line": 35,
-      "column": 18,
-      "endLine": 35,
-      "endColumn": 36,
-      "message": "Route handler for `.delete()` has no authentication middleware.",
-      "codeSnippet": "return caches.delete(key);",
-      "remediation": "Add authentication middleware to all mutating endpoints.",
-      "references": [
-        "https://owasp.org/www-project-web-security-testing-guide/",
-        "https://cwe.mitre.org/data/definitions/306.html"
-      ],
-      "confidence": "low"
-    },
-    {
-      "ruleId": "AUTH-001",
-      "ruleName": "Missing Authentication Guard",
-      "category": "auth",
-      "severity": "high",
-      "filePath": "G:/projects/wotnt.ru/public/sw.js",
-      "line": 65,
-      "column": 36,
-      "endLine": 65,
-      "endColumn": 70,
-      "message": "Route handler for `.put()` has no authentication middleware.",
-      "codeSnippet": ".then(cache => cache.put(event.request, response))",
-      "remediation": "Add authentication middleware to all mutating endpoints.",
-      "references": [
-        "https://owasp.org/www-project-web-security-testing-guide/",
-        "https://cwe.mitre.org/data/definitions/306.html"
-      ],
-      "confidence": "low"
-    },
-    {
-      "ruleId": "AUTH-001",
-      "ruleName": "Missing Authentication Guard",
-      "category": "auth",
-      "severity": "high",
-      "filePath": "G:/projects/wotnt.ru/public/sw.js",
-      "line": 77,
-      "column": 34,
-      "endLine": 77,
-      "endColumn": 65,
-      "message": "Route handler for `.put()` has no authentication middleware.",
-      "codeSnippet": ".then(cache => cache.put(event.request, clone))",
-      "remediation": "Add authentication middleware to all mutating endpoints.",
-      "references": [
-        "https://owasp.org/www-project-web-security-testing-guide/",
-        "https://cwe.mitre.org/data/definitions/306.html"
-      ],
-      "confidence": "low"
-    },
-    {
-      "ruleId": "AUTH-001",
-      "ruleName": "Missing Authentication Guard",
-      "category": "auth",
-      "severity": "high",
-      "filePath": "G:/projects/wotnt.ru/public/sw.js",
-      "line": 102,
-      "column": 34,
-      "endLine": 102,
-      "endColumn": 68,
-      "message": "Route handler for `.put()` has no authentication middleware.",
-      "codeSnippet": ".then(cache => cache.put(event.request, response))",
-      "remediation": "Add authentication middleware to all mutating endpoints.",
-      "references": [
-        "https://owasp.org/www-project-web-security-testing-guide/",
-        "https://cwe.mitre.org/data/definitions/306.html"
-      ],
-      "confidence": "low"
-    },
-    {
-      "ruleId": "AUTH-001",
-      "ruleName": "Missing Authentication Guard",
-      "category": "auth",
-      "severity": "high",
-      "filePath": "G:/projects/wotnt.ru/public/sw.js",
-      "line": 115,
-      "column": 32,
-      "endLine": 115,
-      "endColumn": 63,
-      "message": "Route handler for `.put()` has no authentication middleware.",
-      "codeSnippet": ".then(cache => cache.put(event.request, clone))",
-      "remediation": "Add authentication middleware to all mutating endpoints.",
-      "references": [
-        "https://owasp.org/www-project-web-security-testing-guide/",
-        "https://cwe.mitre.org/data/definitions/306.html"
-      ],
-      "confidence": "low"
-    },
-    {
-      "ruleId": "ERR-003",
-      "ruleName": "Unhandled Promise Rejection",
-      "category": "error-handling",
-      "severity": "low",
-      "filePath": "G:/projects/wotnt.ru/public/sw.js",
       "line": 1,
       "column": 1,
       "endLine": 1,
@@ -1529,6 +1361,24 @@
       "category": "error-handling",
       "severity": "low",
       "filePath": "G:/projects/wotnt.ru/stores/notification.ts",
+      "line": 1,
+      "column": 1,
+      "endLine": 1,
+      "endColumn": 1,
+      "message": "No process.on('unhandledRejection') handler found. Unhandled promise rejections can crash the process.",
+      "codeSnippet": "",
+      "remediation": "Add process.on('unhandledRejection', (reason) => { logger.error(reason); }) at the application entry point.",
+      "references": [
+        "https://nodejs.org/api/process.html#process_event_unhandledrejection"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "ruleId": "ERR-003",
+      "ruleName": "Unhandled Promise Rejection",
+      "category": "error-handling",
+      "severity": "low",
+      "filePath": "G:/projects/wotnt.ru/stores/notifications.ts",
       "line": 1,
       "column": 1,
       "endLine": 1,
@@ -2358,10 +2208,10 @@
       "category": "error-handling",
       "severity": "low",
       "filePath": "G:/projects/wotnt.ru/components/dashboard/TeacherPanel.vue",
-      "line": 714,
+      "line": 968,
       "column": 1,
-      "endLine": 714,
-      "endColumn": 288,
+      "endLine": 968,
+      "endColumn": 287,
       "message": "Async operation without error handling may cause unhandled promise rejection.",
       "codeSnippet": "onMounted(async () => {",
       "remediation": "Wrap async operations in try/catch or chain .catch() handlers.",
@@ -3082,10 +2932,10 @@
       "category": "error-handling",
       "severity": "low",
       "filePath": "G:/projects/wotnt.ru/pages/about/[slug].vue",
-      "line": 175,
+      "line": 253,
       "column": 1,
-      "endLine": 175,
-      "endColumn": 232,
+      "endLine": 253,
+      "endColumn": 236,
       "message": "Async operation without error handling may cause unhandled promise rejection.",
       "codeSnippet": "onMounted(async () => {",
       "remediation": "Wrap async operations in try/catch or chain .catch() handlers.",
@@ -3244,9 +3094,9 @@
       "category": "error-handling",
       "severity": "low",
       "filePath": "G:/projects/wotnt.ru/pages/dashboard/index.vue",
-      "line": 1906,
+      "line": 1980,
       "column": 1,
-      "endLine": 1906,
+      "endLine": 1980,
       "endColumn": 255,
       "message": "Async operation without error handling may cause unhandled promise rejection.",
       "codeSnippet": "watch(activeTab, async (newTab) => {",
@@ -3262,9 +3112,9 @@
       "category": "error-handling",
       "severity": "low",
       "filePath": "G:/projects/wotnt.ru/pages/dashboard/index.vue",
-      "line": 1919,
+      "line": 1993,
       "column": 1,
-      "endLine": 1919,
+      "endLine": 1993,
       "endColumn": 317,
       "message": "Async operation without error handling may cause unhandled promise rejection.",
       "codeSnippet": "watch(",
@@ -3280,10 +3130,10 @@
       "category": "error-handling",
       "severity": "low",
       "filePath": "G:/projects/wotnt.ru/pages/dashboard/index.vue",
-      "line": 1935,
+      "line": 2009,
       "column": 1,
-      "endLine": 1935,
-      "endColumn": 845,
+      "endLine": 2009,
+      "endColumn": 1296,
       "message": "Async operation without error handling may cause unhandled promise rejection.",
       "codeSnippet": "onMounted(async () => {",
       "remediation": "Wrap async operations in try/catch or chain .catch() handlers.",
