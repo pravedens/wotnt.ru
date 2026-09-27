@@ -299,6 +299,7 @@ import TextFile from "~/components/posts/TextFile.vue";
 import CommentSection from "~/components/comments/CommentSection.vue";
 import { useApi } from "~/composables/useApi";
 import type {} from "~/types/yandex-metrika";
+import { useFormatDate } from "~/composables/useFormatDate";
 
 // ✅ Импортируем типы из ~/types/sermon.ts
 import type { Post, Category, Group, Conference } from "~/types/sermon";
@@ -526,12 +527,8 @@ const cleanDescription = computed(() => {
   return post.value.clean_description.substring(0, 300);
 });
 
-// Форматированная дата
-const formatDate = (dateString?: string | null) => {
-  if (!dateString) return "";
-  const d = new Date(dateString);
-  return `${d.getDate()} ${d.toLocaleString("ru-RU", { month: "long" })} ${d.getFullYear()}`;
-};
+// Форматированная дата (из composable)
+const { formatDate } = useFormatDate();
 
 // Заголовок для шаринга
 const shareTitle = computed(() => {
