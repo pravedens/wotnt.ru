@@ -5,7 +5,11 @@ export default defineNuxtConfig({
   devtools: { enabled: false },
   ssr: true,
 
-  modules: ["@pinia/nuxt", "@nuxtjs/tailwindcss", "@nuxt/image", "nuxt-swiper", "@radya/nuxt-dompurify",],
+  modules: ["@pinia/nuxt", "@nuxtjs/tailwindcss", "@nuxt/image", "nuxt-swiper", "@radya/nuxt-dompurify", "@rkaliev/nuxt-yandex-metrika",],
+
+  yandexMetrika: {
+    id: '95320948',
+  },
 
   features: {
     inlineStyles: true,
