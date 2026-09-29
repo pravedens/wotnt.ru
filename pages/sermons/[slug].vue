@@ -310,21 +310,37 @@ const statsStore = useStatsStore();
 const { $api } = useApi();
 
 // Получаем slug из параметров
-const slug = computed(() => route.params.slug as string);
+const slug = computed(() => route.params.slug as string | undefined)
 
 const {
   data: post,
   pending,
   error: fetchError,
-} = useAsyncData<Post>(
+} = useAsyncData<Post | null>(
   () => `post-${slug.value}`,
   async () => {
-    return await $api<Post>(`/posts/${slug.value}`);
+    if (!slug.value || slug.value === 'undefined') {
+      return null
+    }
+
+    try {
+      return await $api<Post>(`/posts/${slug.value}`)
+    } catch (err: any) {
+      if (err?.status === 404 || err?.statusCode === 404) {
+        throw createError({
+          statusCode: 404,
+          statusMessage: 'Проповедь не найдена',
+        })
+      }
+      throw err
+    }
   },
   {
     server: true,
+    watch: [slug],
+    immediate: true,
   },
-);
+)
 
 // Обработка ошибки
 const error = computed(() => {
